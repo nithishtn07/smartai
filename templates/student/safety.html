@@ -1,0 +1,138 @@
+{% extends "student/base_student.html" %}
+
+{% block title %}Campus Safety Center{% endblock %}
+
+{% block student_content %}
+<div class="page-header-block">
+    <div class="page-title-group">
+        <h1><span>🛡️</span> Campus Safety Center</h1>
+        <p>24/7 Rapid Emergency Response, Incident Reporting, and Campus Protection Protocols.</p>
+    </div>
+</div>
+
+<!-- Emergency SOS Big Banner -->
+<div class="emergency-hero-banner">
+    <div style="max-width: 600px; margin: 0 auto 24px;">
+        <h2 style="font-size: 1.8rem; font-weight: 800; color: #fca5a5; margin-bottom: 8px;">Institutional Rapid Emergency Dispatch</h2>
+        <p style="color: var(--text-secondary); font-size: 0.95rem;">
+            In immediate danger or witnessing a critical emergency? Activate instant SOS to broadcast GPS beacon to campus quick response units.
+        </p>
+    </div>
+
+    <a href="{{ url_for('student_emergency') }}" class="sos-big-btn" id="btn-activate-sos" style="text-decoration: none;">
+        <span style="font-size: 2.8rem;">🚨</span>
+        <span>ACTIVATE SOS</span>
+    </a>
+</div>
+
+<div class="form-grid" style="grid-template-columns: 1.1fr 1fr; align-items: start; margin-top: 28px;">
+    
+    <!-- Report Safety Incident Form -->
+    <div class="content-card">
+        <div class="card-header-row">
+            <h2 class="card-heading"><span>⚠️</span> Report Safety Incident</h2>
+            <span class="badge badge-yellow">Confidential</span>
+        </div>
+
+        <form method="POST" action="{{ url_for('student_safety') }}" class="portal-form">
+            <div class="form-group">
+                <label for="incident_type" class="form-label">Incident Type</label>
+                <select id="incident_type" name="incident_type" class="form-select" required>
+                    <option value="Suspicious Activity">Suspicious Activity</option>
+                    <option value="Harassment">Harassment / Intimidation</option>
+                    <option value="Bullying">Bullying / Hazing</option>
+                    <option value="Unsafe Area">Unsafe / Poorly Lit Area</option>
+                    <option value="Medical Issue">Medical Emergency</option>
+                    <option value="Fire">Fire / Smoke Hazard</option>
+                    <option value="Theft">Theft / Property Loss</option>
+                    <option value="Infrastructure Hazard">Physical Hazard (Open Wires, Slippery)</option>
+                    <option value="Other">Other Concern</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="location" class="form-label">Incident Location</label>
+                <input type="text" id="location" name="location" class="form-input" placeholder="e.g. East Gate Lawn, near Library parking" required>
+            </div>
+
+            <div class="form-group">
+                <label for="description" class="form-label">Incident Details</label>
+                <textarea id="description" name="description" class="form-textarea" placeholder="Describe the safety situation or persons involved..." required></textarea>
+            </div>
+
+            <button type="submit" class="btn-primary">
+                <span>🛡️</span> Submit Safety Incident Report
+            </button>
+        </form>
+    </div>
+
+    <!-- Safety Contacts Directory -->
+    <div class="content-card">
+        <div class="card-header-row">
+            <h2 class="card-heading"><span>📞</span> 24/7 Emergency Contacts Directory</h2>
+            <span class="badge badge-green">Always Online</span>
+        </div>
+
+        <div class="contacts-grid" style="grid-template-columns: 1fr;">
+            {% for contact in contacts %}
+            <div class="contact-card">
+                <div class="contact-icon">{{ contact.icon }}</div>
+                <div class="contact-info" style="flex: 1;">
+                    <h4>{{ contact.service_name }}</h4>
+                    <p>{{ contact.role_title }} • {{ contact.location }}</p>
+                    <a href="tel:{{ contact.phone_number }}" class="contact-phone-link">
+                        📞 {{ contact.phone_number }}
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+</div>
+
+<!-- Recent Student Incident Reports -->
+{% if recent_incidents %}
+<section class="content-card" style="margin-top: 28px;">
+    <div class="card-header-row">
+        <h2 class="card-heading"><span>📜</span> My Reported Safety Incidents</h2>
+        <span class="badge badge-cyan">{{ recent_incidents|length }} Reports</span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="portal-table">
+            <thead>
+                <tr>
+                    <th>Incident ID</th>
+                    <th>Type</th>
+                    <th>Location</th>
+                    <th>Status</th>
+                    <th>Reported At</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for inc in recent_incidents %}
+                <tr>
+                    <td><strong style="font-family: var(--font-mono); color: #38bdf8;">{{ inc.incident_id }}</strong></td>
+                    <td>{{ inc.incident_type }}</td>
+                    <td>📍 {{ inc.location }}</td>
+                    <td>
+                        {% if inc.status == 'RESOLVED' %}
+                            <span class="badge badge-green">RESOLVED</span>
+                        {% elif inc.status == 'ACTIVE' %}
+                            <span class="badge badge-red">ACTIVE DISPATCH</span>
+                        {% else %}
+                            <span class="badge badge-yellow">{{ inc.status }}</span>
+                        {% endif %}
+                    </td>
+                    <td style="font-family: var(--font-mono); font-size: 0.82rem; color: var(--text-muted);">
+                        {{ inc.created_at[:16] }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endif %}
+{% endblock %}

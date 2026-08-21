@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="CampusGuard AI - AI-Powered Smart Campus ERP & Safety Platform">
+    <meta name="theme-color" content="#06080e">
+    
+    <title>{% block title %}Student Portal{% endblock %} | CampusGuard AI</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/student-portal.css') }}">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2338bdf8'%3E%3Cpath d='M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 2.18l7 3.12v4.7c0 4.54-3.13 8.78-7 9.88-3.87-1.1-7-5.34-7-9.88V6.3l7-3.12z'/%3E%3C/svg%3E">
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+    <!-- Ambient Glowing Background -->
+    <div class="ambient-background" aria-hidden="true">
+        <div class="glow-orb orb-primary"></div>
+        <div class="glow-orb orb-secondary"></div>
+    </div>
+
+    <!-- Mobile Drawer Overlay -->
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+    <div class="portal-layout">
+
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar" id="student-sidebar" aria-label="Student Navigation">
+            <a href="{{ url_for('student_dashboard') }}" class="sidebar-brand">
+                <div class="brand-icon">
+                    <svg width="22" height="22" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M16 2L4 7V14C4 22 9.5 28.5 16 30C22.5 28.5 28 22 28 14V7L16 2Z" fill="#38bdf8" fill-opacity="0.2" stroke="#38bdf8" stroke-width="2"/>
+                        <circle cx="16" cy="15" r="4" fill="#38bdf8"/>
+                    </svg>
+                </div>
+                <span class="brand-name">CampusGuard <span class="brand-badge">ERP</span></span>
+            </a>
+
+            <nav class="sidebar-nav">
+                <!-- 1. ACADEMIC SERVICES -->
+                <span class="nav-category">Academic Services</span>
+                
+                <a href="{{ url_for('student_dashboard') }}" class="nav-link {% if active_page == 'dashboard' %}active{% endif %}" id="nav-dashboard">
+                    <span>🏠</span> <span class="nav-text">Dashboard</span>
+                </a>
+                <a href="{{ url_for('student_profile') }}" class="nav-link {% if active_page == 'profile' %}active{% endif %}" id="nav-profile">
+                    <span>👤</span> <span class="nav-text">My Profile</span>
+                </a>
+                <a href="{{ url_for('student_academics') }}" class="nav-link {% if active_page == 'academics' or active_page == 'marks' %}active{% endif %}" id="nav-academics">
+                    <span>📚</span> <span class="nav-text">Academics &amp; Marks</span>
+                </a>
+                <a href="{{ url_for('student_attendance') }}" class="nav-link {% if active_page == 'attendance' %}active{% endif %}" id="nav-attendance">
+                    <span>📊</span> <span class="nav-text">Attendance</span>
+                </a>
+                <a href="{{ url_for('student_timetable') }}" class="nav-link {% if active_page == 'timetable' %}active{% endif %}" id="nav-timetable">
+                    <span>📅</span> <span class="nav-text">Class Timetable</span>
+                </a>
+                <a href="{{ url_for('student_assignments') }}" class="nav-link {% if active_page == 'assignments' %}active{% endif %}" id="nav-assignments">
+                    <span>📑</span> <span class="nav-text">Assignments &amp; Notes</span>
+                </a>
+                <a href="{{ url_for('student_examinations') }}" class="nav-link {% if active_page == 'examinations' %}active{% endif %}" id="nav-examinations">
+                    <span>🎯</span> <span class="nav-text">Examinations &amp; Cards</span>
+                </a>
+
+                <!-- 2. CAMPUS LIFE & FINANCE -->
+                <span class="nav-category">Campus Life &amp; Career</span>
+                
+                <a href="{{ url_for('student_fees') }}" class="nav-link {% if active_page == 'fees' %}active{% endif %}" id="nav-fees">
+                    <span>💳</span> <span class="nav-text">Fees &amp; Finance</span>
+                </a>
+                <a href="{{ url_for('student_calendar') }}" class="nav-link {% if active_page == 'calendar' %}active{% endif %}" id="nav-calendar">
+                    <span>🗓️</span> <span class="nav-text">Campus Calendar</span>
+                </a>
+                <a href="{{ url_for('student_hostel') }}" class="nav-link {% if active_page == 'hostel' %}active{% endif %}" id="nav-hostel">
+                    <span>🏢</span> <span class="nav-text">Hostel &amp; Mess</span>
+                </a>
+                <a href="{{ url_for('student_transport') }}" class="nav-link {% if active_page == 'transport' %}active{% endif %}" id="nav-transport">
+                    <span>🚌</span> <span class="nav-text">Transport Tracking</span>
+                </a>
+                <a href="{{ url_for('student_placements') }}" class="nav-link {% if active_page == 'placements' %}active{% endif %}" id="nav-placements">
+                    <span>💼</span> <span class="nav-text">Placements &amp; AI Resume</span>
+                </a>
+
+                <!-- 3. SERVICES & COMMUNICATION -->
+                <span class="nav-category">Services &amp; Redressal</span>
+                
+                <a href="{{ url_for('student_requests') }}" class="nav-link {% if active_page == 'requests' %}active{% endif %}" id="nav-requests">
+                    <span>📜</span> <span class="nav-text">Requests &amp; Services</span>
+                </a>
+                <a href="{{ url_for('student_complaints') }}" class="nav-link {% if active_page == 'complaints' %}active{% endif %}" id="nav-complaints">
+                    <span>📝</span> <span class="nav-text">Grievance Tickets</span>
+                </a>
+                <a href="{{ url_for('student_lost_found') }}" class="nav-link {% if active_page == 'lost_found' %}active{% endif %}" id="nav-lost-found">
+                    <span>🔍</span> <span class="nav-text">Lost &amp; Found</span>
+                </a>
+                <a href="{{ url_for('student_wellbeing') }}" class="nav-link {% if active_page == 'wellbeing' %}active{% endif %}" id="nav-wellbeing">
+                    <span>🌱</span> <span class="nav-text">Student Wellbeing</span>
+                </a>
+                <a href="{{ url_for('student_communication') }}" class="nav-link {% if active_page == 'communication' %}active{% endif %}" id="nav-communication">
+                    <span>💬</span> <span class="nav-text">Communication Center</span>
+                </a>
+                <a href="{{ url_for('student_alerts') }}" class="nav-link {% if active_page == 'alerts' %}active{% endif %}" id="nav-alerts">
+                    <span>🔔</span> <span class="nav-text">Broadcast Alerts</span>
+                </a>
+
+                <!-- 4. SAFETY & AI ASSISTANT -->
+                <span class="nav-category">Safety &amp; AI Intelligence</span>
+                
+                <a href="{{ url_for('student_safety') }}" class="nav-link {% if active_page == 'safety' %}active{% endif %}" id="nav-safety">
+                    <span>🛡️</span> <span class="nav-text">Safety Center</span>
+                </a>
+                <a href="{{ url_for('student_safewalk') }}" class="nav-link {% if active_page == 'safewalk' %}active{% endif %}" id="nav-safewalk">
+                    <span>🚶‍♀️</span> <span class="nav-text">Safe Walk Companion</span>
+                </a>
+                <a href="{{ url_for('student_campus_map') }}" class="nav-link {% if active_page == 'map' %}active{% endif %}" id="nav-map">
+                    <span>🗺️</span> <span class="nav-text">Safety Map &amp; Routes</span>
+                </a>
+                <a href="{{ url_for('student_emergency') }}" class="nav-link nav-link-sos {% if active_page == 'emergency' %}active{% endif %}" id="nav-sos">
+                    <span>🚨</span> <span class="nav-text">Emergency SOS</span>
+                </a>
+                <a href="{{ url_for('student_assistant') }}" class="nav-link {% if active_page == 'assistant' %}active{% endif %}" id="nav-ai">
+                    <span>🤖</span> <span class="nav-text">AI Campus Assistant</span>
+                </a>
+
+                <!-- 5. ACCOUNT SETTINGS -->
+                <span class="nav-category">Account</span>
+                <a href="{{ url_for('student_settings') }}" class="nav-link {% if active_page == 'settings' %}active{% endif %}" id="nav-settings">
+                    <span>⚙️</span> <span class="nav-text">Settings</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <a href="{{ url_for('security_dashboard') }}" class="admin-switch-link" title="Open Security Console">
+                    <span>🛡️</span> <span>Security Console</span>
+                </a>
+                <a href="{{ url_for('admin_analytics') }}" class="admin-switch-link" style="color: var(--accent-indigo); background: rgba(129, 140, 248, 0.08);" title="Open Admin AI Analytics">
+                    <span>📈</span> <span>Admin AI Analytics</span>
+                </a>
+                <a href="{{ url_for('student_logout') }}" class="logout-link" id="btn-logout" aria-label="Sign out">
+                    <span>🚪</span> <span>Logout</span>
+                </a>
+            </div>
+        </aside>
+
+        <!-- Main Content Wrapper -->
+        <div class="main-wrapper">
+            
+            <!-- Topbar Header -->
+            <header class="topbar">
+                <div class="topbar-left">
+                    <button type="button" class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Toggle menu">
+                        ☰
+                    </button>
+                    <div class="topbar-status">
+                        <span class="status-pulse"></span>
+                        <span>CampusGuard Sentinel • Active</span>
+                    </div>
+                </div>
+
+                <div class="topbar-right">
+                    <a href="{{ url_for('student_emergency') }}" class="topbar-quick-sos" title="Instant Emergency Distress Beacon">
+                        <span>🚨</span> EMERGENCY SOS
+                    </a>
+                    
+                    <a href="{{ url_for('student_profile') }}" class="user-avatar-pill" title="View Profile">
+                        <div class="avatar-circle">
+                            {{ student.name[0]|upper if student else 'S' }}
+                        </div>
+                        <div class="user-meta-top">
+                            <span class="user-name-top">{{ student.name if student else 'Student' }}</span>
+                            <span class="user-role-top">{{ student.register_number if student else '' }} • Sem {{ student.semester|default(5) }}</span>
+                        </div>
+                    </a>
+                </div>
+            </header>
+
+            <!-- Page Main Body -->
+            <main class="portal-content">
+                
+                <!-- Flash Messages Block -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        <div class="flash-messages-group">
+                            {% for category, message in messages %}
+                                <div class="flash-box flash-{{ category if category in ['success', 'error', 'info'] else 'info' }}" role="alert">
+                                    <span>{% if category == 'success' %}✓{% elif category == 'error' %}⚠️{% else %}ℹ️{% endif %}</span>
+                                    <div>{{ message }}</div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endwith %}
+
+                {% block student_content %}{% endblock %}
+
+            </main>
+
+        </div>
+
+    </div>
+
+    <!-- Portal Client Scripts -->
+    <script src="{{ url_for('static', filename='js/student-portal.js') }}"></script>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

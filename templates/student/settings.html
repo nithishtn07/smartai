@@ -1,0 +1,85 @@
+{% extends "student/base_student.html" %}
+
+{% block title %}Account Settings{% endblock %}
+
+{% block student_content %}
+<div class="page-header-block">
+    <div class="page-title-group">
+        <h1><span>⚙️</span> Portal Settings &amp; Security</h1>
+        <p>Manage communication alerts and account security credentials.</p>
+    </div>
+</div>
+
+<div class="form-grid" style="grid-template-columns: 1fr 1.1fr; align-items: start;">
+    
+    <!-- Notification Preferences Card -->
+    <div class="content-card">
+        <div class="card-header-row">
+            <h2 class="card-heading"><span>🔔</span> Alert Preferences</h2>
+            <span class="badge badge-cyan">Channels</span>
+        </div>
+
+        <form method="POST" action="{{ url_for('student_settings') }}" class="portal-form">
+            <input type="hidden" name="action_type" value="preferences">
+
+            <div class="toggle-setting-row">
+                <div class="toggle-info">
+                    <h4>Institutional Email Notifications</h4>
+                    <p>Receive examination updates and academic announcements via email.</p>
+                </div>
+                <label class="switch">
+                    <input type="checkbox" name="email_alerts" value="1" {% if settings.email_alerts %}checked{% endif %}>
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <div class="toggle-setting-row">
+                <div class="toggle-info">
+                    <h4>Emergency SOS &amp; Security Broadcasts</h4>
+                    <p>Immediate push/SMS alerts for campus security drills and safety warnings.</p>
+                </div>
+                <label class="switch">
+                    <input type="checkbox" name="emergency_broadcasts" value="1" {% if settings.emergency_broadcasts %}checked{% endif %}>
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <button type="submit" class="btn-primary" style="margin-top: 14px;">
+                <span>💾</span> Save Notification Preferences
+            </button>
+        </form>
+    </div>
+
+    <!-- Security & Password Change Card -->
+    <div class="content-card">
+        <div class="card-header-row">
+            <h2 class="card-heading"><span>🔒</span> Change Account Password</h2>
+            <span class="badge badge-purple">Werkzeug Encrypted</span>
+        </div>
+
+        <form method="POST" action="{{ url_for('student_settings') }}" class="portal-form">
+            <input type="hidden" name="action_type" value="password">
+
+            <div class="form-group">
+                <label for="current_password" class="form-label">Current Password</label>
+                <input type="password" id="current_password" name="current_password" class="form-input" placeholder="Enter current password" required>
+            </div>
+
+            <div class="form-group">
+                <label for="new_password" class="form-label">New Password</label>
+                <input type="password" id="new_password" name="new_password" class="form-input" placeholder="Minimum 6 characters" required>
+            </div>
+
+            <div class="form-group">
+                <label for="confirm_password" class="form-label">Confirm New Password</label>
+                <input type="password" id="confirm_password" name="confirm_password" class="form-input" placeholder="Re-type new password" required>
+            </div>
+
+            <button type="submit" class="btn-primary" style="margin-top: 10px;">
+                <span>🔑</span> Update Password
+            </button>
+        </form>
+    </div>
+
+</div>
+{% endblock %}

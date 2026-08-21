@@ -1,0 +1,122 @@
+{% extends "student/base_student.html" %}
+
+{% block title %}Campus Safety Map &amp; Safe Routes{% endblock %}
+
+{% block student_content %}
+<div class="page-header-block">
+    <div class="page-title-group">
+        <h1><span>🗺️</span> Campus Safety Map &amp; Monitored Safe Routes</h1>
+        <p>Interactive spatial safety heatmaps, active CCTV coverage corridors, and AI safe-route navigation.</p>
+    </div>
+</div>
+
+<div class="form-grid" style="grid-template-columns: 1.3fr 1fr; align-items: start;">
+    
+    <!-- Interactive Campus Map Canvas Card -->
+    <div class="content-card">
+        <div class="card-header-row">
+            <h2 class="card-heading"><span>📍</span> Live Campus Perimeter Safety Heatmap</h2>
+            <div style="display: flex; gap: 8px;">
+                <span class="badge badge-green">🟢 98% Normal</span>
+                <span class="badge badge-cyan">📹 64 CCTV Live</span>
+            </div>
+        </div>
+
+        <div class="map-canvas-container">
+            <svg class="map-svg-canvas" viewBox="0 0 700 450" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <!-- Grid background lines -->
+                <line x1="0" y1="150" x2="700" y2="150" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>
+                <line x1="0" y1="300" x2="700" y2="300" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>
+                <line x1="230" y1="0" x2="230" y2="450" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>
+                <line x1="460" y1="0" x2="460" y2="450" stroke="rgba(255,255,255,0.03)" stroke-width="1"/>
+
+                <!-- Primary Lit Path Corridor (Green Glow) -->
+                <path d="M 120 100 L 320 220 L 560 140 L 560 360" stroke="#10b981" stroke-width="8" stroke-linecap="round" opacity="0.6"/>
+                <path d="M 120 100 L 120 360 L 320 220" stroke="#10b981" stroke-width="6" stroke-linecap="round" opacity="0.4"/>
+
+                <!-- Unlit Caution Path (Amber) -->
+                <path d="M 320 220 L 400 400" stroke="#fbbf24" stroke-width="4" stroke-dasharray="6 6" opacity="0.5"/>
+
+                <!-- Campus Zone Nodes -->
+                <!-- 1. Hostel Block B -->
+                <rect x="60" y="60" width="120" height="80" rx="12" fill="#0f172a" stroke="#10b981" stroke-width="2"/>
+                <text x="120" y="100" fill="#34d399" font-size="12" font-weight="bold" text-anchor="middle" font-family="Plus Jakarta Sans">🏢 Hostel Block B</text>
+                <text x="120" y="120" fill="#94a3b8" font-size="10" text-anchor="middle" font-family="Plus Jakarta Sans">🟢 Safe Zone • 8 CCTV</text>
+
+                <!-- 2. Central Library -->
+                <rect x="500" y="100" width="130" height="80" rx="12" fill="#0f172a" stroke="#10b981" stroke-width="2"/>
+                <text x="565" y="140" fill="#38bdf8" font-size="12" font-weight="bold" text-anchor="middle" font-family="Plus Jakarta Sans">📚 Central Library</text>
+                <text x="565" y="160" fill="#94a3b8" font-size="10" text-anchor="middle" font-family="Plus Jakarta Sans">🟢 Safe Zone • 12 CCTV</text>
+
+                <!-- 3. Security Command Center -->
+                <circle cx="320" cy="220" r="40" fill="#0f172a" stroke="#38bdf8" stroke-width="3"/>
+                <text x="320" y="215" fill="#38bdf8" font-size="18" text-anchor="middle">🛡️</text>
+                <text x="320" y="235" fill="white" font-size="10" font-weight="bold" text-anchor="middle" font-family="Plus Jakarta Sans">Security HQ</text>
+
+                <!-- 4. East Parking Bleachers (Caution Area) -->
+                <rect x="340" y="360" width="120" height="65" rx="12" fill="#0f172a" stroke="#fbbf24" stroke-width="2"/>
+                <text x="400" y="395" fill="#fbbf24" font-size="11" font-weight="bold" text-anchor="middle" font-family="Plus Jakarta Sans">🚗 East Parking</text>
+                <text x="400" y="412" fill="#94a3b8" font-size="9" text-anchor="middle" font-family="Plus Jakarta Sans">🟡 Low Lighting</text>
+
+                <!-- 5. Academic Block A & CS Department -->
+                <rect x="60" y="320" width="130" height="80" rx="12" fill="#0f172a" stroke="#10b981" stroke-width="2"/>
+                <text x="125" y="360" fill="#34d399" font-size="12" font-weight="bold" text-anchor="middle" font-family="Plus Jakarta Sans">🏫 Academic Block A</text>
+                <text x="125" y="380" fill="#94a3b8" font-size="10" text-anchor="middle" font-family="Plus Jakarta Sans">🟢 Safe Zone • 16 CCTV</text>
+
+                <!-- 6. Health Pavilion & Medical -->
+                <rect x="500" y="320" width="130" height="80" rx="12" fill="#0f172a" stroke="#10b981" stroke-width="2"/>
+                <text x="565" y="360" fill="#f87171" font-size="12" font-weight="bold" text-anchor="middle" font-family="Plus Jakarta Sans">🏥 Medical Pavilion</text>
+                <text x="565" y="380" fill="#94a3b8" font-size="10" text-anchor="middle" font-family="Plus Jakarta Sans">🚨 24/7 Emergency</text>
+            </svg>
+        </div>
+
+        <div class="map-legend">
+            <span>🟢 <strong>Safe Zone:</strong> Active CCTV &amp; High Illumination</span>
+            <span>🟡 <strong>Caution:</strong> Secondary Walkway, Low Night Traffic</span>
+            <span>🔴 <strong>High-Risk:</strong> Perimeter Boundary</span>
+            <span>🛡️ <strong>Blue Beacon:</strong> 24/7 Emergency SOS Pole</span>
+        </div>
+    </div>
+
+    <!-- AI Safe Route Pathfinder Form Card -->
+    <div class="content-card">
+        <div class="card-header-row">
+            <h2 class="card-heading"><span>🛡️</span> AI Safe Route Pathfinder</h2>
+            <span class="badge badge-green">Women's Safety</span>
+        </div>
+
+        <p style="font-size: 0.86rem; color: var(--text-secondary); line-height: 1.5; margin-bottom: 18px;">
+            Select your origin and destination. CampusGuard AI computes a well-illuminated walking route that prioritizes continuous CCTV surveillance and active security posts.
+        </p>
+
+        <form id="safe-route-form" class="portal-form">
+            <div class="form-group">
+                <label class="form-label">Origin Location</label>
+                <select id="route-from" class="form-select">
+                    <option value="Hostel Block B">Hostel Block B (Oak Wing)</option>
+                    <option value="Hostel Block A">Hostel Block A (Maple Wing)</option>
+                    <option value="Academic Block A">Academic Block A (CS Dept)</option>
+                    <option value="Student Cafeteria">Student Central Cafeteria</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Destination Location</label>
+                <select id="route-to" class="form-select">
+                    <option value="Central Library">Central University Library</option>
+                    <option value="Medical Pavilion">Medical Pavilion &amp; Health Center</option>
+                    <option value="Hostel Block B">Hostel Block B</option>
+                    <option value="Main Gate Terminal">Main Campus Gate Terminal</option>
+                </select>
+            </div>
+
+            <button type="submit" class="btn-primary" style="justify-content: center;">
+                <span>⚡</span> Compute Monitored Safe Route
+            </button>
+        </form>
+
+        <div id="safe-route-result"></div>
+    </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,93 @@
+{% extends "student/base_student.html" %}
+
+{% block title %}Class Timetable{% endblock %}
+
+{% block student_content %}
+<div class="page-header-block">
+    <div class="page-title-group">
+        <h1><span>📅</span> Academic Timetable</h1>
+        <p>{{ student.department }} • Year {{ student.year }} • Current Semester Schedule</p>
+    </div>
+    
+    <div class="tabs-header" style="margin-bottom: 0;">
+        <button type="button" class="tab-btn active" data-tab="today">Today ({{ current_day }})</button>
+        <button type="button" class="tab-btn" data-tab="weekly">Weekly Schedule</button>
+    </div>
+</div>
+
+<!-- Tab 1: Today's Classes -->
+<div id="tab-today" class="tab-content">
+    {% if today_classes %}
+        <div class="timetable-grid">
+            {% for item in today_classes %}
+            <div class="class-card {% if loop.first %}is-current{% endif %}">
+                <div>
+                    <div class="class-time">⏰ {{ item.start_time }} - {{ item.end_time }}</div>
+                    <div class="class-title">{{ item.subject_name }}</div>
+                    <div style="font-size: 0.8rem; color: var(--student-primary); font-family: var(--font-mono); margin-bottom: 8px;">{{ item.subject_code }}</div>
+                </div>
+
+                <div class="class-meta">
+                    <span>👨‍🏫 {{ item.faculty_name }}</span>
+                    <span style="font-weight: 700; color: #f8fafc; background: rgba(255,255,255,0.06); padding: 2px 8px; border-radius: 6px;">📍 {{ item.room_number }}</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="content-card" style="text-align: center; padding: 48px;">
+            <span style="font-size: 3rem; display: block; margin-bottom: 12px;">🎉</span>
+            <h3 style="font-size: 1.2rem; color: var(--text-primary);">No Scheduled Lectures Today</h3>
+            <p style="color: var(--text-muted); font-size: 0.9rem;">Enjoy your academic preparation and self-study day.</p>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Tab 2: Full Weekly Schedule -->
+<div id="tab-weekly" class="tab-content" style="display: none;">
+    <div class="content-card">
+        <div class="card-header-row">
+            <h2 class="card-heading"><span>🗓️</span> Weekly Master Schedule</h2>
+            <span class="badge badge-cyan">Monday - Friday</span>
+        </div>
+
+        <div class="table-responsive">
+            <table class="portal-table">
+                <thead>
+                    <tr>
+                        <th>Day</th>
+                        <th>Time Slot</th>
+                        <th>Course &amp; Subject</th>
+                        <th>Faculty</th>
+                        <th>Lecture Hall</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in weekly_classes %}
+                    <tr>
+                        <td>
+                            <strong style="color: {% if item.day_of_week == current_day %}#38bdf8{% else %}#f8fafc{% endif %};">
+                                {{ item.day_of_week }}
+                            </strong>
+                        </td>
+                        <td style="font-family: var(--font-mono); font-size: 0.88rem; color: #94a3b8;">
+                            {{ item.start_time }} - {{ item.end_time }}
+                        </td>
+                        <td>
+                            <div style="font-weight: 700;">{{ item.subject_name }}</div>
+                            <div style="font-size: 0.78rem; color: var(--text-muted); font-family: var(--font-mono);">{{ item.subject_code }}</div>
+                        </td>
+                        <td>{{ item.faculty_name }}</td>
+                        <td>
+                            <span style="font-weight: 700; background: rgba(56,189,248,0.1); border: 1px solid rgba(56,189,248,0.25); color: #38bdf8; padding: 4px 10px; border-radius: 6px; font-size: 0.82rem;">
+                                {{ item.room_number }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

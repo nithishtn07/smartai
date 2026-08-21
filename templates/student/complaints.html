@@ -1,0 +1,191 @@
+{% extends "student/base_student.html" %}
+
+{% block title %}Grievance &amp; Complaint Portal{% endblock %}
+
+{% block student_content %}
+<div class="page-header-block">
+    <div class="page-title-group">
+        <h1><span>📝</span> Complaints &amp; Grievance Redressal</h1>
+        <p>Submit campus complaints with automated AI priority routing and real-time resolution tracking.</p>
+    </div>
+</div>
+
+<div class="form-grid" style="grid-template-columns: 1.1fr 1fr; align-items: start;">
+    
+    <!-- Submit New Complaint Form Card -->
+    <div class="content-card">
+        <div class="card-header-row">
+            <h2 class="card-heading"><span>✍️</span> Submit New Complaint</h2>
+            <span class="badge badge-purple">AI Assisted</span>
+        </div>
+
+        <form method="POST" action="{{ url_for('student_complaints') }}" class="portal-form">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="category" class="form-label">Category</label>
+                    <select id="category" name="category" class="form-select" required>
+                        <option value="Academic">Academic</option>
+                        <option value="Hostel">Hostel &amp; Accommodation</option>
+                        <option value="Infrastructure">Campus Infrastructure</option>
+                        <option value="Safety">Safety &amp; Security</option>
+                        <option value="Harassment">Harassment / Bullying</option>
+                        <option value="Transport">Campus Transport</option>
+                        <option value="IT/Technical">IT &amp; WiFi Network</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="priority" class="form-label">Perceived Priority</label>
+                    <select id="priority" name="priority" class="form-select" required>
+                        <option value="Low">Low</option>
+                        <option value="Medium" selected>Medium</option>
+                        <option value="High">High</option>
+                        <option value="Urgent">Urgent</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="title" class="form-label">Complaint Subject / Title</label>
+                <input type="text" id="title" name="title" class="form-input" placeholder="e.g. Broken corridor lights near Block B staircase" required>
+            </div>
+
+            <div class="form-group">
+                <label for="location" class="form-label">Campus Location</label>
+                <input type="text" id="location" name="location" class="form-input" placeholder="e.g. Block B, 2nd Floor Corridor" required>
+            </div>
+
+            <div class="form-group">
+                <label for="description" class="form-label">Detailed Description</label>
+                <textarea id="description" name="description" class="form-textarea" placeholder="Provide full details of the incident or infrastructure failure..." required></textarea>
+            </div>
+
+            <div style="padding: 12px; background: rgba(56, 189, 248, 0.05); border: 1px dashed rgba(56, 189, 248, 0.25); border-radius: 10px; font-size: 0.82rem; color: var(--text-secondary);">
+                🤖 <strong>AI Sentinel Notice:</strong> CampusGuard AI will analyze severity, tag relevant departments, and alert emergency officers if safety risks are detected.
+            </div>
+
+            <button type="submit" class="btn-primary">
+                <span>🚀</span> Submit Complaint
+            </button>
+        </form>
+    </div>
+
+    <!-- Right Side: Guidelines & AI Workflow -->
+    <div class="content-card">
+        <div class="card-header-row">
+            <h2 class="card-heading"><span>🛡️</span> Redressal SLA Timeline</h2>
+            <span class="badge badge-green">Standard 24-48h</span>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 14px; font-size: 0.88rem; color: var(--text-secondary);">
+            <div style="display: flex; gap: 12px; align-items: flex-start;">
+                <span style="font-size: 1.3rem;">1️⃣</span>
+                <div>
+                    <strong style="color: var(--text-primary);">Automated AI Intake &amp; Classification:</strong>
+                    <p>NLP engine analyzes urgency and assigns correct administrative authority.</p>
+                </div>
+            </div>
+            <div style="display: flex; gap: 12px; align-items: flex-start;">
+                <span style="font-size: 1.3rem;">2️⃣</span>
+                <div>
+                    <strong style="color: var(--text-primary);">Departmental Assignment:</strong>
+                    <p>Campus Security, Facility Management, or Academic Dean receives ticket.</p>
+                </div>
+            </div>
+            <div style="display: flex; gap: 12px; align-items: flex-start;">
+                <span style="font-size: 1.3rem;">3️⃣</span>
+                <div>
+                    <strong style="color: var(--text-primary);">Resolution &amp; Verification:</strong>
+                    <p>Technician resolves issue and student confirms satisfaction.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="ai-classification-card">
+            <div class="ai-card-title">
+                <span>🤖</span> AI Complaint Analysis Capabilities
+            </div>
+            <p style="font-size: 0.8rem; color: var(--text-secondary); line-height: 1.4;">
+                Every grievance is triaged for hazard severity, psychological safety, and rapid resolution routing.
+            </p>
+        </div>
+    </div>
+
+</div>
+
+<!-- Previous Complaints Table Card -->
+<section class="content-card" style="margin-top: 28px;">
+    <div class="card-header-row">
+        <h2 class="card-heading"><span>📋</span> My Previous Grievance Tickets</h2>
+        <span class="badge badge-cyan">{{ complaints|length }} Total Filed</span>
+    </div>
+
+    {% if complaints %}
+        <div class="table-responsive">
+            <table class="portal-table">
+                <thead>
+                    <tr>
+                        <th>Ticket ID</th>
+                        <th>Category</th>
+                        <th>Title &amp; Location</th>
+                        <th>AI Triaged Dept</th>
+                        <th>Priority</th>
+                        <th>Status</th>
+                        <th>Filed On</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in complaints %}
+                    <tr>
+                        <td>
+                            <span style="font-family: var(--font-mono); font-weight: 700; color: #38bdf8;">{{ c.complaint_id }}</span>
+                        </td>
+                        <td><span class="badge badge-purple">{{ c.category }}</span></td>
+                        <td>
+                            <div style="font-weight: 700; color: var(--text-primary);">{{ c.title }}</div>
+                            <div style="font-size: 0.78rem; color: var(--text-muted);">📍 {{ c.location }}</div>
+                            {% if c.ai_action %}
+                                <div style="font-size: 0.78rem; color: #34d399; margin-top: 4px;">
+                                    ⚡ <em>Action: {{ c.ai_action }}</em>
+                                </div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span style="font-size: 0.85rem; color: #cbd5e1; font-weight: 500;">
+                                {{ c.ai_dept|default('Campus Administration') }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if c.priority == 'Urgent' or c.priority == 'High' %}
+                                <span class="badge badge-red">{{ c.priority }}</span>
+                            {% elif c.priority == 'Medium' %}
+                                <span class="badge badge-yellow">Medium</span>
+                            {% else %}
+                                <span class="badge badge-green">Low</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if c.status == 'Resolved' %}
+                                <span class="badge badge-green">Resolved</span>
+                            {% elif c.status == 'In Progress' or c.status == 'Under Review' %}
+                                <span class="badge badge-yellow">{{ c.status }}</span>
+                            {% else %}
+                                <span class="badge badge-cyan">{{ c.status }}</span>
+                            {% endif %}
+                        </td>
+                        <td style="font-size: 0.82rem; color: var(--text-muted); font-family: var(--font-mono);">
+                            {{ c.created_at[:16] }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div style="text-align: center; padding: 40px; color: var(--text-muted);">
+            <p>You have not submitted any complaints yet.</p>
+        </div>
+    {% endif %}
+</section>
+{% endblock %}

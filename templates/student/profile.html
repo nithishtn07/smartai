@@ -1,0 +1,125 @@
+{% extends "student/base_student.html" %}
+
+{% block title %}My Profile &amp; ID Card{% endblock %}
+
+{% block student_content %}
+<div class="page-header-block">
+    <div class="page-title-group">
+        <h1><span>👤</span> Student Profile &amp; Digital ID</h1>
+        <p>Official institutional identity, enrollment metadata, and emergency contact details.</p>
+    </div>
+</div>
+
+<div class="form-grid" style="grid-template-columns: 1fr 1.1fr; align-items: start;">
+    
+    <!-- Digital Student ID Card Card -->
+    <div class="content-card">
+        <div class="card-header-row">
+            <h2 class="card-heading"><span>💳</span> Digital Campus Smart ID</h2>
+            <span class="badge badge-green">NFC / QR Active</span>
+        </div>
+
+        <!-- Visual ID Card -->
+        <div class="student-id-card" style="margin: 0 auto 20px;">
+            <div class="id-card-header">
+                <div>
+                    <div style="font-size: 0.72rem; font-weight: 800; letter-spacing: 0.1em; color: #38bdf8;">CAMPUSGUARD UNIVERSITY</div>
+                    <div style="font-size: 0.65rem; color: #94a3b8;">SMART CAMPUS IDENTITY PASS</div>
+                </div>
+                <div style="font-size: 1.2rem;">🎓</div>
+            </div>
+
+            <div class="id-card-body">
+                <div class="id-card-avatar">
+                    {{ student.name[0]|upper }}
+                </div>
+                <div class="id-card-meta">
+                    <h3 style="font-size: 1.15rem; font-weight: 800; color: white;">{{ student.name }}</h3>
+                    <p style="color: #38bdf8; font-family: var(--font-mono); font-weight: 700; font-size: 0.88rem;">{{ student.register_number }}</p>
+                    <p style="font-size: 0.78rem; color: #cbd5e1;">{{ student.program|default('B.Tech') }} in {{ student.department }}</p>
+                    <p style="font-size: 0.72rem; color: #94a3b8;">Valid: 2023 - 2027 • Section {{ student.section|default('A') }}</p>
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 18px; padding-top: 10px; border-top: 1px dashed rgba(255, 255, 255, 0.2); font-size: 0.72rem; color: #94a3b8;">
+                <span>Blood Grp: <strong>O+</strong></span>
+                <span style="font-family: var(--font-mono); color: #34d399;">BARCODE: #{{ student.register_number }}948</span>
+                <span>Sem: <strong>{{ student.semester|default(5) }}</strong></span>
+            </div>
+        </div>
+
+        <!-- Academic Read-Only Attributes -->
+        <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
+            <div class="form-group">
+                <label class="form-label">Registration No (Locked)</label>
+                <input type="text" class="form-input" value="{{ student.register_number }}" disabled readonly>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Department &amp; Program</label>
+                <input type="text" class="form-input" value="{{ student.program|default('B.Tech') }} - {{ student.department }}" disabled readonly>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Semester &amp; Section</label>
+                <input type="text" class="form-input" value="Sem {{ student.semester|default(5) }} (Sec {{ student.section|default('A') }})" disabled readonly>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Cumulative GPA</label>
+                <input type="text" class="form-input" value="{{ student.cgpa|default('8.75') }} / 10.0" disabled readonly>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Contact & Guardian Information Card -->
+    <div class="content-card">
+        <div class="card-header-row">
+            <h2 class="card-heading"><span>✏️</span> Manage Personal &amp; Guardian Info</h2>
+            <span class="badge badge-cyan">Editable</span>
+        </div>
+
+        <form method="POST" action="{{ url_for('student_profile') }}" class="portal-form">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="name" class="form-label">Full Name</label>
+                    <input type="text" id="name" name="name" class="form-input" value="{{ student.name }}" required>
+                </div>
+                <div class="form-group">
+                    <label for="email" class="form-label">Primary Email Address</label>
+                    <input type="email" id="email" name="email" class="form-input" value="{{ student.email }}" required>
+                </div>
+            </div>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="phone" class="form-label">Student Phone</label>
+                    <input type="tel" id="phone" name="phone" class="form-input" value="{{ student.phone|default('+91 98765 43210') }}">
+                </div>
+                <div class="form-group">
+                    <label for="dob" class="form-label">Date of Birth</label>
+                    <input type="text" id="dob" name="dob" class="form-input" value="{{ student.dob|default('2004-05-14') }}" disabled readonly>
+                </div>
+            </div>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="parent_name" class="form-label">Parent / Guardian Name</label>
+                    <input type="text" id="parent_name" name="parent_name" class="form-input" value="{{ student.parent_name|default('R. S. Kumar') }}">
+                </div>
+                <div class="form-group">
+                    <label for="parent_phone" class="form-label">Parent Contact (Emergency)</label>
+                    <input type="tel" id="parent_phone" name="parent_phone" class="form-input" value="{{ student.parent_phone|default('+91 94440 12345') }}">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="address" class="form-label">Permanent Residential Address</label>
+                <textarea id="address" name="address" class="form-textarea" style="min-height: 70px;">{{ student.address|default('#42, Green Avenue, Tech City, Karnataka 560001') }}</textarea>
+            </div>
+
+            <button type="submit" class="btn-primary" style="align-self: flex-start;">
+                <span>💾</span> Save Profile Updates
+            </button>
+        </form>
+    </div>
+
+</div>
+{% endblock %}

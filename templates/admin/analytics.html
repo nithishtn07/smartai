@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CampusGuard AI - Executive Safety Intelligence &amp; Predictive Analytics</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/student-portal.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .admin-topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(10, 15, 30, 0.95);
+            border-bottom: 1px solid rgba(192, 132, 252, 0.2);
+            padding: 16px 32px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(12px);
+        }
+        .admin-container {
+            max-width: 1440px;
+            margin: 0 auto;
+            padding: 28px 32px;
+            display: flex;
+            flex-direction: column;
+            gap: 28px;
+        }
+        .analytics-grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+        .analytics-grid-3 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 24px;
+        }
+        .chart-card {
+            background: rgba(14, 23, 42, 0.85);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .chart-box {
+            position: relative;
+            height: 260px;
+            width: 100%;
+        }
+        .risk-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+        .risk-table th {
+            text-align: left;
+            padding: 12px 16px;
+            background: rgba(15, 23, 42, 0.7);
+            color: var(--text-secondary);
+            font-weight: 700;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+        .risk-table td {
+            padding: 14px 16px;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            vertical-align: middle;
+        }
+    </style>
+</head>
+<body style="background: #060913; color: #f8fafc; font-family: 'Plus Jakarta Sans', sans-serif;">
+
+    <!-- Executive Admin Topbar -->
+    <header class="admin-topbar">
+        <div style="display: flex; align-items: center; gap: 20px;">
+            <a href="/" style="text-decoration: none; color: #fff; font-weight: 800; font-size: 1.25rem; display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 1.6rem;">📊</span>
+                <span>CampusGuard <span style="color: #c084fc;">ADMIN INTELLIGENCE</span></span>
+            </a>
+            <span class="badge badge-purple" style="font-size: 0.8rem;">INSTITUTIONAL SAFETY SENTINEL</span>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 14px;">
+            <a href="/security/dashboard" class="btn-secondary" style="font-size: 0.85rem; padding: 8px 16px; text-decoration: none;">
+                🛡️ Security Command Console
+            </a>
+            <a href="/student/login" class="btn-secondary" style="font-size: 0.85rem; padding: 8px 16px; text-decoration: none;">
+                🎓 Student Portal
+            </a>
+        </div>
+    </header>
+
+    <main class="admin-container">
+
+        <!-- Executive AI Safety Briefing -->
+        <section style="background: linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.95)); border: 1px solid rgba(192, 132, 252, 0.3); border-left: 5px solid #c084fc; border-radius: 20px; padding: 24px 28px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <span style="font-size: 1.8rem;">🤖</span>
+                    <div>
+                        <h2 style="font-size: 1.3rem; font-weight: 800; color: #c084fc; margin: 0;">Institutional Campus Safety Briefing</h2>
+                        <p style="color: var(--text-secondary); font-size: 0.88rem; margin: 2px 0 0;">
+                            Multi-source intelligence synthesized from historical telemetry, spatial clustering, and complaint logs.
+                        </p>
+                    </div>
+                </div>
+
+                <span class="badge {% if briefing.overall_risk_level == 'CRITICAL' %}badge-red{% elif briefing.overall_risk_level == 'HIGH' %}badge-red{% else %}badge-yellow{% endif %}" style="font-size: 0.95rem; padding: 6px 14px;">
+                    CAMPUS RISK: {{ briefing.overall_risk_level }} ({{ briefing.overall_risk_score }}/100)
+                </span>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-top: 14px;">
+                <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 14px;">
+                    <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase;">Top Risk Hotspot</div>
+                    <div style="font-size: 1.3rem; font-weight: 800; color: #f87171; margin-top: 4px;">
+                        {{ briefing.top_hotspots[0].short_name if briefing.top_hotspots else 'Parking Area' }}
+                    </div>
+                    <div style="font-size: 0.8rem; color: var(--text-secondary);">Score: {{ briefing.top_hotspots[0].risk_score if briefing.top_hotspots else '82' }}/100</div>
+                </div>
+
+                <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 14px;">
+                    <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase;">Peak Incident Window</div>
+                    <div style="font-size: 1.3rem; font-weight: 800; color: #fbbf24; margin-top: 4px;">
+                        {{ briefing.peak_risk_window }}
+                    </div>
+                    <div style="font-size: 0.8rem; color: var(--text-secondary);">Day: {{ briefing.peak_risk_day }}s</div>
+                </div>
+
+                <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 14px;">
+                    <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase;">Emerging Risk Surges</div>
+                    <div style="font-size: 1.3rem; font-weight: 800; color: #38bdf8; margin-top: 4px;">
+                        {{ briefing.emerging_risks_count }} Zone Alert{% if briefing.emerging_risks_count != 1 %}s{% endif %}
+                    </div>
+                    <div style="font-size: 0.8rem; color: var(--text-secondary);">Sharp volume spike</div>
+                </div>
+
+                <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 14px;">
+                    <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase;">Repeat Pattern Clusters</div>
+                    <div style="font-size: 1.3rem; font-weight: 800; color: #a855f7; margin-top: 4px;">
+                        {{ briefing.repeated_patterns_count }} Identified
+                    </div>
+                    <div style="font-size: 0.8rem; color: var(--text-secondary);">Linked infrastructure deficits</div>
+                </div>
+            </div>
+
+            <!-- Actionable Directives -->
+            <div style="background: rgba(192, 132, 252, 0.1); border: 1px solid rgba(192, 132, 252, 0.25); border-radius: 12px; padding: 14px 18px; margin-top: 16px;">
+                <div style="font-size: 0.85rem; font-weight: 700; color: #d8b4fe; margin-bottom: 6px;">🎯 Actionable Administrative &amp; Security Directives:</div>
+                <ul style="margin: 0; padding-left: 20px; font-size: 0.88rem; color: #e2e8f0; line-height: 1.6;">
+                    {% for rec in briefing.ai_recommendations %}
+                    <li>{{ rec }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </section>
+
+        <!-- Emerging Risks & Repeat Patterns -->
+        <section class="analytics-grid-2">
+            
+            <!-- Emerging Risk Card -->
+            <div class="chart-card">
+                <div class="card-header-row" style="margin-bottom: 0;">
+                    <div>
+                        <h3 class="card-heading"><span>🔥</span> Emerging Safety Risk Detection</h3>
+                        <p style="color: var(--text-secondary); font-size: 0.82rem; margin: 2px 0 0;">
+                            Automatic surge detection comparing recent 30-day volume vs previous period.
+                        </p>
+                    </div>
+                </div>
+
+                {% if emerging %}
+                    {% for em in emerging %}
+                    <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 12px; padding: 16px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                            <strong style="color: #f87171; font-size: 1rem;">{{ em.alert_title }}</strong>
+                            <span class="badge badge-red">+{{ em.surge_pct }}% SPIKE</span>
+                        </div>
+                        <p style="font-size: 0.85rem; color: #fecaca; line-height: 1.5; margin: 0 0 8px;">
+                            {{ em.description }}
+                        </p>
+                        <div style="font-size: 0.82rem; color: #93c5fd;">
+                            <strong>AI Directive:</strong> {{ em.recommendation }}
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 12px; padding: 18px; text-align: center; color: #34d399;">
+                        ✓ All campus zones show stable incident velocity. No acute surges detected.
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Linked Repeat Patterns Card -->
+            <div class="chart-card">
+                <div class="card-header-row" style="margin-bottom: 0;">
+                    <div>
+                        <h3 class="card-heading"><span>🔁</span> Linked Repeated Safety Patterns</h3>
+                        <p style="color: var(--text-secondary); font-size: 0.82rem; margin: 2px 0 0;">
+                            Correlating multi-complaint reports to uncover underlying safety vulnerabilities.
+                        </p>
+                    </div>
+                </div>
+
+                {% if patterns %}
+                    {% for pat in patterns %}
+                    <div style="background: rgba(168, 85, 247, 0.1); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 12px; padding: 16px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                            <strong style="color: #c084fc; font-size: 0.95rem;">📍 {{ pat.location }}</strong>
+                            <span class="badge badge-purple">{{ pat.report_count }} Linked Reports</span>
+                        </div>
+                        <div style="font-size: 0.88rem; font-weight: 700; color: #e9d5ff; margin-bottom: 4px;">
+                            {{ pat.pattern_theme }}
+                        </div>
+                        <p style="font-size: 0.82rem; color: #cbd5e1; line-height: 1.4; margin: 0 0 6px;">
+                            Linked issues: {{ pat.linked_issues|join(', ') }}
+                        </p>
+                        <div style="font-size: 0.8rem; color: #38bdf8;">
+                            <strong>Mitigation:</strong> {{ pat.recommended_action }}
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 18px; text-align: center; color: var(--text-secondary);">
+                        No multi-report repeated safety clusters detected.
+                    </div>
+                {% endif %}
+            </div>
+
+        </section>
+
+        <!-- Visual Analytics Charts -->
+        <section class="analytics-grid-2">
+            
+            <!-- Chart 1: Incidents by Campus Zone -->
+            <div class="chart-card">
+                <h3 class="card-heading" style="font-size: 1.1rem;"><span>📊</span> Risk Scores &amp; Incidents by Location</h3>
+                <div class="chart-box">
+                    <canvas id="zoneRiskChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Chart 2: Temporal Distribution -->
+            <div class="chart-card">
+                <h3 class="card-heading" style="font-size: 1.1rem;"><span>⏰</span> Incident Temporal Distribution (By Hour)</h3>
+                <div class="chart-box">
+                    <canvas id="temporalChart"></canvas>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- Location Risk Ranking Table -->
+        <section class="content-card" style="padding: 24px;">
+            <div class="card-header-row" style="margin-bottom: 20px;">
+                <div>
+                    <h2 class="card-heading">
+                        <span>🛡️</span> Comprehensive Campus Safety Risk Ranking (0–100)
+                    </h2>
+                    <p style="color: var(--text-secondary); font-size: 0.88rem; margin: 4px 0 0;">
+                        Quantitatively computed using incident frequency, severity weights, recency decay, and repeat pattern boosts.
+                    </p>
+                </div>
+            </div>
+
+            <div style="overflow-x: auto;">
+                <table class="risk-table">
+                    <thead>
+                        <tr>
+                            <th>Zone Name</th>
+                            <th>Zone Type</th>
+                            <th>0–100 Risk Score</th>
+                            <th>Risk Tier</th>
+                            <th>Total Logged Reports</th>
+                            <th>Peak Incident Window</th>
+                            <th>CCTV / Booth Coverage</th>
+                            <th>Safety Directive</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for name, z in zone_scores.items() %}
+                        <tr>
+                            <td style="font-weight: 700; color: #fff;">
+                                {{ z.short_name }}
+                            </td>
+                            <td style="color: var(--text-secondary); font-size: 0.85rem;">
+                                {{ z.type }}
+                            </td>
+                            <td>
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <span style="font-family: 'JetBrains Mono', monospace; font-weight: 800; font-size: 1.1rem; color: {{ z.color }};">
+                                        {{ z.risk_score }}
+                                    </span>
+                                    <div style="flex: 1; height: 6px; background: rgba(255,255,255,0.08); border-radius: 99px; overflow: hidden; min-width: 60px;">
+                                        <div style="height: 100%; width: {{ z.risk_score }}%; background: {{ z.color }};"></div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge {{ z.risk_class }}">
+                                    {{ z.risk_level }}
+                                </span>
+                            </td>
+                            <td style="font-weight: 600;">
+                                {{ z.total_reports or z.incident_count }} Reports
+                            </td>
+                            <td style="color: #fbbf24; font-size: 0.85rem;">
+                                {{ z.peak_time }}
+                            </td>
+                            <td style="color: var(--text-secondary); font-size: 0.82rem;">
+                                {{ z.cctv_count }} CCTVs &bull; {{ z.emergency_booth }}
+                            </td>
+                            <td style="font-size: 0.82rem; color: #93c5fd; max-width: 240px;">
+                                {{ z.insights }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="site-footer">
+        &copy; 2026 CampusGuard AI &bull; Autonomous Institutional Safety &amp; ERP Intelligence Platform.
+    </footer>
+
+    <!-- Chart.js Scripts -->
+    <script>
+        const zoneData = {{ zone_scores|tojson }};
+        const temporalData = {{ temporal.hourly_distribution|tojson if temporal.hourly_distribution else '{}'|tojson }};
+
+        // Zone Risk Chart
+        const zoneLabels = [];
+        const zoneScores = [];
+        const zoneColors = [];
+
+        for (let name in zoneData) {
+            zoneLabels.push(zoneData[name].short_name);
+            zoneScores.push(zoneData[name].risk_score);
+            zoneColors.push(zoneData[name].color);
+        }
+
+        new Chart(document.getElementById('zoneRiskChart'), {
+            type: 'bar',
+            data: {
+                labels: zoneLabels,
+                datasets: [{
+                    label: 'Campus Risk Score (0-100)',
+                    data: zoneScores,
+                    backgroundColor: zoneColors,
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        grid: { color: 'rgba(255,255,255,0.06)' },
+                        ticks: { color: '#94a3b8' }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { color: '#94a3b8', font: { size: 10 } }
+                    }
+                }
+            }
+        });
+
+        // Temporal Chart
+        const tempLabels = Object.keys(temporalData);
+        const tempValues = Object.values(temporalData);
+
+        new Chart(document.getElementById('temporalChart'), {
+            type: 'doughnut',
+            data: {
+                labels: tempLabels,
+                datasets: [{
+                    data: tempValues,
+                    backgroundColor: ['#38bdf8', '#34d399', '#f97316', '#a855f7'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: { color: '#cbd5e1', font: { size: 11 } }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

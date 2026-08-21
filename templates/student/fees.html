@@ -1,0 +1,182 @@
+{% extends "student/base_student.html" %}
+
+{% block title %}Fees &amp; Financial Ledger{% endblock %}
+
+{% block student_content %}
+<div class="page-header-block">
+    <div class="page-title-group">
+        <h1><span>💳</span> Student Fees &amp; Payments Ledger</h1>
+        <p>Institutional tuition fees, hostel accommodation, transport dues, and transaction receipts.</p>
+    </div>
+
+    <div>
+        <button type="button" class="btn-primary" onclick="openModal('payment-modal')">
+            <span>⚡</span> Quick Pay Outstanding Dues
+        </button>
+    </div>
+</div>
+
+<!-- Financial Overview Summary Banner -->
+<section class="fee-summary-banner">
+    <div class="fee-stat-box">
+        <div class="stat-box-label">Total Semester Dues</div>
+        <div class="stat-box-num" style="color: var(--text-primary);">₹{{ total_fee }}</div>
+        <span style="font-size: 0.72rem; color: #94a3b8;">Academic Year 2026</span>
+    </div>
+    <div class="fee-stat-box">
+        <div class="stat-box-label">Paid Amount</div>
+        <div class="stat-box-num" style="color: #34d399;">₹{{ total_paid }}</div>
+        <span style="font-size: 0.72rem; color: #34d399;">✓ Verified Online</span>
+    </div>
+    <div class="fee-stat-box">
+        <div class="stat-box-label">Outstanding Balance</div>
+        <div class="stat-box-num" style="color: #fbbf24;">₹{{ total_pending }}</div>
+        <span style="font-size: 0.72rem; color: #f87171;">Due in 12 Days</span>
+    </div>
+</section>
+
+<!-- Fee Breakdown Ledger Card -->
+<section class="content-card">
+    <div class="card-header-row">
+        <h2 class="card-heading"><span>📑</span> Semester 5 Fee Heads &amp; Dues Breakdown</h2>
+        <span class="badge badge-cyan">Automated Clearance</span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="portal-table">
+            <thead>
+                <tr>
+                    <th>Fee Category</th>
+                    <th>Total Amount</th>
+                    <th>Amount Paid</th>
+                    <th>Pending Balance</th>
+                    <th>Due Date</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for fee in fee_items %}
+                <tr>
+                    <td><strong>{{ fee.fee_type }}</strong></td>
+                    <td style="font-family: var(--font-mono);">₹{{ fee.amount }}</td>
+                    <td style="font-family: var(--font-mono); color: #34d399;">₹{{ fee.paid_amount }}</td>
+                    <td style="font-family: var(--font-mono); font-weight: 700; color: {% if fee.amount - fee.paid_amount > 0 %}#fbbf24{% else %}#94a3b8{% endif %};">
+                        ₹{{ fee.amount - fee.paid_amount }}
+                    </td>
+                    <td style="font-size: 0.84rem; color: var(--text-muted); font-family: var(--font-mono);">{{ fee.due_date }}</td>
+                    <td>
+                        {% if fee.status == 'PAID' %}
+                            <span class="badge badge-green">PAID</span>
+                        {% elif fee.status == 'PARTIAL' %}
+                            <span class="badge badge-yellow">PARTIAL</span>
+                        {% else %}
+                            <span class="badge badge-red">PENDING</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if fee.amount - fee.paid_amount > 0 %}
+                            <button type="button" class="btn-primary" style="font-size: 0.78rem; padding: 4px 10px;" onclick="openPaymentFor('{{ fee.id }}', '{{ fee.fee_type }}', '{{ fee.amount - fee.paid_amount }}')">
+                                Pay Now
+                            </button>
+                        {% else %}
+                            <button type="button" class="btn-secondary" style="font-size: 0.78rem; padding: 4px 10px;" onclick="alert('Downloading Paid Receipt #REC-{{ fee.id }}9048...');">
+                                🧾 Receipt
+                            </button>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<!-- Payment Transactions History Card -->
+<section class="content-card" style="margin-top: 20px;">
+    <div class="card-header-row">
+        <h2 class="card-heading"><span>📜</span> Recent Payment Transactions &amp; Receipts</h2>
+        <span class="badge badge-purple">Secured Gateway</span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="portal-table">
+            <thead>
+                <tr>
+                    <th>Transaction ID</th>
+                    <th>Fee Category</th>
+                    <th>Amount</th>
+                    <th>Payment Method</th>
+                    <th>Receipt No</th>
+                    <th>Date &amp; Time</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for tx in transactions|default([]) %}
+                <tr>
+                    <td><strong style="font-family: var(--font-mono); color: #38bdf8;">{{ tx.transaction_id }}</strong></td>
+                    <td>{{ tx.fee_type }}</td>
+                    <td style="font-family: var(--font-mono); color: #34d399; font-weight: 700;">₹{{ tx.amount }}</td>
+                    <td>{{ tx.payment_method }}</td>
+                    <td style="font-family: var(--font-mono);">{{ tx.receipt_no }}</td>
+                    <td style="font-size: 0.82rem; color: var(--text-muted); font-family: var(--font-mono);">{{ tx.paid_at }}</td>
+                    <td><span class="badge badge-green">SUCCESS</span></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<!-- Payment Modal (Simulation) -->
+<div class="portal-modal-backdrop" id="payment-modal">
+    <div class="portal-modal-content">
+        <div class="card-header-row">
+            <h3 class="card-heading"><span>💳</span> Simulated Secure Payment Gateway</h3>
+            <button type="button" style="background: none; border: none; color: white; font-size: 1.2rem; cursor: pointer;" onclick="closeModal('payment-modal')">✕</button>
+        </div>
+
+        <form method="POST" action="{{ url_for('student_fees_pay') }}" class="portal-form">
+            <input type="hidden" id="modal-fee-id" name="fee_id" value="1">
+
+            <div class="form-group">
+                <label class="form-label">Payment Category</label>
+                <input type="text" id="modal-fee-type" class="form-input" value="Examination &amp; Assessment Fee" readonly>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Amount (INR)</label>
+                <input type="text" id="modal-fee-amount" name="amount" class="form-input" value="15000" required>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Payment Mode</label>
+                <select name="payment_method" class="form-select">
+                    <option value="UPI / QR Instant">UPI / QR Code Instant</option>
+                    <option value="Net Banking (SBI / HDFC / ICICI)">Net Banking</option>
+                    <option value="Debit / Credit Card">Debit / Credit Card</option>
+                </select>
+            </div>
+
+            <div style="padding: 10px; background: rgba(56,189,248,0.08); border-radius: 8px; font-size: 0.8rem; color: var(--text-secondary);">
+                ℹ️ Hackathon Demonstration: Submitting this form processes an instantaneous simulated transaction and logs a real receipt.
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px;">
+                <button type="button" class="btn-secondary" onclick="closeModal('payment-modal')">Cancel</button>
+                <button type="submit" class="btn-primary">Confirm &amp; Pay ₹</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openPaymentFor(feeId, feeType, pendingAmount) {
+    document.getElementById('modal-fee-id').value = feeId;
+    document.getElementById('modal-fee-type').value = feeType;
+    document.getElementById('modal-fee-amount').value = pendingAmount;
+    openModal('payment-modal');
+}
+</script>
+{% endblock %}

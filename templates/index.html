@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="CampusGuard AI - AI-Powered Smart & Safe Campus ERP Platform. One Campus. One Intelligent Platform for Students, Faculty, and Parents.">
+    <meta name="theme-color" content="#07090e">
+    
+    <title>CampusGuard AI | Smart & Safe Campus ERP Platform</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+    
+    <!-- Favicon (SVG) -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2338bdf8'%3E%3Cpath d='M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 2.18l7 3.12v4.7c0 4.54-3.13 8.78-7 9.88-3.87-1.1-7-5.34-7-9.88V6.3l7-3.12z'/%3E%3C/svg%3E">
+</head>
+
+<body>
+
+    <!-- Atmospheric Animated Background Glows -->
+    <div class="ambient-background" aria-hidden="true">
+        <div class="glow-orb orb-primary"></div>
+        <div class="glow-orb orb-secondary"></div>
+        <div class="glow-orb orb-tertiary"></div>
+        <div class="cyber-grid"></div>
+        <div class="noise-overlay"></div>
+    </div>
+
+    <!-- Sticky Glass Navigation Header -->
+    <header class="navbar-wrapper">
+        <nav class="navbar" aria-label="Main Navigation">
+            <a href="/" class="brand-logo" aria-label="CampusGuard AI Home">
+                <div class="logo-icon-container">
+                    <svg class="shield-svg" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M16 2L4 7V14C4 22 9.5 28.5 16 30C22.5 28.5 28 22 28 14V7L16 2Z" fill="url(#shield-grad)" fill-opacity="0.2" stroke="url(#shield-stroke)" stroke-width="2" stroke-linejoin="round"/>
+                        <circle cx="16" cy="15" r="4" fill="#38bdf8" fill-opacity="0.8"/>
+                        <path d="M16 9V11M16 19V21M10 15H12M20 15H22" stroke="#38bdf8" stroke-width="2" stroke-linecap="round"/>
+                        <defs>
+                            <linearGradient id="shield-grad" x1="4" y1="2" x2="28" y2="30" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#38bdf8"/>
+                                <stop offset="1" stop-color="#818cf8"/>
+                            </linearGradient>
+                            <linearGradient id="shield-stroke" x1="4" y1="2" x2="28" y2="30" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#38bdf8"/>
+                                <stop offset="1" stop-color="#a855f7"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </div>
+                <div class="brand-text-group">
+                    <span class="brand-title">CampusGuard <span class="ai-badge">AI</span></span>
+                    <span class="brand-subtitle">SMART &amp; SAFE CAMPUS</span>
+                </div>
+            </a>
+
+            <div class="nav-links">
+                <a href="#about" class="nav-link">About</a>
+                <a href="#roles" class="nav-link">Portals</a>
+                <a href="#contact" class="nav-link">Contact</a>
+            </div>
+
+            <div class="nav-cta-group">
+                <div class="status-indicator" title="System Operational">
+                    <span class="status-dot"></span>
+                    <span class="status-text">AI Shield Active</span>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="page-container">
+
+        <!-- Hero Section -->
+        <section class="hero-section" id="hero">
+            
+            <div class="badge-wrapper">
+                <div class="hero-badge">
+                    <span class="badge-sparkle">✦</span>
+                    <span>AI-POWERED CAMPUS PLATFORM</span>
+                </div>
+            </div>
+
+            <h1 class="hero-heading">
+                <span class="heading-line-1">One Campus.</span>
+                <span class="heading-line-2 gradient-text">One Intelligent Platform.</span>
+            </h1>
+
+            <p class="hero-subtext">
+                A smarter way to connect students, faculty and parents while creating a safer and more connected campus.
+            </p>
+
+            <!-- Role Section Heading / Prompt -->
+            <div class="section-prompt-block">
+                <div class="prompt-header-group">
+                    <div class="prompt-indicator-bar"></div>
+                    <div class="prompt-text-wrap">
+                        <span class="prompt-caption">ACCESS GATEWAY</span>
+                        <h2 class="prompt-question">Who are you?</h2>
+                        <p class="prompt-instruction">How would you like to continue?</p>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- Role Selection Cards Section -->
+        <section class="roles-section" id="roles" aria-label="Portal Selection">
+            <div class="roles-grid">
+
+                <!-- 1. Student Card -->
+                <a href="/student/login" class="role-card card-student" id="card-student" aria-label="Enter Student Portal">
+                    <div class="card-glow-bg"></div>
+                    <div class="card-inner">
+                        
+                        <div class="card-header">
+                            <div class="role-icon-box" aria-hidden="true">
+                                <span class="role-emoji">🎓</span>
+                            </div>
+                            <div class="corner-arrow" aria-hidden="true">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="7" y1="17" x2="17" y2="7"></line>
+                                    <polyline points="7 7 17 7 17 17"></polyline>
+                                </svg>
+                            </div>
+                        </div>
+
+                        <div class="card-body">
+                            <span class="role-tag">FOR STUDENTS</span>
+                            <h3 class="role-title">Student Portal</h3>
+                            <p class="role-desc">
+                                Manage academics, attendance, timetable, complaints and campus safety.
+                            </p>
+                        </div>
+
+                        <div class="card-footer">
+                            <span class="card-btn-text">Enter Student Portal</span>
+                            <span class="btn-arrow-icon" aria-hidden="true">→</span>
+                        </div>
+
+                    </div>
+                </a>
+
+                <!-- 2. Faculty Card -->
+                <a href="/faculty/login" class="role-card card-faculty" id="card-faculty" aria-label="Enter Faculty Portal">
+                    <div class="card-glow-bg"></div>
+                    <div class="card-inner">
+                        
+                        <div class="card-header">
+                            <div class="role-icon-box" aria-hidden="true">
+                                <span class="role-emoji">👨‍🏫</span>
+                            </div>
+                            <div class="corner-arrow" aria-hidden="true">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="7" y1="17" x2="17" y2="7"></line>
+                                    <polyline points="7 7 17 7 17 17"></polyline>
+                                </svg>
+                            </div>
+                        </div>
+
+                        <div class="card-body">
+                            <span class="role-tag">FOR FACULTY</span>
+                            <h3 class="role-title">Faculty Portal</h3>
+                            <p class="role-desc">
+                                Manage classes, attendance, students, incidents and academic activities.
+                            </p>
+                        </div>
+
+                        <div class="card-footer">
+                            <span class="card-btn-text">Enter Faculty Portal</span>
+                            <span class="btn-arrow-icon" aria-hidden="true">→</span>
+                        </div>
+
+                    </div>
+                </a>
+
+                <!-- 3. Parent Card -->
+                <a href="/parent/login" class="role-card card-parent" id="card-parent" aria-label="Enter Parent Portal">
+                    <div class="card-glow-bg"></div>
+                    <div class="card-inner">
+                        
+                        <div class="card-header">
+                            <div class="role-icon-box" aria-hidden="true">
+                                <span class="role-emoji">👨‍👩‍👧</span>
+                            </div>
+                            <div class="corner-arrow" aria-hidden="true">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="7" y1="17" x2="17" y2="7"></line>
+                                    <polyline points="7 7 17 7 17 17"></polyline>
+                                </svg>
+                            </div>
+                        </div>
+
+                        <div class="card-body">
+                            <span class="role-tag">FOR PARENTS</span>
+                            <h3 class="role-title">Parent Portal</h3>
+                            <p class="role-desc">
+                                Stay connected with your ward's academics, attendance, alerts and campus safety.
+                            </p>
+                        </div>
+
+                        <div class="card-footer">
+                            <span class="card-btn-text">Enter Parent Portal</span>
+                            <span class="btn-arrow-icon" aria-hidden="true">→</span>
+                        </div>
+
+                    </div>
+                </a>
+
+            </div>
+        </section>
+
+        <!-- Feature Strip / Highlights -->
+        <section class="features-section" id="about" aria-label="Core Capabilities">
+            <div class="features-wrapper">
+                
+                <div class="feature-item" id="feature-ai">
+                    <div class="feature-icon-wrapper">
+                        <span class="feature-emoji">🤖</span>
+                    </div>
+                    <div class="feature-content">
+                        <h4 class="feature-title">AI Powered</h4>
+                        <p class="feature-desc">Intelligent campus assistance</p>
+                    </div>
+                </div>
+
+                <div class="feature-divider" aria-hidden="true"></div>
+
+                <div class="feature-item" id="feature-safety">
+                    <div class="feature-icon-wrapper">
+                        <span class="feature-emoji">🛡️</span>
+                    </div>
+                    <div class="feature-content">
+                        <h4 class="feature-title">Safety First</h4>
+                        <p class="feature-desc">Real-time campus protection</p>
+                    </div>
+                </div>
+
+                <div class="feature-divider" aria-hidden="true"></div>
+
+                <div class="feature-item" id="feature-connected">
+                    <div class="feature-icon-wrapper">
+                        <span class="feature-emoji">🔗</span>
+                    </div>
+                    <div class="feature-content">
+                        <h4 class="feature-title">Connected</h4>
+                        <p class="feature-desc">One platform for everyone</p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Minimal Modern Footer -->
+    <footer class="site-footer" id="contact">
+        <div class="footer-inner">
+            
+            <div class="footer-branding">
+                <span class="footer-title">CampusGuard AI</span>
+                <span class="footer-divider-dot">•</span>
+                <span class="footer-tagline">Smart &amp; Safe Campus Operating System</span>
+            </div>
+
+            <div class="footer-copyright">
+                © 2026 CampusGuard AI. All rights reserved.
+            </div>
+
+        </div>
+    </footer>
+
+    <!-- Interactive Micro-Interactions Script -->
+    <script>
+        // Interactive 3D tilt & dynamic spotlight glow effect for cards
+        document.addEventListener('DOMContentLoaded', () => {
+            const cards = document.querySelectorAll('.role-card');
+            
+            cards.forEach(card => {
+                card.addEventListener('mousemove', (e) => {
+                    const rect = card.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+                    
+                    card.style.setProperty('--mouse-x', `${x}px`);
+                    card.style.setProperty('--mouse-y', `${y}px`);
+                });
+            });
+
+            // Smooth scrolling for navigation links
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function(e) {
+                    const targetId = this.getAttribute('href');
+                    if (targetId.length > 1) {
+                        const targetEl = document.querySelector(targetId);
+                        if (targetEl) {
+                            e.preventDefault();
+                            targetEl.scrollIntoView({
+                                behavior: 'smooth',
+                                block: 'start'
+                            });
+                        }
+                    }
+                });
+            });
+        });
+    </script>
+
+</body>
+</html>

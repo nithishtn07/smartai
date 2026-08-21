@@ -1,0 +1,60 @@
+{% extends "student/base_student.html" %}
+
+{% block title %}CampusGuard AI Assistant{% endblock %}
+
+{% block student_content %}
+<div class="page-header-block">
+    <div class="page-title-group">
+        <h1><span>🤖</span> CampusGuard AI Assistant</h1>
+        <p>Your intelligent, privacy-first companion for attendance, timetable, complaints, and campus safety.</p>
+    </div>
+</div>
+
+<div class="chat-container">
+    <div class="chat-header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <div style="width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, #0284c7, #38bdf8); display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">
+                🤖
+            </div>
+            <div>
+                <h3 style="font-size: 0.95rem; font-weight: 700; color: var(--text-primary);">CampusGuard AI Neural Assistant</h3>
+                <span style="font-size: 0.72rem; color: #34d399; font-weight: 600;">● Online • Context: {{ student.name }} ({{ student.register_number }})</span>
+            </div>
+        </div>
+
+        <span class="badge badge-cyan">v2.4 Intelligent ERP</span>
+    </div>
+
+    <!-- Messages Window -->
+    <div class="chat-messages" id="chat-messages">
+        <div class="chat-bubble chat-bubble-ai">
+            👋 Hello {{ student.name }}! I am your personal CampusGuard AI Assistant.<br><br>
+            I can check your real-time course attendance, lookup your lecture schedule, track filed complaints, and guide you through campus safety services. How can I assist you today?
+        </div>
+    </div>
+
+    <!-- Quick Prompt Suggestions -->
+    <div class="chat-prompt-chips">
+        <span class="prompt-chip" data-prompt="What is my overall attendance?">📊 Overall Attendance</span>
+        <span class="prompt-chip" data-prompt="When is my next class?">📅 When is my next class?</span>
+        <span class="prompt-chip" data-prompt="What are my pending complaints?">📝 Check My Complaints</span>
+        <span class="prompt-chip" data-prompt="Who do I contact for an emergency?">🚨 Emergency Contacts</span>
+        <span class="prompt-chip" data-prompt="What is my attendance in DBMS?">📚 Attendance in DBMS</span>
+    </div>
+
+    <!-- Message Input Bar -->
+    <form id="assistant-chat-form" class="chat-input-row">
+        <input 
+            type="text" 
+            id="chat-input" 
+            class="chat-input" 
+            placeholder="Ask anything about your timetable, attendance, safety or campus services..." 
+            autocomplete="off"
+            required
+        >
+        <button type="submit" class="chat-send-btn" title="Send query">
+            ➤
+        </button>
+    </form>
+</div>
+{% endblock %}

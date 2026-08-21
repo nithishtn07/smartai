@@ -1,0 +1,98 @@
+{% extends "student/base_student.html" %}
+
+{% block title %}Lost &amp; Found Directory{% endblock %}
+
+{% block student_content %}
+<div class="page-header-block">
+    <div class="page-title-group">
+        <h1><span>🔍</span> Campus Lost &amp; Found Directory</h1>
+        <p>Report misplaced personal belongings or list items handed over to security desk.</p>
+    </div>
+
+    <button type="button" class="btn-primary" onclick="openModal('lost-found-modal')">
+        <span>📢</span> Report Lost / Found Item
+    </button>
+</div>
+
+<!-- Active Listings Grid -->
+<section class="content-card">
+    <div class="card-header-row">
+        <h2 class="card-heading"><span>📦</span> Active Campus Item Listings</h2>
+        <span class="badge badge-cyan">{{ items|length }} Active Listings</span>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px;">
+        {% for it in items %}
+        <div class="content-card" style="background: rgba(6, 8, 14, 0.4); border: 1px solid var(--glass-border); display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                    <span class="badge {% if it.item_type == 'LOST' %}badge-red{% else %}badge-green{% endif %}">
+                        {{ it.item_type }}
+                    </span>
+                    <span style="font-size: 0.75rem; color: var(--text-muted); font-family: var(--font-mono);">{{ it.reported_at[:16] }}</span>
+                </div>
+
+                <h3 style="font-size: 1.1rem; font-weight: 700; color: var(--text-primary); margin-bottom: 4px;">{{ it.item_name }}</h3>
+                <p style="font-size: 0.84rem; color: var(--text-secondary); line-height: 1.4; margin-bottom: 10px;">{{ it.description }}</p>
+                <div style="font-size: 0.8rem; color: var(--student-primary);">📍 Location: <strong>{{ it.location }}</strong></div>
+            </div>
+
+            <div style="padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.06); display: flex; justify-content: space-between; align-items: center; margin-top: 14px;">
+                <span style="font-size: 0.8rem; color: #94a3b8;">Contact: <strong>{{ it.contact_phone }}</strong></span>
+                <span class="badge badge-purple">{{ it.status }}</span>
+            </div>
+        </div>
+        {% else %}
+        <div style="text-align: center; padding: 32px; color: var(--text-muted);">
+            <p>No active lost or found items reported.</p>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
+<!-- Report Item Modal -->
+<div class="portal-modal-backdrop" id="lost-found-modal">
+    <div class="portal-modal-content">
+        <div class="card-header-row">
+            <h3 class="card-heading"><span>📢</span> Report Lost or Found Belonging</h3>
+            <button type="button" style="background: none; border: none; color: white; font-size: 1.2rem; cursor: pointer;" onclick="closeModal('lost-found-modal')">✕</button>
+        </div>
+
+        <form method="POST" action="{{ url_for('student_lost_found') }}" class="portal-form">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-label">Report Type</label>
+                    <select name="item_type" class="form-select">
+                        <option value="LOST">I Lost an Item</option>
+                        <option value="FOUND">I Found an Item</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Item Name</label>
+                    <input type="text" name="item_name" class="form-input" placeholder="e.g. Blue Dell Laptop Charger" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Location Where Lost / Found</label>
+                <input type="text" name="location" class="form-input" placeholder="e.g. CS Lab 2 or Library 2nd Floor Reading Hall" required>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Item Description &amp; Identifying Details</label>
+                <textarea name="description" class="form-textarea" placeholder="Provide distinct characteristics, brand, serial, color..." required></textarea>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Contact Phone / Desk Location</label>
+                <input type="tel" name="contact_phone" class="form-input" value="{{ student.phone|default('+91 98765 43210') }}" required>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px;">
+                <button type="button" class="btn-secondary" onclick="closeModal('lost-found-modal')">Cancel</button>
+                <button type="submit" class="btn-primary">Publish Listing</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

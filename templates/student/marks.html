@@ -1,0 +1,137 @@
+{% extends "student/base_student.html" %}
+
+{% block title %}Marks &amp; Grades Transcript{% endblock %}
+
+{% block student_content %}
+<div class="page-header-block">
+    <div class="page-title-group">
+        <h1><span>📈</span> Academic Marks &amp; Performance</h1>
+        <p>Continuous Assessment Tests (CAT), Final Assessment (FAT), and AI Grade Projections.</p>
+    </div>
+
+    <div style="display: flex; gap: 10px;">
+        <span class="badge badge-green" style="font-size: 0.88rem; padding: 8px 16px;">Current CGPA: {{ student.cgpa|default('8.75') }}</span>
+        <span class="badge badge-purple" style="font-size: 0.88rem; padding: 8px 16px;">Sem 5 SGPA: {{ student.sgpa|default('8.90') }}</span>
+    </div>
+</div>
+
+<!-- AI Academic Trend Analysis Card -->
+<section class="ai-insights-card">
+    <div class="ai-insights-header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 1.3rem;">🧠</span>
+            <h3 style="font-size: 1.05rem; font-weight: 700; color: #38bdf8;">CampusGuard AI — Performance Trend &amp; Grade Forecast</h3>
+        </div>
+        <span class="badge badge-green">High Distinction Trajectory</span>
+    </div>
+
+    <div class="ai-insights-list">
+        <div class="ai-insight-item">
+            <span style="font-size: 1.2rem;">📈</span>
+            <div>
+                <strong>Strongest Course:</strong> <em>Computer Networks &amp; Security</em> (Score: <strong>94/100</strong>, Projected Grade: <strong>S / Outstanding</strong>).
+            </div>
+        </div>
+        <div class="ai-insight-item">
+            <span style="font-size: 1.2rem;">🎯</span>
+            <div>
+                <strong>Growth Area:</strong> <em>Data Science &amp; Machine Learning</em> (Internal: <strong>76/100</strong>). Scoring $\ge 42/50$ in FAT ensures an <strong>A Grade</strong>.
+            </div>
+        </div>
+        <div class="ai-insight-item">
+            <span style="font-size: 1.2rem;">💡</span>
+            <div>
+                <strong>AI Study Recommendation:</strong> Dedicate 4 hours this weekend to Neural Networks tutorials available in Study Materials.
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Detailed Marks Sheet Table -->
+<section class="content-card">
+    <div class="card-header-row">
+        <h2 class="card-heading"><span>📊</span> Course-Wise Assessment Breakdown</h2>
+        <span class="badge badge-cyan">Semester 5</span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="portal-table">
+            <thead>
+                <tr>
+                    <th>Course Code &amp; Title</th>
+                    <th>CAT 1 (50)</th>
+                    <th>CAT 2 (50)</th>
+                    <th>Quiz (10)</th>
+                    <th>Assignment (10)</th>
+                    <th>Project (20)</th>
+                    <th>FAT (100)</th>
+                    <th>Total Grade</th>
+                    <th>Points</th>
+                    <th>Result</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for m in marks %}
+                <tr>
+                    <td>
+                        <div style="font-weight: 700; color: var(--text-primary);">{{ m.course_name }}</div>
+                        <div style="font-size: 0.78rem; color: var(--student-primary); font-family: var(--font-mono);">{{ m.course_code }}</div>
+                    </td>
+                    <td><strong>{{ m.cat1 }}</strong></td>
+                    <td><strong>{{ m.cat2 }}</strong></td>
+                    <td>{{ m.quiz }}</td>
+                    <td>{{ m.assignment }}</td>
+                    <td>{{ m.project }}</td>
+                    <td><strong style="color: #38bdf8;">{{ m.fat }}</strong></td>
+                    <td>
+                        <span class="badge {% if m.grade in ['S', 'A+'] %}badge-green{% elif m.grade in ['A', 'B+'] %}badge-cyan{% else %}badge-yellow{% endif %}" style="font-size: 0.85rem;">
+                            {{ m.grade }}
+                        </span>
+                    </td>
+                    <td><strong style="font-family: var(--font-mono);">{{ m.grade_points }}</strong></td>
+                    <td>
+                        <span class="badge badge-green">PASS</span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<!-- Semester GPA History Card -->
+<section class="content-card" style="margin-top: 20px;">
+    <div class="card-header-row">
+        <h2 class="card-heading"><span>📜</span> Semester GPA Progression History</h2>
+        <span class="badge badge-purple">8 Semesters Program</span>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 14px; text-align: center;">
+        <div class="stat-box">
+            <div class="stat-box-label">Semester 1</div>
+            <div class="stat-box-num" style="color: #38bdf8;">8.50</div>
+            <span style="font-size: 0.72rem; color: #34d399;">22 Credits</span>
+        </div>
+        <div class="stat-box">
+            <div class="stat-box-label">Semester 2</div>
+            <div class="stat-box-num" style="color: #38bdf8;">8.65</div>
+            <span style="font-size: 0.72rem; color: #34d399;">24 Credits</span>
+        </div>
+        <div class="stat-box">
+            <div class="stat-box-label">Semester 3</div>
+            <div class="stat-box-num" style="color: #38bdf8;">8.80</div>
+            <span style="font-size: 0.72rem; color: #34d399;">22 Credits</span>
+        </div>
+        <div class="stat-box">
+            <div class="stat-box-label">Semester 4</div>
+            <div class="stat-box-num" style="color: #38bdf8;">8.90</div>
+            <span style="font-size: 0.72rem; color: #34d399;">24 Credits</span>
+        </div>
+        <div class="stat-box" style="border: 1px solid var(--student-primary); background: rgba(56,189,248,0.1);">
+            <div class="stat-box-label" style="color: #38bdf8;">Semester 5 (Current)</div>
+            <div class="stat-box-num" style="color: #34d399;">8.90</div>
+            <span style="font-size: 0.72rem; color: #38bdf8;">20 Credits</span>
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,116 @@
+{% extends "student/base_student.html" %}
+
+{% block title %}Student Wellbeing &amp; Health{% endblock %}
+
+{% block student_content %}
+<div class="page-header-block">
+    <div class="page-title-group">
+        <h1><span>🌱</span> Student Health &amp; Wellbeing Center</h1>
+        <p>Confidential mental health advisory, medical pavilion appointments, and wellness resources.</p>
+    </div>
+
+    <button type="button" class="btn-primary" onclick="openModal('counseling-modal')">
+        <span>📅</span> Book Confidential Counseling Session
+    </button>
+</div>
+
+<div class="form-grid" style="grid-template-columns: 1fr 1fr; align-items: start;">
+    
+    <!-- Medical Center & Health Info Card -->
+    <div class="content-card">
+        <div class="card-header-row">
+            <h2 class="card-heading"><span>🏥</span> Campus Medical Pavilion</h2>
+            <span class="badge badge-green">24/7 Physician On-Duty</span>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 14px; font-size: 0.88rem; color: var(--text-secondary);">
+            <div style="padding: 12px; background: rgba(6, 8, 14, 0.4); border-radius: 10px;">
+                <strong style="color: white;">Location:</strong> Health Pavilion, Ground Floor Block A<br>
+                <strong style="color: white;">Emergency Helpline:</strong> <a href="tel:+919123456781" style="color: #38bdf8; text-decoration: none;">📞 +91 91234 56781</a><br>
+                <strong style="color: white;">Available Facilities:</strong> Emergency ICU beds, Ambulance Dispatch, Pharmacy &amp; Diagnostic Lab.
+            </div>
+
+            <div style="padding: 12px; background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 10px;">
+                <h4 style="color: #34d399; font-size: 0.92rem; margin-bottom: 4px;">🧘 Mental Health Advisory Council</h4>
+                <p style="font-size: 0.82rem; line-height: 1.4;">
+                    Our certified student psychologists provide free, 100% confidential counseling for exam stress, career anxiety, and personal wellbeing.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Appointments & Wellness Tracker -->
+    <div class="content-card">
+        <div class="card-header-row">
+            <h2 class="card-heading"><span>📅</span> My Confidential Counseling Sessions</h2>
+            <span class="badge badge-purple">Confidential</span>
+        </div>
+
+        <div class="table-responsive">
+            <table class="portal-table">
+                <thead>
+                    <tr>
+                        <th>Counselor</th>
+                        <th>Slot Time</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for appt in appointments|default([]) %}
+                    <tr>
+                        <td><strong>{{ appt.counselor_name }}</strong></td>
+                        <td style="font-family: var(--font-mono); font-size: 0.84rem;">{{ appt.slot_time }}</td>
+                        <td><span class="badge badge-green">{{ appt.status }}</span></td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="3" style="text-align: center; color: var(--text-muted); padding: 24px;">No upcoming appointments.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<!-- Booking Modal -->
+<div class="portal-modal-backdrop" id="counseling-modal">
+    <div class="portal-modal-content">
+        <div class="card-header-row">
+            <h3 class="card-heading"><span>📅</span> Book Confidential Counseling Slot</h3>
+            <button type="button" style="background: none; border: none; color: white; font-size: 1.2rem; cursor: pointer;" onclick="closeModal('counseling-modal')">✕</button>
+        </div>
+
+        <form method="POST" action="{{ url_for('student_wellbeing_book') }}" class="portal-form">
+            <div class="form-group">
+                <label class="form-label">Select Counselor</label>
+                <select name="counselor_name" class="form-select">
+                    <option value="Dr. Ananya Sharma (Lead Psychologist)">Dr. Ananya Sharma (Lead Psychologist)</option>
+                    <option value="Prof. Mark Davis (Academic Stress Counselor)">Prof. Mark Davis (Academic Stress Counselor)</option>
+                    <option value="Dr. Sunita Rao (Student Life Advisor)">Dr. Sunita Rao (Student Life Advisor)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Preferred Session Time Slot</label>
+                <select name="slot_time" class="form-select">
+                    <option value="Tomorrow 04:00 PM - 05:00 PM">Tomorrow 04:00 PM - 05:00 PM (In-Person)</option>
+                    <option value="Thursday 11:00 AM - 12:00 PM">Thursday 11:00 AM - 12:00 PM (Confidential Video)</option>
+                    <option value="Friday 03:00 PM - 04:00 PM">Friday 03:00 PM - 04:00 PM (In-Person)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Area of Discussion (Optional &amp; Strictly Confidential)</label>
+                <textarea name="concerns" class="form-textarea" placeholder="e.g. Exam anxiety, academic balance, or general wellness advice..."></textarea>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px;">
+                <button type="button" class="btn-secondary" onclick="closeModal('counseling-modal')">Cancel</button>
+                <button type="submit" class="btn-primary">Confirm Appointment</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
