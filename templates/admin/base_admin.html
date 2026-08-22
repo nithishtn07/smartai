@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="CampusGuard AI - Central Admin & Safety Command Console.">
+    <meta name="theme-color" content="#06080e">
+    
+    <title>{% block title %}Admin Console{% endblock %} | CampusGuard AI</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Socket.IO CDN -->
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+
+    <!-- Universal Real-time & Toast Styles -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/campusguard-toast.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/parent.css') }}">
+    
+    <style>
+        :root {
+            --parent-primary: #6366f1;
+            --parent-primary-rgb: 99, 102, 241;
+            --parent-primary-hover: #4f46e5;
+            --parent-secondary: #ec4899;
+            --parent-accent: #818cf8;
+            --parent-gradient: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+            --parent-border: rgba(99, 102, 241, 0.3);
+            --parent-glow: rgba(99, 102, 241, 0.2);
+        }
+        .admin-badge {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(99, 102, 241, 0.2));
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            color: #fca5a5;
+        }
+        .alert-banner-strip {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .alert-banner-card {
+            background: rgba(14, 19, 32, 0.85);
+            border: 1px solid var(--glass-border);
+            border-radius: 14px;
+            padding: 16px 18px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            text-decoration: none;
+            transition: all var(--transition-fast);
+        }
+        .alert-banner-card:hover {
+            transform: translateY(-3px);
+            border-color: var(--parent-border);
+            background: rgba(99, 102, 241, 0.1);
+        }
+        .alert-banner-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            flex-shrink: 0;
+        }
+    </style>
+    
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+    <!-- Ambient Glowing Background -->
+    <div class="ambient-background" aria-hidden="true">
+        <div class="glow-orb" style="background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%); top: -100px; left: -100px; width: 500px; height: 500px; position: fixed; border-radius: 50%; pointer-events: none; z-index: 0;"></div>
+        <div class="glow-orb" style="background: radial-gradient(circle, rgba(239, 68, 68, 0.12) 0%, transparent 70%); bottom: -100px; right: -100px; width: 600px; height: 600px; position: fixed; border-radius: 50%; pointer-events: none; z-index: 0;"></div>
+    </div>
+
+    <!-- Mobile Drawer Overlay -->
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+    <div class="portal-layout">
+
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar" id="parent-sidebar" aria-label="Admin Navigation" style="overflow-y: auto;">
+            <a href="{{ url_for('admin_dashboard') }}" class="sidebar-brand">
+                <div class="brand-icon" style="background: rgba(99, 102, 241, 0.15); border: 1px solid rgba(99, 102, 241, 0.3);">
+                    <span style="font-size: 1.3rem;">🛡️</span>
+                </div>
+                <span class="brand-name">CampusGuard <span class="brand-badge admin-badge">ADMIN</span></span>
+            </a>
+
+            <nav class="sidebar-nav">
+                <span class="nav-category">Command &amp; Control</span>
+                
+                <a href="{{ url_for('admin_dashboard') }}" class="nav-link {% if active_page == 'dashboard' %}active{% endif %}" id="nav-dashboard">
+                    <span>🏠</span> <span class="nav-text">Admin Dashboard</span>
+                </a>
+                <a href="{{ url_for('admin_safety') }}" class="nav-link nav-link-sos {% if active_page == 'safety' %}active{% endif %}" id="nav-safety">
+                    <span>🚨</span> <span class="nav-text">Safety Control Center</span>
+                </a>
+                <a href="{{ url_for('admin_analytics') }}" class="nav-link {% if active_page == 'analytics' %}active{% endif %}" id="nav-analytics">
+                    <span>🤖</span> <span class="nav-text">AI Risk Analytics</span>
+                </a>
+
+                <span class="nav-category">User Management</span>
+
+                <a href="{{ url_for('admin_students') }}" class="nav-link {% if active_page == 'students' %}active{% endif %}" id="nav-students">
+                    <span>🎓</span> <span class="nav-text">Students Directory</span>
+                </a>
+                <a href="{{ url_for('admin_parents') }}" class="nav-link {% if active_page == 'parents' %}active{% endif %}" id="nav-parents">
+                    <span>👨‍👩‍👧</span> <span class="nav-text">Parents Directory</span>
+                </a>
+                <a href="{{ url_for('admin_faculty') }}" class="nav-link {% if active_page == 'faculty' %}active{% endif %}" id="nav-faculty">
+                    <span>👨‍🏫</span> <span class="nav-text">Faculty Directory</span>
+                </a>
+
+                <span class="nav-category">Academics &amp; Operations</span>
+
+                <a href="{{ url_for('admin_academics') }}" class="nav-link {% if active_page == 'academics' %}active{% endif %}" id="nav-academics">
+                    <span>📚</span> <span class="nav-text">Courses &amp; Subjects</span>
+                </a>
+                <a href="{{ url_for('admin_attendance') }}" class="nav-link {% if active_page == 'attendance' %}active{% endif %}" id="nav-attendance">
+                    <span>📊</span> <span class="nav-text">Attendance Monitor</span>
+                </a>
+                <a href="{{ url_for('admin_marks') }}" class="nav-link {% if active_page == 'marks' %}active{% endif %}" id="nav-marks">
+                    <span>🎯</span> <span class="nav-text">Marks &amp; Grades</span>
+                </a>
+                <a href="{{ url_for('admin_fees') }}" class="nav-link {% if active_page == 'fees' %}active{% endif %}" id="nav-fees">
+                    <span>💰</span> <span class="nav-text">Fees &amp; Finance</span>
+                </a>
+                <a href="{{ url_for('admin_exams') }}" class="nav-link {% if active_page == 'exams' %}active{% endif %}" id="nav-exams">
+                    <span>📝</span> <span class="nav-text">Exam Schedules</span>
+                </a>
+                <a href="{{ url_for('admin_leaves') }}" class="nav-link {% if active_page == 'leaves' %}active{% endif %}" id="nav-leaves">
+                    <span>🚪</span> <span class="nav-text">Hostel Outpass &amp; Leaves</span>
+                </a>
+
+                <span class="nav-category">Communication</span>
+
+                <a href="{{ url_for('admin_announcements') }}" class="nav-link {% if active_page == 'announcements' %}active{% endif %}" id="nav-announcements">
+                    <span>📢</span> <span class="nav-text">Announcements</span>
+                </a>
+                <a href="{{ url_for('admin_messages') }}" class="nav-link {% if active_page == 'messages' %}active{% endif %}" id="nav-messages">
+                    <span>💬</span> <span class="nav-text">Messages Center</span>
+                </a>
+
+                <span class="nav-category">Intelligence &amp; System</span>
+
+                <a href="{{ url_for('admin_reports') }}" class="nav-link {% if active_page == 'reports' %}active{% endif %}" id="nav-reports">
+                    <span>📄</span> <span class="nav-text">Institutional Reports</span>
+                </a>
+                <a href="{{ url_for('admin_audit_logs') }}" class="nav-link {% if active_page == 'audit_logs' %}active{% endif %}" id="nav-audit">
+                    <span>📜</span> <span class="nav-text">ERP Activity Logs</span>
+                </a>
+                <a href="{{ url_for('admin_settings') }}" class="nav-link {% if active_page == 'settings' %}active{% endif %}" id="nav-settings">
+                    <span>⚙️</span> <span class="nav-text">System Settings</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <a href="/" class="portal-switch-link" title="Open Main Landing Gateway">
+                    <span>🌐</span> <span>Campus Gateway</span>
+                </a>
+                <a href="{{ url_for('admin_logout') }}" class="logout-link" id="btn-logout" aria-label="Sign out">
+                    <span>🚪</span> <span>Sign Out</span>
+                </a>
+            </div>
+        </aside>
+
+        <!-- Main Content Wrapper -->
+        <div class="main-wrapper">
+            
+            <!-- Topbar Header -->
+            <header class="topbar">
+                <div class="topbar-left">
+                    <button type="button" class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Toggle menu">
+                        ☰
+                    </button>
+
+                    <!-- Connection Status Indicator -->
+                    <div class="conn-status-pill">
+                        <span class="conn-dot"></span>
+                        <span>Live Connected</span>
+                    </div>
+
+                    <!-- Role Pill -->
+                    <div class="hide-mobile" style="font-size: 0.82rem; color: var(--text-muted); padding-left: 12px; border-left: 1px solid var(--glass-border);">
+                        <span>Enterprise Central Administration</span>
+                    </div>
+                </div>
+
+                <div class="topbar-right">
+                    <!-- Notification Bell with Dropdown -->
+                    <div class="notif-bell-wrapper">
+                        <button type="button" class="notif-bell-btn" id="notif-bell-btn" aria-label="View notifications">
+                            <span>🔔</span>
+                            <span class="notif-badge-pill" id="notif-badge-count">0</span>
+                        </button>
+
+                        <div class="notif-dropdown-menu" id="notif-dropdown-menu">
+                            <div class="notif-dropdown-header">
+                                <span class="notif-dropdown-title"><span>🔔</span> Admin Alerts</span>
+                                <button type="button" class="notif-clear-all-btn" onclick="markAllNotificationsRead()">Mark all read</button>
+                            </div>
+                            <div class="notif-items-list" id="notif-dropdown-items">
+                                <div class="notif-empty-state">Loading alerts...</div>
+                            </div>
+                            <div class="notif-dropdown-footer">
+                                <a href="{{ url_for('admin_dashboard') }}" class="notif-view-all-link">Command Center →</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Admin Profile Badge -->
+                    <div class="topbar-profile" style="cursor: default;">
+                        <div class="parent-avatar" style="background: linear-gradient(135deg, #ef4444, #6366f1);">
+                            A
+                        </div>
+                        <div class="hide-mobile" style="text-align: left;">
+                            <div style="font-size: 0.88rem; font-weight: 700; color: #fff;">{{ session.get('admin_name', 'Campus Administrator') }}</div>
+                            <div style="font-size: 0.72rem; color: #fca5a5; font-weight: 600;">SUPERADMIN</div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Page Dynamic Content -->
+            <main class="page-content">
+                
+                <!-- Flash Alerts -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        <div style="margin-bottom: 20px;">
+                            {% for category, message in messages %}
+                                <div class="alert-box alert-{{ 'error' if category == 'error' else ('success' if category == 'success' else 'info') }}" role="alert">
+                                    <span>{% if category == 'error' %}⚠️{% elif category == 'success' %}✓{% else %}ℹ️{% endif %}</span>
+                                    <div>{{ message }}</div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endwith %}
+
+                {% block content %}{% block admin_content %}{% endblock %}{% endblock %}
+
+            </main>
+
+            <!-- Minimal ERP Footer -->
+            <footer class="footer">
+                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 10px;">
+                    <div>© 2026 CampusGuard AI • Enterprise Safe Campus Operating System</div>
+                    <div style="color: var(--parent-primary);">Central Admin Control Center • Active Node: v2.5</div>
+                </div>
+            </footer>
+
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="{{ url_for('static', filename='js/parent.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/campusguard-realtime.js') }}"></script>
+    {% block extra_scripts %}{% endblock %}
+
+</body>
+</html>

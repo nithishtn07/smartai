@@ -1,0 +1,162 @@
+{% extends "faculty/base_faculty.html" %}
+
+{% block title %}Lab &amp; Practical Instruction Management{% endblock %}
+
+{% block faculty_content %}
+<div class="page-header-block">
+    <div class="page-title-group">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+            <span class="badge badge-green">PRACTICAL INSTRUCTION</span>
+            <span class="badge badge-indigo">Lab Coursework &amp; Viva Records</span>
+        </div>
+        <h1><span>🧪</span> Lab Management &amp; Practical Experiments</h1>
+        <p>Log practical lab experiments, record continuous viva and practical scores, and verify digital lab records.</p>
+    </div>
+    
+    <div>
+        <button type="button" class="btn-primary" onclick="openModal('add-experiment-modal')" style="background: linear-gradient(135deg, #10b981, #059669);">
+            <span>➕</span> Record Experiment
+        </button>
+    </div>
+</div>
+
+<!-- Lab Course Selector Tabs -->
+<div style="display: flex; gap: 10px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 4px;">
+    {% for lc in lab_courses %}
+    <a href="{{ url_for('faculty_lab', course=lc.course_code) }}" 
+       class="btn-secondary {% if selected_course == lc.course_code %}active{% endif %}"
+       style="{% if selected_course == lc.course_code %}background: linear-gradient(135deg, #10b981, #059669); color: #fff; border-color: transparent;{% endif %} padding: 8px 16px; font-size: 0.85rem; text-decoration: none;">
+        🧪 {{ lc.course_code }} - {{ lc.course_name }}
+    </a>
+    {% endfor %}
+</div>
+
+<!-- Experiments Log Table -->
+<section class="content-card">
+    <div class="card-header-row">
+        <h2 class="card-heading"><span>📜</span> Experiment Records &amp; Practical Evaluations</h2>
+        <span class="badge badge-purple">{{ experiments|length }} Experiments Logged</span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="portal-table">
+            <thead>
+                <tr>
+                    <th>Exp #</th>
+                    <th>Student Name &amp; Reg No</th>
+                    <th>Experiment Title</th>
+                    <th>Date Conducted</th>
+                    <th>Practical (10)</th>
+                    <th>Viva (10)</th>
+                    <th>Total (20)</th>
+                    <th>Record Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for exp in experiments %}
+                <tr>
+                    <td>
+                        <span class="badge badge-indigo" style="font-weight: 800;">Exp #{{ exp.experiment_no }}</span>
+                    </td>
+                    <td>
+                        <strong style="color: #fff;">{{ exp.student_name }}</strong>
+                        <div style="font-size: 0.76rem; color: #38bdf8; font-family: monospace;">{{ exp.register_number }}</div>
+                    </td>
+                    <td>
+                        <strong style="color: #e2e8f0;">{{ exp.title }}</strong>
+                        {% if exp.faculty_remarks %}
+                        <div style="font-size: 0.76rem; color: var(--text-muted); margin-top: 2px;">💬 {{ exp.faculty_remarks }}</div>
+                        {% endif %}
+                    </td>
+                    <td style="color: var(--text-secondary); font-size: 0.85rem;">{{ exp.conducted_date }}</td>
+                    <td style="color: #34d399; font-weight: 700;">{{ exp.practical_marks }}</td>
+                    <td style="color: #38bdf8; font-weight: 700;">{{ exp.viva_marks }}</td>
+                    <td style="font-weight: 800; color: #fff; font-size: 1.05rem;">
+                        {{ (exp.practical_marks + exp.viva_marks)|round(1) }}
+                    </td>
+                    <td>
+                        <span class="badge {% if exp.record_status == 'Verified' %}badge-green{% elif exp.record_status == 'Submitted' %}badge-cyan{% else %}badge-yellow{% endif %}">
+                            {{ exp.record_status }}
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<!-- Add Experiment Modal -->
+<div class="modal-overlay" id="add-experiment-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); align-items: center; justify-content: center; z-index: 1000;">
+    <div class="modal-card" style="background: #0f172a; border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 16px; padding: 24px; max-width: 520px; width: 90%;">
+        <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h3 class="modal-title" style="color: #fff; margin: 0; font-size: 1.15rem;">🧪 Record Practical Lab Experiment</h3>
+            <button type="button" class="modal-close" onclick="closeModal('add-experiment-modal')" style="background: none; border: none; color: #fff; font-size: 1.2rem; cursor: pointer;">✕</button>
+        </div>
+
+        <form method="POST" action="{{ url_for('faculty_lab') }}">
+            <input type="hidden" name="course_code" value="{{ selected_course }}">
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                <div class="form-group">
+                    <label class="form-label" style="display: block; color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 4px;">Student</label>
+                    <select name="student_id" class="form-select" required style="width: 100%; padding: 8px 12px; border-radius: 8px; background: #1e293b; border: 1px solid rgba(255,255,255,0.1); color: #fff;">
+                        {% for s in students %}
+                            <option value="{{ s.id }}">{{ s.name }} ({{ s.register_number }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" style="display: block; color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 4px;">Experiment Number</label>
+                    <input type="number" min="1" max="20" name="experiment_no" value="6" required style="width: 100%; padding: 8px 12px; border-radius: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff;">
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 12px;">
+                <label class="form-label" style="display: block; color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 4px;">Experiment Title</label>
+                <input type="text" name="title" placeholder="e.g. Distributed Consensus (Raft Protocol Implementation)" required style="width: 100%; padding: 8px 12px; border-radius: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff;">
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                <div class="form-group">
+                    <label class="form-label" style="display: block; color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 4px;">Practical (10)</label>
+                    <input type="number" step="0.5" min="0" max="10" name="practical_marks" value="9.5" required style="width: 100%; padding: 8px 12px; border-radius: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff;">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" style="display: block; color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 4px;">Viva (10)</label>
+                    <input type="number" step="0.5" min="0" max="10" name="viva_marks" value="9.5" required style="width: 100%; padding: 8px 12px; border-radius: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff;">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" style="display: block; color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 4px;">Record Status</label>
+                    <select name="record_status" class="form-select" style="width: 100%; padding: 8px 12px; border-radius: 8px; background: #1e293b; border: 1px solid rgba(255,255,255,0.1); color: #fff;">
+                        <option value="Verified">Verified</option>
+                        <option value="Submitted">Submitted</option>
+                        <option value="Needs Revision">Needs Revision</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 16px;">
+                <label class="form-label" style="display: block; color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 4px;">Faculty Remarks &amp; Feedback</label>
+                <textarea name="remarks" class="form-textarea" rows="2" style="width: 100%; padding: 8px 12px; border-radius: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff;">Code executed flawlessly and demonstrated thorough understanding of quorum voting.</textarea>
+            </div>
+
+            <button type="submit" class="btn-primary" style="width: 100%; justify-content: center; background: linear-gradient(135deg, #10b981, #059669); padding: 10px; font-size: 0.95rem;">
+                <span>💾</span> Save Lab Record &amp; Notify Student
+            </button>
+        </form>
+    </div>
+</div>
+
+<script>
+function openModal(id) {
+    document.getElementById(id).style.display = 'flex';
+}
+function closeModal(id) {
+    document.getElementById(id).style.display = 'none';
+}
+</script>
+{% endblock %}

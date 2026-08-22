@@ -34,7 +34,7 @@ class TestCampusSafetyIntelligence(unittest.TestCase):
         with self.client.session_transaction() as sess:
             sess['student_id'] = 1
             sess['student_register_number'] = 'STU001'
-            sess['student_name'] = 'Nithish Kumar'
+            sess['student_name'] = 'Nithish Nagaraj'
 
     # -----------------------------------------------------------------------
     # 1. 0–100 Location Risk Scoring Test

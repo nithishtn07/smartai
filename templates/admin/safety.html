@@ -1,0 +1,181 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}Campus Safety &amp; Emergency Command Center{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="/static/css/emergency.css">
+
+<!-- Header -->
+<div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 24px;">
+    <div>
+        <h1 style="font-size: 1.6rem; font-weight: 800; color: #fff; margin-bottom: 4px;">🚨 Campus Safety Control Center &amp; Emergency Command</h1>
+        <p style="color: var(--text-secondary); font-size: 0.88rem;">Autonomous SOS Distress Triage, Multi-Unit Dispatch, GPS Telemetry, &amp; Response Timeline Auditing.</p>
+    </div>
+
+    <div style="display: flex; gap: 10px; align-items: center;">
+        <!-- Audio Alarm Toggle -->
+        <button type="button" id="sound-toggle-btn" class="sound-toggle-btn active" onclick="toggleEmergencyAudio(this)">
+            <span>🔊</span> Alarm Audio Enabled
+        </button>
+
+        <a href="/emergency/history" class="btn-secondary" style="font-size: 0.82rem; padding: 8px 14px;">
+            <span>📋</span> Incident Archive
+        </a>
+        <a href="/emergency/analytics" class="btn-secondary" style="font-size: 0.82rem; padding: 8px 14px;">
+            <span>📊</span> Safety Analytics
+        </a>
+    </div>
+</div>
+
+<!-- Active Emergency Incidents Board -->
+<div style="background: rgba(14, 19, 32, 0.88); border: 1px solid rgba(239, 68, 68, 0.35); border-radius: 18px; padding: 24px; margin-bottom: 28px; box-shadow: 0 4px 25px rgba(239, 68, 68, 0.12);">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 10px;">
+        <div>
+            <h2 style="font-size: 1.25rem; font-weight: 800; color: #fca5a5; display: flex; align-items: center; gap: 8px;">
+                <span>🚨</span> Real-Time Emergency Distress Queue
+            </h2>
+            <p style="font-size: 0.82rem; color: var(--text-secondary); margin-top: 2px;">
+                State Machine: Triggered &rarr; Acknowledged &rarr; Assigned &rarr; En Route &rarr; On Scene &rarr; Resolved
+            </p>
+        </div>
+        <span id="active-emergency-count" class="beacon-pulse">
+            <span class="beacon-dot"></span> {{ all_incidents|length }} Active Incident{{ all_incidents|length == 1 and '' or 's' }}
+        </span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="data-table" style="width: 100%; border-collapse: collapse; font-size: 0.88rem;">
+            <thead>
+                <tr style="border-bottom: 1px solid var(--glass-border); text-align: left; color: var(--text-muted);">
+                    <th style="padding: 12px 10px;">Incident ID</th>
+                    <th style="padding: 12px 10px;">Reporter / Student</th>
+                    <th style="padding: 12px 10px;">Location / Coordinates</th>
+                    <th style="padding: 12px 10px;">Category &amp; Severity</th>
+                    <th style="padding: 12px 10px;">Status</th>
+                    <th style="padding: 12px 10px;">Reported At</th>
+                    <th style="padding: 12px 10px; text-align: right;">Command Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for inc in all_incidents %}
+                <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.04);">
+                    <td style="padding: 14px 10px; font-family: var(--font-mono); font-weight: 700; color: #818cf8;">
+                        <a href="/emergency/incident/{{ inc.incident_id }}" style="color: inherit; text-decoration: none;" title="Open Full Incident Dossier">
+                            {{ inc.incident_id }}
+                        </a>
+                    </td>
+                    <td style="padding: 14px 10px;">
+                        <strong style="color: #fff;">{{ inc.student_name|default('Nithish Nagaraj') }}</strong>
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">{{ inc.register_number|default('STU001') }}</div>
+                    </td>
+                    <td style="padding: 14px 10px;">
+                        <div style="color: var(--text-primary);">{{ inc.location|default('Campus North Block') }}</div>
+                        {% if inc.latitude and inc.longitude %}
+                        <div style="font-size: 0.72rem; color: #38bdf8; font-family: var(--font-mono);">GPS: {{ inc.latitude|round(4) }}, {{ inc.longitude|round(4) }}</div>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 14px 10px;">
+                        <div style="color: #fbbf24; font-weight: 600;">{{ inc.category|default(inc.emergency_type|default('Personal Safety')) }}</div>
+                        <span class="severity-badge-high" style="font-size: 0.7rem; padding: 2px 6px;">HIGH</span>
+                    </td>
+                    <td style="padding: 14px 10px;">
+                        {% if inc.status in ['ACTIVE', 'TRIGGERED'] %}
+                            <span class="badge" style="background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.4);">ACTIVE</span>
+                        {% elif inc.status == 'ACKNOWLEDGED' %}
+                            <span class="badge" style="background: rgba(245, 158, 11, 0.2); color: #fcd34d; border: 1px solid rgba(245, 158, 11, 0.4);">ACKNOWLEDGED</span>
+                        {% elif inc.status in ['RESPONDING', 'RESPONDER_ASSIGNED', 'EN_ROUTE'] %}
+                            <span class="badge" style="background: rgba(56, 189, 248, 0.2); color: #7dd3fc; border: 1px solid rgba(56, 189, 248, 0.4);">RESPONDING</span>
+                        {% elif inc.status == 'ON_SCENE' %}
+                            <span class="badge" style="background: rgba(192, 132, 252, 0.2); color: #e9d5ff; border: 1px solid rgba(192, 132, 252, 0.4);">ON SCENE</span>
+                        {% else %}
+                            <span class="badge" style="background: rgba(52, 211, 153, 0.2); color: #6ee7b7; border: 1px solid rgba(52, 211, 153, 0.4);">RESOLVED</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 14px 10px; color: var(--text-muted); font-size: 0.8rem;">{{ inc.created_at }}</td>
+                    <td style="padding: 14px 10px; text-align: right;">
+                        <div style="display: inline-flex; gap: 6px; align-items: center;">
+                            <a href="/emergency/incident/{{ inc.incident_id }}" class="btn-secondary" style="padding: 5px 10px; font-size: 0.76rem;" title="View Dossier">
+                                Dossier &rarr;
+                            </a>
+
+                            <form method="POST" action="{{ url_for('admin_sos_status_update') }}" style="display: inline-flex; gap: 6px;">
+                                <input type="hidden" name="incident_id" value="{{ inc.incident_id }}">
+                                {% if inc.status in ['ACTIVE', 'TRIGGERED'] %}
+                                    <input type="hidden" name="new_status" value="ACKNOWLEDGED">
+                                    <button type="submit" class="btn-primary" style="padding: 6px 12px; font-size: 0.78rem; background: #f59e0b;">Acknowledge</button>
+                                {% elif inc.status == 'ACKNOWLEDGED' %}
+                                    <input type="hidden" name="new_status" value="RESPONDING">
+                                    <button type="submit" class="btn-primary" style="padding: 6px 12px; font-size: 0.78rem; background: #38bdf8;">Dispatch QRT</button>
+                                {% elif inc.status in ['RESPONDING', 'RESPONDER_ASSIGNED', 'EN_ROUTE', 'ON_SCENE'] %}
+                                    <input type="hidden" name="new_status" value="RESOLVED">
+                                    <button type="submit" class="btn-primary" style="padding: 6px 12px; font-size: 0.78rem; background: #10b981;">Resolve</button>
+                                {% else %}
+                                    <span style="font-size: 0.75rem; color: #34d399;">✓ Safe Closed</span>
+                                {% endif %}
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="7" style="text-align: center; padding: 30px; color: var(--text-muted);">No incident records logged.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Two-Column Grid: Safe Walk Active Sessions & Emergency Contact Roster -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px;">
+    
+    <!-- Safe Walk Monitors -->
+    <div style="background: rgba(14, 19, 32, 0.85); border: 1px solid var(--glass-border); border-radius: 18px; padding: 22px;">
+        <h3 style="font-size: 1.05rem; font-weight: 700; color: #fff; margin-bottom: 16px;">🚶 Active Safe Walk Sessions</h3>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+            {% for sw in safe_walks %}
+            <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--glass-border); border-radius: 12px; padding: 14px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                    <strong style="color: #38bdf8;">{{ sw.student_name }} ({{ sw.register_number }})</strong>
+                    <span class="badge badge-emerald">{{ sw.status }}</span>
+                </div>
+                <div style="font-size: 0.82rem; color: var(--text-secondary);">Route: {{ sw.start_location }} &rarr; {{ sw.destination }}</div>
+                <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">ETA: {{ sw.expected_arrival }}</div>
+            </div>
+            {% else %}
+            <div style="color: var(--text-muted); text-align: center; padding: 20px;">No active Safe Walk journeys currently in progress.</div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Security Directory & Dispatch Contacts -->
+    <div style="background: rgba(14, 19, 32, 0.85); border: 1px solid var(--glass-border); border-radius: 18px; padding: 22px;">
+        <h3 style="font-size: 1.05rem; font-weight: 700; color: #fff; margin-bottom: 16px;">📞 Emergency Response Quick Directory</h3>
+        <div style="display: flex; flex-direction: column; gap: 12px; font-size: 0.88rem;">
+            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.04); padding-bottom: 8px;">
+                <span style="color: var(--text-muted);">Main Security Control Room:</span>
+                <span style="color: #f87171; font-weight: 700; font-family: var(--font-mono);">+91 80 2345 6789</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.04); padding-bottom: 8px;">
+                <span style="color: var(--text-muted);">Campus Health Center / Ambulance:</span>
+                <span style="color: #34d399; font-weight: 700; font-family: var(--font-mono);">+91 80 2345 6790</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.04); padding-bottom: 8px;">
+                <span style="color: var(--text-muted);">Women's Safety Helpdesk:</span>
+                <span style="color: #c084fc; font-weight: 700; font-family: var(--font-mono);">1091 / Ext 404</span>
+            </div>
+            <div style="display: flex; justify-content: space-between;">
+                <span style="color: var(--text-muted);">Chief Warden (Hostels):</span>
+                <span style="color: #fbbf24; font-weight: 700; font-family: var(--font-mono);">+91 98450 11223</span>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script src="/static/js/emergency.js"></script>
+<script>
+    if (typeof initCommandCenterLiveStream === 'function') {
+        initCommandCenterLiveStream();
+    }
+</script>
+{% endblock %}
+

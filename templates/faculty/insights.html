@@ -1,0 +1,160 @@
+{% extends "faculty/base_faculty.html" %}
+
+{% block title %}AI Academic Insights &amp; Assistant{% endblock %}
+
+{% block faculty_content %}
+<section class="content-card" style="background: linear-gradient(135deg, rgba(14, 19, 32, 0.95) 0%, rgba(20, 27, 45, 0.9) 100%); border-color: rgba(16, 185, 129, 0.3);">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+        <div>
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                <span class="badge badge-green">AI INTELLIGENCE</span>
+                <span class="badge badge-indigo">Database-Driven Predictive Engine</span>
+            </div>
+            <h1 style="font-size: 1.5rem; font-weight: 800; color: #fff; margin: 0 0 4px;">
+                Faculty AI Academic &amp; Attendance Insights
+            </h1>
+            <p style="color: var(--text-secondary); font-size: 0.88rem; margin: 0;">
+                Predictive risk detection, grade trajectory analysis, and natural language database assistance for course instruction.
+            </p>
+        </div>
+    </div>
+</section>
+
+<!-- AI Assistant Conversational Console -->
+<section class="content-card" style="border-left: 4px solid #10b981;">
+    <div class="card-header-row">
+        <h2 class="card-heading"><span>🤖</span> Ask Faculty AI Assistant</h2>
+        <span class="badge badge-green">Live Database Query Engine</span>
+    </div>
+
+    <div style="margin-bottom: 16px;">
+        <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 0 0 12px;">
+            Ask questions regarding students, attendance compliance, fees, academic standing, or safety patterns:
+        </p>
+
+        <!-- Pre-set sample questions -->
+        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px;">
+            <button type="button" class="btn-secondary" style="font-size: 0.78rem; padding: 4px 10px;" onclick="askSample('Which department has the lowest attendance?')">
+                Lowest Attendance Dept?
+            </button>
+            <button type="button" class="btn-secondary" style="font-size: 0.78rem; padding: 4px 10px;" onclick="askSample('Show students below 75% attendance.')">
+                Students Below 75%?
+            </button>
+            <button type="button" class="btn-secondary" style="font-size: 0.78rem; padding: 4px 10px;" onclick="askSample('Which students are academically at risk?')">
+                Academically At-Risk Students?
+            </button>
+            <button type="button" class="btn-secondary" style="font-size: 0.78rem; padding: 4px 10px;" onclick="askSample('Show summary of pending leave requests.')">
+                Pending Leave Requests?
+            </button>
+        </div>
+
+        <div style="display: flex; gap: 10px;">
+            <input type="text" id="aiQueryInput" class="form-input" placeholder="Type your academic inquiry here... (e.g. Show students with low attendance)" style="flex: 1;">
+            <button type="button" class="btn-primary" onclick="submitAIQuery()" id="btnSubmitAI" style="background: linear-gradient(135deg, #10b981, #059669); padding: 8px 20px;">
+                <span>✨</span> Ask AI
+            </button>
+        </div>
+    </div>
+
+    <div id="aiResponseBox" style="display: none; background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 12px; padding: 18px; color: #e2e8f0; font-size: 0.9rem; line-height: 1.6; white-space: pre-wrap;">
+    </div>
+</section>
+
+<!-- 2-Column Section: Low Attendance Watchlist & Top Performers -->
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+
+    <!-- Low Attendance Risk Watchlist -->
+    <section class="content-card" style="margin-bottom: 0;">
+        <div class="card-header-row">
+            <h2 class="card-heading"><span>⚠️</span> Attendance Compliance Watchlist</h2>
+            <span class="badge badge-red">&lt; 75% Threshold</span>
+        </div>
+
+        {% if low_att_students %}
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+            {% for s in low_att_students %}
+            <div style="background: rgba(244, 63, 94, 0.08); border: 1px solid rgba(244, 63, 94, 0.2); border-radius: 10px; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <div style="font-weight: 700; color: #fff; font-size: 0.92rem;">{{ s.name }} ({{ s.register_number }})</div>
+                    <div style="font-size: 0.78rem; color: var(--text-muted);">{{ s.subject_name }} ({{ s.subject_code }})</div>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-weight: 800; color: #f43f5e; font-size: 1.1rem;">{{ s.attendance_pct }}%</div>
+                    <div style="font-size: 0.72rem; color: var(--text-muted);">{{ s.classes_attended }}/{{ s.classes_held }} Attended</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div style="text-align: center; padding: 24px; color: #34d399;">
+            ✓ All students in your assigned sections maintain attendance at or above the 75% threshold!
+        </div>
+        {% endif %}
+    </section>
+
+    <!-- Top Academic Performers -->
+    <section class="content-card" style="margin-bottom: 0;">
+        <div class="card-header-row">
+            <h2 class="card-heading"><span>🏆</span> Top Academic Performers</h2>
+            <span class="badge badge-green">Highest CGPA</span>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+            {% for s in top_performers %}
+            <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 10px; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="width: 34px; height: 34px; border-radius: 8px; background: linear-gradient(135deg, #10b981, #059669); display: flex; align-items: center; justify-content: center; font-weight: 800; color: #fff; font-size: 0.9rem;">
+                        #{{ loop.index }}
+                    </div>
+                    <div>
+                        <div style="font-weight: 700; color: #fff; font-size: 0.92rem;">{{ s.name }}</div>
+                        <div style="font-size: 0.78rem; color: #38bdf8; font-family: monospace;">{{ s.register_number }}</div>
+                    </div>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-weight: 800; color: #34d399; font-size: 1.1rem;">{{ s.cgpa }}</div>
+                    <div style="font-size: 0.72rem; color: var(--text-muted);">CGPA / 10.0</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+
+</div>
+
+<script>
+function askSample(text) {
+    document.getElementById('aiQueryInput').value = text;
+    submitAIQuery();
+}
+
+function submitAIQuery() {
+    const query = document.getElementById('aiQueryInput').value.trim();
+    if (!query) return;
+
+    const box = document.getElementById('aiResponseBox');
+    const btn = document.getElementById('btnSubmitAI');
+    btn.disabled = true;
+    btn.innerHTML = 'Analyzing...';
+    box.style.display = 'block';
+    box.innerHTML = '<em>Consulting central database records and intelligence models...</em>';
+
+    fetch('{{ url_for("faculty_api_ai_insights") }}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: query })
+    })
+    .then(res => res.json())
+    .then(data => {
+        box.innerHTML = data.reply || 'No insights returned.';
+    })
+    .catch(err => {
+        box.innerHTML = 'Error retrieving AI insights: ' + err.message;
+    })
+    .finally(() => {
+        btn.disabled = false;
+        btn.innerHTML = '<span>✨</span> Ask AI';
+    });
+}
+</script>
+{% endblock %}

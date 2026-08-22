@@ -1,0 +1,123 @@
+{% extends "student/base_student.html" %}
+
+{% block title %}Messages &amp; Communication{% endblock %}
+
+{% block student_content %}
+<div class="page-header-block" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 16px;">
+    <div>
+        <h1 style="font-size: 1.6rem; font-weight: 800; color: #fff; margin: 0 0 4px; display: flex; align-items: center; gap: 8px;">
+            <span>💬</span> Messages &amp; Communication
+        </h1>
+        <p style="color: var(--text-secondary); font-size: 0.88rem; margin: 0;">
+            Direct secure communication with your Parent / Guardian and Class Faculty Advisor.
+        </p>
+    </div>
+    
+    <div>
+        <button type="button" class="btn-primary" onclick="openModal('compose-modal')" style="background: linear-gradient(135deg, #0284c7, #38bdf8);">
+            <span>✉️</span> Compose Message
+        </button>
+    </div>
+</div>
+
+<!-- Conversation Feed -->
+<section class="content-card">
+    <div class="card-header-row" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
+        <h2 style="font-size: 1.15rem; font-weight: 800; color: #fff; margin: 0;"><span>📜</span> Message Inbox &amp; Sent Correspondence</h2>
+        <span class="badge badge-cyan">{{ messages|length }} Messages</span>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 16px;">
+        {% for msg in messages %}
+        <div style="background: rgba(10, 14, 26, 0.7); border: 1px solid var(--glass-border); border-radius: 14px; padding: 20px; transition: all var(--transition-fast);">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 36px; height: 36px; border-radius: 50%; background: {% if msg.sender_role == 'Parent' %}var(--parent-gradient){% elif msg.sender_role == 'Faculty' %}linear-gradient(135deg, #10b981, #059669){% else %}linear-gradient(135deg, #0284c7, #38bdf8){% endif %}; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 0.85rem;">
+                        {{ msg.sender_name[:1] }}
+                    </div>
+                    <div>
+                        <strong style="color: var(--text-primary); font-size: 0.95rem;">{{ msg.sender_name }}</strong>
+                        <span class="badge {% if msg.sender_role == 'Parent' %}badge-purple{% elif msg.sender_role == 'Faculty' %}badge-green{% else %}badge-cyan{% endif %}" style="margin-left: 6px;">
+                            {{ msg.sender_role }}
+                        </span>
+                        <div style="font-size: 0.76rem; color: var(--text-muted);">To: {{ msg.receiver_name }}</div>
+                    </div>
+                </div>
+
+                <div style="font-size: 0.78rem; color: var(--text-muted); font-family: var(--font-mono);">
+                    {{ msg.sent_at }}
+                </div>
+            </div>
+
+            <h4 style="font-size: 1rem; font-weight: 700; color: #38bdf8; margin: 10px 0 6px;">
+                {{ msg.subject }}
+            </h4>
+
+            <p style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.6; margin: 0; white-space: pre-wrap;">
+                {{ msg.content }}
+            </p>
+        </div>
+        {% else %}
+        <div style="text-align: center; padding: 48px; color: var(--text-muted);">
+            <div style="font-size: 2.5rem; margin-bottom: 12px;">💬</div>
+            <h3 style="font-size: 1.1rem; color: #fff; margin-bottom: 4px;">No messages in your thread</h3>
+            <p style="font-size: 0.86rem; margin: 0;">Click 'Compose Message' above to send a direct message to your Parent or Faculty Advisor.</p>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
+<!-- Compose Message Modal -->
+<div class="modal-overlay" id="compose-modal">
+    <div class="modal-card">
+        <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h3 class="modal-title" style="margin: 0; font-size: 1.2rem; color: #fff;">✉️ Compose Message</h3>
+            <button type="button" class="modal-close" onclick="closeModal('compose-modal')" style="background: none; border: none; color: #fff; font-size: 1.2rem; cursor: pointer;">✕</button>
+        </div>
+
+        <form method="POST" action="{{ url_for('student_messages') }}">
+            <div class="form-group" style="margin-bottom: 14px;">
+                <label for="recipient_role" class="form-label" style="display: block; font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 6px;">Select Recipient</label>
+                <select id="recipient_role" name="recipient_role" class="form-select" style="width: 100%; padding: 10px; border-radius: 8px; background: rgba(14, 19, 32, 0.8); border: 1px solid var(--glass-border); color: #fff;" required>
+                    <option value="parent">Parent / Guardian ({{ student.parent_name|default('R. S. Kumar') }})</option>
+                    <option value="faculty">Class Faculty Advisor (Dr. Ramesh Rao)</option>
+                </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 14px;">
+                <label for="subject" class="form-label" style="display: block; font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 6px;">Message Subject</label>
+                <input 
+                    type="text" 
+                    id="subject" 
+                    name="subject" 
+                    class="form-input" 
+                    style="width: 100%; padding: 10px; border-radius: 8px; background: rgba(14, 19, 32, 0.8); border: 1px solid var(--glass-border); color: #fff;"
+                    placeholder="e.g. Weekend Travel Update or Project Consultation" 
+                    required
+                >
+            </div>
+
+            <div class="form-group" style="margin-bottom: 18px;">
+                <label for="content" class="form-label" style="display: block; font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 6px;">Message Content</label>
+                <textarea 
+                    id="content" 
+                    name="content" 
+                    class="form-textarea" 
+                    style="width: 100%; min-height: 130px; padding: 10px; border-radius: 8px; background: rgba(14, 19, 32, 0.8); border: 1px solid var(--glass-border); color: #fff;"
+                    placeholder="Type your message..." 
+                    required
+                ></textarea>
+            </div>
+
+            <div style="display: flex; gap: 12px;">
+                <button type="submit" class="btn-primary" style="flex: 1; padding: 12px; border-radius: 8px; border: none; background: linear-gradient(135deg, #0284c7, #38bdf8); color: #fff; font-weight: 700; cursor: pointer;">
+                    Send Message
+                </button>
+                <button type="button" class="btn-secondary" onclick="closeModal('compose-modal')" style="padding: 12px 18px; border-radius: 8px; border: 1px solid var(--glass-border); background: rgba(255, 255, 255, 0.05); color: #fff; cursor: pointer;">
+                    Cancel
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

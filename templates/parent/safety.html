@@ -1,0 +1,188 @@
+{% extends "parent/base_parent.html" %}
+
+{% block title %}Campus Safety & SOS Command Center{% endblock %}
+
+{% block parent_content %}
+<div class="page-header-block">
+    <div class="page-title-group">
+        <h1><span>🛡️</span> Campus Safety &amp; Emergency Command</h1>
+        <p>Live ward safety tracking, real-time emergency distress beacon updates, 24/7 security contacts, and welfare inquiries.</p>
+    </div>
+    
+    <div>
+        {% if active_sos %}
+            <span class="badge badge-red" style="font-size: 0.88rem; padding: 8px 16px;">🚨 LIVE EMERGENCY SOS ACTIVE</span>
+        {% elif active_safewalk %}
+            <span class="badge badge-cyan" style="font-size: 0.88rem; padding: 8px 16px;">🚶‍♀️ Safe Walk in Progress</span>
+        {% else %}
+            <span class="badge badge-green" style="font-size: 0.88rem; padding: 8px 16px;">✓ Campus Perimeter Secure</span>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Real-Time Ward Safety Status Card -->
+{% if active_sos %}
+<section class="content-card" style="border: 2px solid #ef4444; background: linear-gradient(135deg, rgba(239, 68, 68, 0.22) 0%, rgba(153, 27, 27, 0.3) 100%); box-shadow: 0 0 40px var(--sos-glow);">
+    <div style="display: flex; align-items: flex-start; gap: 20px; flex-wrap: wrap;">
+        <div style="width: 64px; height: 64px; border-radius: 16px; background: rgba(239, 68, 68, 0.3); border: 2px solid #ef4444; display: flex; align-items: center; justify-content: center; font-size: 2.4rem;">
+            🚨
+        </div>
+        <div style="flex: 1; min-width: 280px;">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+                <span class="badge badge-red" style="font-size: 0.82rem;">CRITICAL SOS BEACON</span>
+                <span style="color: var(--text-primary); font-weight: 700; font-family: var(--font-mono);">ID: {{ active_sos.incident_id }}</span>
+            </div>
+            <h2 style="font-size: 1.35rem; font-weight: 800; color: #fff; margin-bottom: 8px;">
+                Emergency Distress Beacon Broadcasted by {{ student.name }}
+            </h2>
+            <div style="background: rgba(10, 14, 26, 0.8); border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 12px; padding: 14px 18px; margin-bottom: 14px; font-size: 0.88rem;">
+                <div style="margin-bottom: 4px;"><strong style="color: #fca5a5;">Broadcast Location:</strong> <span style="color: #fff;">{{ active_sos.location }}</span></div>
+                <div style="margin-bottom: 4px;"><strong style="color: #fca5a5;">Timestamp:</strong> <span style="color: #fff; font-family: var(--font-mono);">{{ active_sos.created_at }}</span></div>
+                <div><strong style="color: #fca5a5;">QRT Status:</strong> <span style="color: #34d399; font-weight: 700;">Active Dispatch • Security Units Responding</span></div>
+            </div>
+            <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                <a href="tel:+919123456780" class="btn-danger">
+                    <span>📞</span> Call Security Command (+91 91234 56780)
+                </a>
+                <a href="tel:+919123456784" class="btn-secondary" style="border-color: rgba(239, 68, 68, 0.4); color: #fca5a5;">
+                    <span>🏢</span> Call Hostel Chief Warden
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+{% else %}
+<section class="content-card" style="background: linear-gradient(135deg, rgba(14, 19, 32, 0.95) 0%, rgba(20, 27, 45, 0.9) 100%); border-color: var(--parent-border);">
+    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 20px;">
+        <div style="display: flex; align-items: center; gap: 18px;">
+            <div style="width: 54px; height: 54px; border-radius: 14px; background: rgba(52, 211, 153, 0.15); border: 1px solid rgba(52, 211, 153, 0.4); display: flex; align-items: center; justify-content: center; font-size: 2rem;">
+                🛡️
+            </div>
+            <div>
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 2px;">
+                    <span class="badge badge-green">STATUS: NORMAL &amp; SAFE</span>
+                    <span style="font-size: 0.8rem; color: var(--text-muted);">24/7 AI Shield Active</span>
+                </div>
+                <h3 style="font-size: 1.15rem; font-weight: 800; color: var(--text-primary); margin: 0;">
+                    {{ student.name }} is currently secure on campus
+                </h3>
+                <p style="color: var(--text-secondary); font-size: 0.84rem; margin: 2px 0 0;">
+                    No active safety incidents or distress beacons reported. AI perimeter monitoring operational.
+                </p>
+            </div>
+        </div>
+
+        <div>
+            <button type="button" class="btn-secondary" onclick="openModal('welfare-modal')">
+                <span>💬</span> Request Welfare Verification
+            </button>
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- Campus Emergency Contacts Directory Grid -->
+<section class="content-card">
+    <div class="card-header-row">
+        <h2 class="card-heading"><span>📞</span> 24/7 Campus Emergency Contacts Directory</h2>
+        <span class="badge badge-purple">Direct Dial Helplines</span>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px;">
+        {% for contact in contacts %}
+        <div style="background: rgba(10, 14, 26, 0.7); border: 1px solid var(--glass-border); border-radius: 14px; padding: 16px; display: flex; justify-content: space-between; align-items: center; gap: 12px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="font-size: 1.8rem; width: 42px; height: 42px; border-radius: 10px; background: rgba(255, 255, 255, 0.04); display: flex; align-items: center; justify-content: center;">
+                    {{ contact.icon }}
+                </div>
+                <div>
+                    <h4 style="font-size: 0.92rem; font-weight: 700; color: #fff; margin: 0 0 2px;">{{ contact.service_name }}</h4>
+                    <div style="font-size: 0.76rem; color: var(--parent-primary);">{{ contact.role_title }} • {{ contact.location }}</div>
+                    <div style="font-size: 0.82rem; font-family: var(--font-mono); color: #34d399; margin-top: 4px; font-weight: 700;">{{ contact.phone_number }}</div>
+                </div>
+            </div>
+            <a href="tel:{{ contact.phone_number }}" class="btn-secondary" style="padding: 6px 12px; font-size: 0.78rem;" title="Call Helpline">
+                Call
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
+<!-- Campus Safety Advisories & Incidents Log -->
+<section class="content-card">
+    <div class="card-header-row">
+        <h2 class="card-heading"><span>📜</span> Campus Safety Advisories &amp; Resolved Incidents</h2>
+        <span class="badge badge-indigo">Campus Patrol Log</span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="portal-table">
+            <thead>
+                <tr>
+                    <th>Incident ID</th>
+                    <th>Safety Concern</th>
+                    <th>Zone Location</th>
+                    <th>Status</th>
+                    <th>Assigned Response Unit</th>
+                    <th>Logged Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for inc in recent_incidents %}
+                <tr>
+                    <td style="font-family: var(--font-mono); font-weight: 700; color: var(--parent-primary);">{{ inc.incident_id }}</td>
+                    <td style="font-weight: 600; color: var(--text-primary);">{{ inc.incident_type }}</td>
+                    <td style="color: var(--text-secondary);">{{ inc.location }}</td>
+                    <td>
+                        {% if inc.status == 'RESOLVED' %}
+                            <span class="badge badge-green">✓ Resolved</span>
+                        {% else %}
+                            <span class="badge badge-yellow">⏳ Investigating</span>
+                        {% endif %}
+                    </td>
+                    <td style="color: #38bdf8;">{{ inc.assigned_to|default('Campus Security') }}</td>
+                    <td style="font-size: 0.82rem; color: var(--text-muted); font-family: var(--font-mono);">{{ inc.created_at[:10] }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<!-- Welfare Check Request Modal -->
+<div class="modal-overlay" id="welfare-modal">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h3 class="modal-title">🛡️ Request Campus Welfare Verification</h3>
+            <button type="button" class="modal-close" onclick="closeModal('welfare-modal')">✕</button>
+        </div>
+
+        <form method="POST" action="{{ url_for('parent_safety_checkin') }}">
+            <p style="color: var(--text-secondary); font-size: 0.88rem; line-height: 1.5; margin-bottom: 16px;">
+                Submit a welfare check request if you need campus security or the hostel warden to check on your ward's well-being on campus.
+            </p>
+
+            <div class="form-group">
+                <label for="concern_text" class="form-label">Specific Request or Concern Details</label>
+                <textarea 
+                    id="concern_text" 
+                    name="concern_text" 
+                    class="form-textarea" 
+                    placeholder="e.g. Please confirm Nithish Nagaraj has returned to Hostel Block B safely after evening lab sessions."
+                    required
+                ></textarea>
+            </div>
+
+            <div style="display: flex; gap: 12px; margin-top: 20px;">
+                <button type="submit" class="btn-primary" style="flex: 1;">
+                    Transmit Welfare Request
+                </button>
+                <button type="button" class="btn-secondary" onclick="closeModal('welfare-modal')">
+                    Cancel
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

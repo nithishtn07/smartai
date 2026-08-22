@@ -1,0 +1,126 @@
+{% extends "faculty/base_faculty.html" %}
+
+{% block title %}Faculty Feedback &amp; Administrative Requests{% endblock %}
+
+{% block faculty_content %}
+<div class="page-header-block">
+    <div class="page-title-group">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+            <span class="badge badge-green">ADMINISTRATIVE HELPDESK</span>
+            <span class="badge badge-indigo">Direct Link to Central Administration</span>
+        </div>
+        <h1><span>🎫</span> Faculty Feedback &amp; Administrative Requests</h1>
+        <p>Submit classroom infrastructure tickets, technical software support, student welfare concerns, and academic requests directly to central admin.</p>
+    </div>
+    
+    <div>
+        <button type="button" class="btn-primary" onclick="openModal('create-ticket-modal')" style="background: linear-gradient(135deg, #10b981, #059669);">
+            <span>➕</span> Submit Request Ticket
+        </button>
+    </div>
+</div>
+
+<!-- Requests History Feed -->
+<section class="content-card">
+    <div class="card-header-row">
+        <h2 class="card-heading"><span>📜</span> My Submitted Request History &amp; Status</h2>
+        <span class="badge badge-purple">{{ requests_list|length }} Tickets</span>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 14px;">
+        {% for req in requests_list %}
+        <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 12px; padding: 18px;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
+                <div>
+                    <span class="badge badge-indigo" style="margin-right: 6px;">{{ req.category }}</span>
+                    <span class="badge {% if req.priority == 'Urgent' or req.priority == 'High' %}badge-red{% else %}badge-green{% endif %}">{{ req.priority }} Priority</span>
+                    <span class="badge {% if req.status == 'Resolved' %}badge-green{% elif req.status == 'In Progress' %}badge-cyan{% elif req.status == 'Under Review' %}badge-amber{% elif req.status == 'Rejected' %}badge-red{% else %}badge-yellow{% endif %}" style="margin-left: 6px;">
+                        {{ req.status }}
+                    </span>
+                </div>
+                <div style="font-size: 0.78rem; color: var(--text-muted); font-family: monospace;">
+                    {{ req.created_at }}
+                </div>
+            </div>
+
+            <h3 style="font-size: 1.1rem; font-weight: 800; color: #fff; margin: 0 0 6px;">
+                {{ req.title }}
+            </h3>
+
+            <p style="font-size: 0.88rem; color: var(--text-secondary); line-height: 1.6; margin: 0 0 10px;">
+                {{ req.description }}
+            </p>
+
+            {% if req.admin_response %}
+            <div style="background: rgba(16, 185, 129, 0.08); border-left: 3px solid #10b981; border-radius: 6px; padding: 10px 14px; margin-top: 10px;">
+                <div style="font-size: 0.78rem; font-weight: 700; color: #34d399; margin-bottom: 2px;">🏛️ Central Administration Response:</div>
+                <div style="font-size: 0.85rem; color: #e2e8f0;">{{ req.admin_response }}</div>
+            </div>
+            {% endif %}
+        </div>
+        {% else %}
+        <div style="text-align: center; padding: 32px; color: var(--text-muted);">
+            No support tickets submitted. Click 'Submit Request Ticket' above to log an administrative request.
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
+<!-- Create Ticket Modal -->
+<div class="modal-overlay" id="create-ticket-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); align-items: center; justify-content: center; z-index: 1000;">
+    <div class="modal-card" style="background: #0f172a; border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 16px; padding: 24px; max-width: 520px; width: 90%;">
+        <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h3 class="modal-title" style="color: #fff; margin: 0; font-size: 1.15rem;">🎫 Submit Administrative Request</h3>
+            <button type="button" class="modal-close" onclick="closeModal('create-ticket-modal')" style="background: none; border: none; color: #fff; font-size: 1.2rem; cursor: pointer;">✕</button>
+        </div>
+
+        <form method="POST" action="{{ url_for('faculty_feedback_create') }}">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                <div class="form-group">
+                    <label class="form-label" style="display: block; color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 4px;">Category</label>
+                    <select name="category" class="form-select" required style="width: 100%; padding: 8px 12px; border-radius: 8px; background: #1e293b; border: 1px solid rgba(255,255,255,0.1); color: #fff;">
+                        <option value="Academic Request">Academic Request</option>
+                        <option value="Technical Issue">Technical / Lab Software Issue</option>
+                        <option value="Classroom Issue">Classroom / AV Equipment</option>
+                        <option value="Student Concern">Student Welfare Concern</option>
+                        <option value="Administrative Request">Administrative Request</option>
+                        <option value="General Feedback">General Feedback</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" style="display: block; color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 4px;">Priority</label>
+                    <select name="priority" class="form-select" style="width: 100%; padding: 8px 12px; border-radius: 8px; background: #1e293b; border: 1px solid rgba(255,255,255,0.1); color: #fff;">
+                        <option value="Normal">Normal</option>
+                        <option value="High">High</option>
+                        <option value="Urgent">Urgent</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 12px;">
+                <label class="form-label" style="display: block; color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 4px;">Request Title</label>
+                <input type="text" name="title" placeholder="e.g. Request for Lab 1 Workstation RAM Upgrade" required style="width: 100%; padding: 8px 12px; border-radius: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff;">
+            </div>
+
+            <div class="form-group" style="margin-bottom: 16px;">
+                <label class="form-label" style="display: block; color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 4px;">Detailed Description</label>
+                <textarea name="description" class="form-textarea" rows="4" placeholder="Describe the issue, requirements, room location, or student concern..." required style="width: 100%; padding: 8px 12px; border-radius: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff;"></textarea>
+            </div>
+
+            <button type="submit" class="btn-primary" style="width: 100%; justify-content: center; background: linear-gradient(135deg, #10b981, #059669); padding: 10px; font-size: 0.95rem;">
+                <span>🚀</span> Submit Request to Admin
+            </button>
+        </form>
+    </div>
+</div>
+
+<script>
+function openModal(id) {
+    document.getElementById(id).style.display = 'flex';
+}
+function closeModal(id) {
+    document.getElementById(id).style.display = 'none';
+}
+</script>
+{% endblock %}

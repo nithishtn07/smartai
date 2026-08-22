@@ -1,0 +1,123 @@
+{% extends "faculty/base_faculty.html" %}
+
+{% block title %}Faculty Messages &amp; Communication{% endblock %}
+
+{% block faculty_content %}
+<div class="page-header-block">
+    <div class="page-title-group">
+        <h1><span>💬</span> Faculty Communication Center &amp; Messaging Hub</h1>
+        <p>Direct bi-directional messaging with advisees, students, parents, and central campus administration.</p>
+    </div>
+    
+    <div>
+        <button type="button" class="btn-primary" onclick="openModal('compose-modal')" style="background: linear-gradient(135deg, #10b981, #059669);">
+            <span>✉️</span> Compose Message
+        </button>
+    </div>
+</div>
+
+<!-- Messages Conversation Feed -->
+<section class="content-card">
+    <div class="card-header-row">
+        <h2 class="card-heading"><span>📜</span> Official Correspondence Feed</h2>
+        <span class="badge badge-purple">{{ messages|length }} Messages Logged</span>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 16px;">
+        {% for msg in messages %}
+        <div style="background: rgba(10, 14, 26, 0.7); border: 1px solid var(--glass-border); border-radius: 14px; padding: 20px; transition: all var(--transition-fast);">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 38px; height: 38px; border-radius: 50%; background: {% if msg.sender_role == 'Faculty' %}linear-gradient(135deg, #10b981, #059669){% elif msg.sender_role == 'Parent' %}var(--parent-gradient){% elif msg.sender_role == 'Admin' %}linear-gradient(135deg, #f43f5e, #e11d48){% else %}linear-gradient(135deg, #0284c7, #38bdf8){% endif %}; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 0.9rem;">
+                        {{ msg.sender_name[:1] }}
+                    </div>
+                    <div>
+                        <strong style="color: var(--text-primary); font-size: 0.95rem;">{{ msg.sender_name }}</strong>
+                        <span class="badge {% if msg.sender_role == 'Faculty' %}badge-green{% elif msg.sender_role == 'Parent' %}badge-purple{% elif msg.sender_role == 'Admin' %}badge-red{% else %}badge-cyan{% endif %}" style="margin-left: 6px;">
+                            {{ msg.sender_role }}
+                        </span>
+                        <div style="font-size: 0.76rem; color: var(--text-muted); margin-top: 2px;">To: {{ msg.receiver_name }}</div>
+                    </div>
+                </div>
+
+                <div style="font-size: 0.78rem; color: var(--text-muted); font-family: monospace;">
+                    {{ msg.sent_at }}
+                </div>
+            </div>
+
+            <h4 style="font-size: 1rem; font-weight: 700; color: #34d399; margin: 10px 0 6px;">
+                {{ msg.subject }}
+            </h4>
+
+            <p style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.6; margin: 0; white-space: pre-wrap;">
+                {{ msg.content }}
+            </p>
+        </div>
+        {% else %}
+        <div style="text-align: center; padding: 48px; color: var(--text-muted);">
+            <div style="font-size: 2.5rem; margin-bottom: 12px;">💬</div>
+            <h3 style="font-size: 1.1rem; color: #fff; margin-bottom: 4px;">No messages yet</h3>
+            <p style="font-size: 0.86rem; margin: 0;">Click 'Compose Message' above to reach out to students, parents, or administration.</p>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
+<!-- Compose Message Modal -->
+<div class="modal-overlay" id="compose-modal">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h3 class="modal-title">✉️ Compose Message</h3>
+            <button type="button" class="modal-close" onclick="closeModal('compose-modal')">✕</button>
+        </div>
+
+        <form method="POST" action="{{ url_for('faculty_messages') }}">
+            <div class="form-group">
+                <label for="recipient_target" class="form-label">Recipient</label>
+                <select id="recipient_target" name="recipient_target" class="form-select" required>
+                    <option value="student_1">Nithish Nagaraj (Student - STU001)</option>
+                    <option value="parent_1">R. S. Kumar (Parent of Nithish Nagaraj)</option>
+                    <option value="admin">Campus Administrator (Central Admin Office)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="subject" class="form-label">Subject</label>
+                <input 
+                    type="text" 
+                    id="subject" 
+                    name="subject" 
+                    class="form-input" 
+                    placeholder="e.g. Capstone Phase 1 Milestone Evaluation" 
+                    required
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="content" class="form-label">Message Content</label>
+                <textarea 
+                    id="content" 
+                    name="content" 
+                    class="form-textarea" 
+                    rows="5"
+                    placeholder="Type your official message here..." 
+                    required
+                ></textarea>
+            </div>
+
+            <button type="submit" class="btn-primary" style="width: 100%; justify-content: center; background: linear-gradient(135deg, #10b981, #059669); margin-top: 16px;">
+                <span>🚀</span> Transmit Message
+            </button>
+        </form>
+    </div>
+</div>
+
+<script>
+function openModal(id) {
+    document.getElementById(id).style.display = 'flex';
+}
+function closeModal(id) {
+    document.getElementById(id).style.display = 'none';
+}
+</script>
+{% endblock %}

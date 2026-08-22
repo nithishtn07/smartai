@@ -1,0 +1,143 @@
+{% extends "faculty/base_faculty.html" %}
+
+{% block title %}Faculty Reports &amp; Data Exports{% endblock %}
+
+{% block faculty_content %}
+<div class="page-header-block">
+    <div class="page-title-group">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+            <span class="badge badge-green">DATA GOVERNANCE</span>
+            <span class="badge badge-indigo">Official University Formats</span>
+        </div>
+        <h1><span>📊</span> Reports Generation &amp; CSV Exports</h1>
+        <p>Generate certified attendance registers, gradebook transcripts, lab performance logs, and student risk summaries with instant export.</p>
+    </div>
+    
+    <div>
+        <a href="{{ url_for('faculty_reports_export', report_type=report_type) }}" class="btn-primary" style="background: linear-gradient(135deg, #10b981, #059669);">
+            <span>⬇️</span> Download CSV Export
+        </a>
+    </div>
+</div>
+
+<!-- Report Type Filter Bar -->
+<div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
+    <a href="{{ url_for('faculty_reports', type='attendance') }}" class="btn-secondary {% if report_type == 'attendance' %}active{% endif %}" style="{% if report_type == 'attendance' %}background: linear-gradient(135deg, #10b981, #059669); color: #fff; border-color: transparent;{% endif %} padding: 8px 16px; font-size: 0.85rem; text-decoration: none;">
+        📈 Attendance Register
+    </a>
+    <a href="{{ url_for('faculty_reports', type='marks') }}" class="btn-secondary {% if report_type == 'marks' %}active{% endif %}" style="{% if report_type == 'marks' %}background: linear-gradient(135deg, #10b981, #059669); color: #fff; border-color: transparent;{% endif %} padding: 8px 16px; font-size: 0.85rem; text-decoration: none;">
+        📝 Marks &amp; Assessment Report
+    </a>
+    <a href="{{ url_for('faculty_reports', type='lab') }}" class="btn-secondary {% if report_type == 'lab' %}active{% endif %}" style="{% if report_type == 'lab' %}background: linear-gradient(135deg, #10b981, #059669); color: #fff; border-color: transparent;{% endif %} padding: 8px 16px; font-size: 0.85rem; text-decoration: none;">
+        🧪 Lab Practical Log
+    </a>
+</div>
+
+<!-- Report Table Preview Card -->
+<section class="content-card">
+    <div class="card-header-row">
+        <h2 class="card-heading"><span>📜</span> {{ report_type|capitalize }} Report Preview</h2>
+        <span class="badge badge-purple">{{ records|length }} Records Retrieved</span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="portal-table">
+            {% if report_type == 'attendance' %}
+            <thead>
+                <tr>
+                    <th>Student Name &amp; Reg No</th>
+                    <th>Subject Code</th>
+                    <th>Held</th>
+                    <th>Attended</th>
+                    <th>Missed</th>
+                    <th>Attendance %</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in records %}
+                <tr>
+                    <td>
+                        <strong style="color: #fff;">{{ r.student_name }}</strong>
+                        <div style="font-size: 0.76rem; color: #38bdf8; font-family: monospace;">{{ r.register_number }}</div>
+                    </td>
+                    <td><span class="badge badge-indigo">{{ r.subject_code }}</span></td>
+                    <td>{{ r.classes_held }}</td>
+                    <td style="color: #34d399; font-weight: 700;">{{ r.classes_attended }}</td>
+                    <td style="color: #f43f5e;">{{ r.classes_missed }}</td>
+                    <td style="font-weight: 800; color: #fff;">{{ r.attendance_pct }}%</td>
+                    <td>
+                        <span class="badge {% if r.attendance_pct >= 75 %}badge-green{% else %}badge-red{% endif %}">
+                            {% if r.attendance_pct >= 75 %}Eligible{% else %}Shortage{% endif %}
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            {% elif report_type == 'marks' %}
+            <thead>
+                <tr>
+                    <th>Student Name &amp; Reg No</th>
+                    <th>Course Code</th>
+                    <th>CAT 1 (50)</th>
+                    <th>CAT 2 (50)</th>
+                    <th>Quiz (10)</th>
+                    <th>Assign (10)</th>
+                    <th>FAT (100)</th>
+                    <th>Grade</th>
+                    <th>Points</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in records %}
+                <tr>
+                    <td>
+                        <strong style="color: #fff;">{{ r.student_name }}</strong>
+                        <div style="font-size: 0.76rem; color: #38bdf8; font-family: monospace;">{{ r.register_number }}</div>
+                    </td>
+                    <td><span class="badge badge-indigo">{{ r.course_code }}</span></td>
+                    <td>{{ r.cat1 }}</td>
+                    <td>{{ r.cat2 }}</td>
+                    <td>{{ r.quiz }}</td>
+                    <td>{{ r.assignment }}</td>
+                    <td>{{ r.fat }}</td>
+                    <td><span class="badge badge-indigo" style="font-weight: 800;">{{ r.grade }}</span></td>
+                    <td style="color: #38bdf8; font-weight: 700;">{{ r.grade_points }}</td>
+                    <td><span class="badge badge-green">{{ r.status }}</span></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            {% else %}
+            <thead>
+                <tr>
+                    <th>Exp #</th>
+                    <th>Student Name &amp; Reg No</th>
+                    <th>Title</th>
+                    <th>Date</th>
+                    <th>Practical (10)</th>
+                    <th>Viva (10)</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in records %}
+                <tr>
+                    <td><span class="badge badge-indigo">#{{ r.experiment_no }}</span></td>
+                    <td>
+                        <strong style="color: #fff;">{{ r.student_name }}</strong>
+                        <div style="font-size: 0.76rem; color: #38bdf8; font-family: monospace;">{{ r.register_number }}</div>
+                    </td>
+                    <td style="color: #e2e8f0;">{{ r.title }}</td>
+                    <td style="color: var(--text-secondary);">{{ r.conducted_date }}</td>
+                    <td style="color: #34d399; font-weight: 700;">{{ r.practical_marks }}</td>
+                    <td style="color: #38bdf8; font-weight: 700;">{{ r.viva_marks }}</td>
+                    <td><span class="badge badge-green">{{ r.record_status }}</span></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            {% endif %}
+        </table>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,74 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}ERP Audit &amp; Activity Trail{% endblock %}
+
+{% block admin_content %}
+<div class="page-header-block">
+    <div class="page-title-group">
+        <h1><span>📜</span> ERP Activity &amp; Audit Trail</h1>
+        <p>Comprehensive immutable activity logging across Authentication, Attendance, Marks, Leaves, Messaging, and Safety.</p>
+    </div>
+    
+    <div>
+        <span class="badge badge-purple" style="font-size: 0.88rem; padding: 8px 16px;">
+            {{ logs|length }} Activity Records
+        </span>
+    </div>
+</div>
+
+<!-- Audit Trail Table -->
+<section class="content-card">
+    <div class="card-header-row">
+        <h2 class="card-heading"><span>📋</span> System Activity Records</h2>
+        <span class="badge badge-green">Audit Trace Verified</span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="portal-table">
+            <thead>
+                <tr>
+                    <th>Log ID</th>
+                    <th>User &amp; Role</th>
+                    <th>Action Performed</th>
+                    <th>Details / Context</th>
+                    <th>Record ID</th>
+                    <th>IP Address</th>
+                    <th>Timestamp</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in logs %}
+                <tr>
+                    <td style="font-family: var(--font-mono); color: var(--text-muted);">#{{ log.id }}</td>
+                    <td>
+                        <strong style="color: var(--text-primary);">{{ log.user_name }}</strong>
+                        <span class="badge {% if log.user_role == 'admin' %}badge-red{% elif log.user_role == 'faculty' %}badge-green{% elif log.user_role == 'parent' %}badge-purple{% else %}badge-cyan{% endif %}" style="margin-left: 4px; font-size: 0.72rem;">
+                            {{ log.user_role|upper }}
+                        </span>
+                    </td>
+                    <td>
+                        <strong style="color: #34d399;">{{ log.action }}</strong>
+                    </td>
+                    <td style="font-size: 0.84rem; color: var(--text-secondary); max-width: 280px;">
+                        {{ log.details }}
+                    </td>
+                    <td style="font-family: var(--font-mono); font-size: 0.8rem; color: #818cf8;">
+                        {{ log.record_id|default('-') }}
+                    </td>
+                    <td style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-muted);">
+                        {{ log.ip_address }}
+                    </td>
+                    <td style="font-family: var(--font-mono); font-size: 0.82rem; color: var(--text-muted);">
+                        {{ log.created_at }}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 32px;">No activity logged yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

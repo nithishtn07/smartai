@@ -1,0 +1,392 @@
+{% extends "parent/base_parent.html" %}
+
+{% block title %}Parent Dashboard{% endblock %}
+
+{% block parent_content %}
+<!-- Welcome & Linked Student Profile Banner -->
+<section class="welcome-banner" style="background: linear-gradient(135deg, rgba(14, 19, 32, 0.95) 0%, rgba(20, 27, 45, 0.9) 100%); border: 1px solid var(--parent-border); border-radius: var(--card-radius); padding: 26px 30px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4), 0 0 30px var(--parent-glow);">
+    <div style="display: flex; align-items: center; gap: 18px;">
+        <div style="width: 58px; height: 58px; border-radius: 16px; background: var(--parent-gradient); display: flex; align-items: center; justify-content: center; font-size: 1.8rem; color: #fff; font-weight: 800; border: 2px solid rgba(192, 132, 252, 0.4); box-shadow: 0 0 20px var(--parent-glow);">
+            🎓
+        </div>
+        <div>
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 4px;">
+                <h1 style="font-size: 1.7rem; font-weight: 800; color: var(--text-primary); margin: 0;">
+                    {{ student.name }}
+                </h1>
+                <span class="badge badge-purple">Linked Ward</span>
+            </div>
+            <p style="color: var(--text-secondary); font-size: 0.92rem; margin: 0;">
+                {{ student.program|default('B.Tech') }} in {{ student.department }} • Year {{ student.year }} (Semester {{ student.semester|default(5) }}, Section {{ student.section|default('A') }})
+            </p>
+        </div>
+    </div>
+
+    <!-- Ward Meta Pills -->
+    <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+        <div style="display: flex; align-items: center; gap: 8px; padding: 8px 14px; background: rgba(10, 14, 26, 0.75); border: 1px solid var(--glass-border); border-radius: 10px; font-size: 0.84rem;">
+            <span style="color: var(--text-muted);">Register No:</span>
+            <span style="color: var(--parent-primary); font-weight: 700; font-family: var(--font-mono);">{{ student.register_number }}</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px; padding: 8px 14px; background: rgba(10, 14, 26, 0.75); border: 1px solid var(--glass-border); border-radius: 10px; font-size: 0.84rem;">
+            <span style="color: var(--text-muted);">CGPA:</span>
+            <span style="color: #34d399; font-weight: 800; font-family: var(--font-mono);">{{ student.cgpa|default('8.75') }}</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px; padding: 8px 14px; background: rgba(10, 14, 26, 0.75); border: 1px solid var(--glass-border); border-radius: 10px; font-size: 0.84rem;">
+            <span style="color: var(--text-muted);">Attendance:</span>
+            <span style="font-weight: 800; font-family: var(--font-mono); {% if overall_pct >= 85 %}color: #34d399;{% elif overall_pct >= 75 %}color: #fbbf24;{% else %}color: #f87171;{% endif %}">{{ overall_pct }}%</span>
+        </div>
+    </div>
+</section>
+
+<!-- Emergency SOS & Campus Safety Status Banner -->
+{% if active_sos %}
+<section class="content-card" style="border: 1px solid #ef4444; background: linear-gradient(135deg, rgba(239, 68, 68, 0.18) 0%, rgba(153, 27, 27, 0.25) 100%); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 18px; box-shadow: 0 0 30px var(--sos-glow);">
+    <div style="display: flex; align-items: center; gap: 18px;">
+        <div style="font-size: 2.2rem; width: 54px; height: 54px; background: rgba(239, 68, 68, 0.25); border: 1px solid rgba(239, 68, 68, 0.5); border-radius: 14px; display: flex; align-items: center; justify-content: center;">
+            🚨
+        </div>
+        <div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span class="badge badge-red">CRITICAL SAFETY ALERT</span>
+                <span style="color: var(--text-muted); font-size: 0.8rem;">Incident ID: {{ active_sos.incident_id }}</span>
+            </div>
+            <h3 style="font-size: 1.15rem; font-weight: 800; color: #fca5a5; margin: 4px 0 2px;">
+                Emergency Distress Beacon Triggered by {{ student.name }}
+            </h3>
+            <p style="color: var(--text-secondary); font-size: 0.86rem; margin: 0;">
+                Location: <strong>{{ active_sos.location }}</strong>. Campus Quick Response Security Team and Warden have been dispatched.
+            </p>
+        </div>
+    </div>
+    <a href="{{ url_for('parent_safety') }}" class="btn-danger">
+        <span>🛡️</span> Open Live Safety Center
+    </a>
+</section>
+{% elif active_safewalk %}
+<section class="content-card" style="border: 1px solid rgba(56, 189, 248, 0.4); background: linear-gradient(135deg, rgba(56, 189, 248, 0.1) 0%, rgba(14, 165, 233, 0.15) 100%); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 18px;">
+    <div style="display: flex; align-items: center; gap: 16px;">
+        <div style="font-size: 1.8rem;">🚶‍♀️</div>
+        <div>
+            <h4 style="font-size: 1.05rem; font-weight: 700; color: #38bdf8; margin: 0 0 2px;">
+                Safe Walk Companion Active
+            </h4>
+            <p style="color: var(--text-secondary); font-size: 0.85rem; margin: 0;">
+                Ward is walking from {{ active_safewalk.start_location }} to {{ active_safewalk.destination }}. Expected arrival: {{ active_safewalk.expected_arrival }}.
+            </p>
+        </div>
+    </div>
+    <a href="{{ url_for('parent_safety') }}" class="btn-secondary" style="border-color: rgba(56, 189, 248, 0.3); color: #38bdf8;">
+        <span>🗺️</span> Track Route
+    </a>
+</section>
+{% endif %}
+
+<!-- Key Metrics Grid (7 Cards) -->
+<section class="stats-grid">
+    
+    <!-- 1. Attendance -->
+    <a href="{{ url_for('parent_attendance') }}" class="stat-card">
+        <div class="stat-card-header">
+            <span class="stat-card-icon">📊</span>
+            {% if overall_pct >= 85 %}
+                <span class="badge badge-green">Good Standing</span>
+            {% elif overall_pct >= 75 %}
+                <span class="badge badge-yellow">Minimum Req</span>
+            {% else %}
+                <span class="badge badge-red">Shortage Warning</span>
+            {% endif %}
+        </div>
+        <div>
+            <div class="stat-card-label">Overall Attendance</div>
+            <div class="stat-card-value" style="{% if overall_pct >= 85 %}color: #34d399;{% elif overall_pct >= 75 %}color: #fbbf24;{% else %}color: #f87171;{% endif %}">
+                {{ overall_pct }}%
+            </div>
+            <div class="stat-card-desc">Conducted: {{ att_analysis.total_held }} | Attended: {{ att_analysis.total_attended }}</div>
+        </div>
+    </a>
+
+    <!-- 2. Academic CGPA / SGPA -->
+    <a href="{{ url_for('parent_academics') }}" class="stat-card">
+        <div class="stat-card-header">
+            <span class="stat-card-icon">🎓</span>
+            <span class="badge badge-purple">SGPA: {{ student.sgpa|default('8.90') }}</span>
+        </div>
+        <div>
+            <div class="stat-card-label">Cumulative GPA (CGPA)</div>
+            <div class="stat-card-value" style="color: #c084fc;">
+                {{ student.cgpa|default('8.75') }}
+            </div>
+            <div class="stat-card-desc">Credits: {{ student.earned_credits|default(112) }} / {{ student.total_credits|default(160) }} Total</div>
+        </div>
+    </a>
+
+    <!-- 3. Pending Fees -->
+    <a href="{{ url_for('parent_fees') }}" class="stat-card">
+        <div class="stat-card-header">
+            <span class="stat-card-icon">💳</span>
+            {% if total_pending == 0 %}
+                <span class="badge badge-green">All Clear</span>
+            {% else %}
+                <span class="badge badge-yellow">Due Soon</span>
+            {% endif %}
+        </div>
+        <div>
+            <div class="stat-card-label">Outstanding Fees</div>
+            <div class="stat-card-value" style="{% if total_pending > 0 %}color: #fbbf24;{% else %}color: #34d399;{% endif %}">
+                ₹{{ total_pending }}
+            </div>
+            <div class="stat-card-desc">Total Paid: ₹{{ total_paid }}</div>
+        </div>
+    </a>
+
+    <!-- 4. Upcoming Examinations -->
+    <a href="{{ url_for('parent_exams') }}" class="stat-card">
+        <div class="stat-card-header">
+            <span class="stat-card-icon">🎯</span>
+            <span class="badge badge-indigo">{{ upcoming_exams_count }} Scheduled</span>
+        </div>
+        <div>
+            <div class="stat-card-label">Upcoming Exams</div>
+            <div class="stat-card-value" style="color: #818cf8;">
+                {{ upcoming_exams_count }}
+            </div>
+            <div class="stat-card-desc">
+                {% if next_exam %}Next: {{ next_exam.course_code }} ({{ next_exam.exam_date }}){% else %}No upcoming exams{% endif %}
+            </div>
+        </div>
+    </a>
+
+    <!-- 5. Course Assignments -->
+    <a href="{{ url_for('parent_academics') }}" class="stat-card">
+        <div class="stat-card-header">
+            <span class="stat-card-icon">📑</span>
+            <span class="badge badge-cyan">{{ pending_assignments_count }} Pending</span>
+        </div>
+        <div>
+            <div class="stat-card-label">Course Assignments</div>
+            <div class="stat-card-value" style="color: #38bdf8;">
+                {{ pending_assignments_count }}
+            </div>
+            <div class="stat-card-desc">Submission deadlines monitored</div>
+        </div>
+    </a>
+
+    <!-- 6. Leave & Outpass -->
+    <a href="{{ url_for('parent_leave') }}" class="stat-card">
+        <div class="stat-card-header">
+            <span class="stat-card-icon">🏢</span>
+            {% if pending_leaves_count > 0 %}
+                <span class="badge badge-yellow">{{ pending_leaves_count }} Pending</span>
+            {% else %}
+                <span class="badge badge-green">Up to date</span>
+            {% endif %}
+        </div>
+        <div>
+            <div class="stat-card-label">Leave &amp; Outpass Requests</div>
+            <div class="stat-card-value" style="color: #a855f7;">
+                {{ leaves|length }}
+            </div>
+            <div class="stat-card-desc">Residential hostel logs verified</div>
+        </div>
+    </a>
+
+</section>
+
+<!-- Two Column Layout: Academic Performance & Attendance Analytics -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 20px;">
+    
+    <!-- Subject Performance Chart Card -->
+    <div class="content-card">
+        <div class="card-header-row">
+            <h2 class="card-heading"><span>📚</span> Subject Performance Breakdown</h2>
+            <a href="{{ url_for('parent_academics') }}" style="color: var(--parent-primary); font-size: 0.82rem; text-decoration: none; font-weight: 600;">View Transcript →</a>
+        </div>
+        <div style="height: 240px; position: relative;">
+            <canvas id="parentAcademicsChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Attendance Gauge & Safe Margin Card -->
+    <div class="content-card">
+        <div class="card-header-row">
+            <h2 class="card-heading"><span>📊</span> Attendance Standing &amp; Margin</h2>
+            <a href="{{ url_for('parent_attendance') }}" style="color: var(--parent-primary); font-size: 0.82rem; text-decoration: none; font-weight: 600;">Full Analytics →</a>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 24px; flex-wrap: wrap;">
+            <div class="progress-circle" style="--pct: {{ overall_pct }};">
+                <div class="progress-circle-inner">
+                    <span class="progress-pct-text">{{ overall_pct }}%</span>
+                    <span class="progress-label">ATTENDANCE</span>
+                </div>
+            </div>
+
+            <div style="flex: 1; min-width: 180px;">
+                <div style="margin-bottom: 12px;">
+                    <div style="font-size: 0.84rem; color: var(--text-muted);">Institutional Minimum:</div>
+                    <div style="font-size: 1rem; font-weight: 700; color: var(--text-primary);">75.0% Mandatory</div>
+                </div>
+
+                {% if overall_pct < 75 %}
+                    <div style="background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 10px; padding: 10px; font-size: 0.82rem; color: #fca5a5;">
+                        ⚠️ Warning: Attendance is below 75%. Examination eligibility is restricted.
+                    </div>
+                {% else %}
+                    <div style="background: rgba(52, 211, 153, 0.12); border: 1px solid rgba(52, 211, 153, 0.3); border-radius: 10px; padding: 10px; font-size: 0.82rem; color: #6ee7b7;">
+                        ✓ Good Standing: Ward meets all mandatory criteria for semester exams.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Recent Notifications & Quick Actions Section -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 20px;">
+    
+    <!-- Recent Broadcast Alerts -->
+    <div class="content-card">
+        <div class="card-header-row">
+            <h2 class="card-heading"><span>🔔</span> Recent Campus Announcements</h2>
+            <a href="{{ url_for('parent_notifications') }}" style="color: var(--parent-primary); font-size: 0.82rem; text-decoration: none; font-weight: 600;">All Alerts ({{ unread_alerts_count }} unread) →</a>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+            {% for alert in recent_alerts %}
+            <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid var(--glass-border); border-radius: 12px; padding: 14px; display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;">
+                <div>
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                        <span class="badge {% if alert.priority == 'Critical' %}badge-red{% elif alert.priority == 'High' %}badge-yellow{% else %}badge-purple{% endif %}">
+                            {{ alert.category }}
+                        </span>
+                        <strong style="font-size: 0.88rem; color: var(--text-primary);">{{ alert.title }}</strong>
+                    </div>
+                    <p style="font-size: 0.82rem; color: var(--text-secondary); margin: 0; line-height: 1.4;">{{ alert.description }}</p>
+                </div>
+            </div>
+            {% else %}
+            <div style="text-align: center; padding: 24px; color: var(--text-muted); font-size: 0.88rem;">
+                No recent announcements.
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Quick Parent Actions & Faculty Connect -->
+    <div class="content-card">
+        <div class="card-header-row">
+            <h2 class="card-heading"><span>⚡</span> Quick Parent Actions</h2>
+            <span class="badge badge-purple">Direct Access</span>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <a href="{{ url_for('parent_messages') }}" class="btn-secondary" style="justify-content: flex-start; padding: 14px; text-align: left; height: auto;">
+                <span style="font-size: 1.4rem;">💬</span>
+                <div>
+                    <div style="font-size: 0.86rem; font-weight: 700; color: #fff;">Message Advisor</div>
+                    <div style="font-size: 0.72rem; color: var(--text-muted);">Dr. Ramesh Rao</div>
+                </div>
+            </a>
+
+            <a href="{{ url_for('parent_safety') }}" class="btn-secondary" style="justify-content: flex-start; padding: 14px; text-align: left; height: auto;">
+                <span style="font-size: 1.4rem;">🛡️</span>
+                <div>
+                    <div style="font-size: 0.86rem; font-weight: 700; color: #fff;">Safety Center</div>
+                    <div style="font-size: 0.72rem; color: var(--text-muted);">Contacts &amp; SOS</div>
+                </div>
+            </a>
+
+            <a href="{{ url_for('parent_fees') }}" class="btn-secondary" style="justify-content: flex-start; padding: 14px; text-align: left; height: auto;">
+                <span style="font-size: 1.4rem;">🧾</span>
+                <div>
+                    <div style="font-size: 0.86rem; font-weight: 700; color: #fff;">Fee Receipts</div>
+                    <div style="font-size: 0.72rem; color: var(--text-muted);">Ledger &amp; dues</div>
+                </div>
+            </a>
+
+            <a href="{{ url_for('parent_timetable') }}" class="btn-secondary" style="justify-content: flex-start; padding: 14px; text-align: left; height: auto;">
+                <span style="font-size: 1.4rem;">📅</span>
+                <div>
+                    <div style="font-size: 0.86rem; font-weight: 700; color: #fff;">Timetable</div>
+                    <div style="font-size: 0.72rem; color: var(--text-muted);">Weekly schedule</div>
+                </div>
+            </a>
+        </div>
+
+        <div style="margin-top: 16px; background: rgba(147, 51, 234, 0.08); border: 1px solid var(--parent-border); border-radius: 12px; padding: 12px 14px; display: flex; align-items: center; justify-content: space-between;">
+            <div style="font-size: 0.82rem;">
+                <span style="color: #fff; font-weight: 700;">Need a quick welfare check on campus?</span>
+                <div style="color: var(--text-muted);">Alerts campus security and chief warden directly.</div>
+            </div>
+            <form method="POST" action="{{ url_for('parent_safety_checkin') }}">
+                <button type="submit" class="btn-primary" style="font-size: 0.78rem; padding: 6px 12px;">
+                    Request Check
+                </button>
+            </form>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Initialize Subject Performance Chart
+    const ctx = document.getElementById('parentAcademicsChart').getContext('2d');
+    
+    // Extract marks data
+    const courseLabels = [{% for m in marks %}'{{ m.course_code }}'{% if not loop.last %}, {% endif %}{% endfor %}];
+    const catMarks = [{% for m in marks %}{{ m.cat1 }}{% if not loop.last %}, {% endif %}{% endfor %}];
+    const fatMarks = [{% for m in marks %}{{ m.fat }}{% if not loop.last %}, {% endif %}{% endfor %}];
+
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: courseLabels.length ? courseLabels : ['CS301', 'CS302', 'CS303', 'CS304', 'CS305'],
+            datasets: [
+                {
+                    label: 'CAT 1 Marks (Out of 50)',
+                    data: catMarks.length ? catMarks : [46.5, 42, 38, 48, 45],
+                    backgroundColor: 'rgba(192, 132, 252, 0.7)',
+                    borderColor: '#c084fc',
+                    borderWidth: 1,
+                    borderRadius: 6
+                },
+                {
+                    label: 'FAT Final Exam Marks (Out of 100)',
+                    data: fatMarks.length ? fatMarks : [92, 86, 78, 95, 89],
+                    backgroundColor: 'rgba(99, 102, 241, 0.7)',
+                    borderColor: '#6366f1',
+                    borderWidth: 1,
+                    borderRadius: 6
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    labels: {
+                        color: '#94a3b8',
+                        font: { family: "'Plus Jakarta Sans', sans-serif", size: 11 }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                    ticks: { color: '#94a3b8' }
+                },
+                y: {
+                    grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                    ticks: { color: '#94a3b8' },
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

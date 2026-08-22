@@ -1,0 +1,109 @@
+{% extends "faculty/base_faculty.html" %}
+
+{% block title %}My Timetable &amp; Schedule{% endblock %}
+
+{% block faculty_content %}
+<section class="content-card" style="background: linear-gradient(135deg, rgba(14, 19, 32, 0.95) 0%, rgba(20, 27, 45, 0.9) 100%); border-color: rgba(16, 185, 129, 0.3);">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+        <div>
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                <span class="badge badge-green">OFFICIAL SYLLABUS SCHEDULE</span>
+                <span class="badge badge-indigo">Semester 5 (Fall 2026)</span>
+            </div>
+            <h1 style="font-size: 1.5rem; font-weight: 800; color: #fff; margin: 0 0 4px;">
+                Weekly Faculty Lecture Timetable
+            </h1>
+            <p style="color: var(--text-secondary); font-size: 0.88rem; margin: 0;">
+                All classroom allocations and lecture schedules governed directly by Central Administration.
+            </p>
+        </div>
+
+        <div style="display: flex; gap: 10px;">
+            <a href="{{ url_for('faculty_attendance') }}" class="btn-primary" style="background: linear-gradient(135deg, #10b981, #059669);">
+                <span>📊</span> Take Attendance
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- Today's Schedule Highlight Strip -->
+<section class="content-card" style="border-left: 4px solid #10b981;">
+    <div class="card-header-row">
+        <h2 class="card-heading"><span>📍</span> Today's Slots ({{ today_name }})</h2>
+        <span class="badge badge-green">{{ today_schedule|length }} Classes Today</span>
+    </div>
+
+    {% if today_schedule %}
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px;">
+        {% for slot in today_schedule %}
+        <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 14px; padding: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <span class="badge badge-indigo" style="font-family: monospace;">{{ slot.subject_code }}</span>
+                <span style="font-size: 0.82rem; font-weight: 700; color: #34d399;">⏰ {{ slot.start_time }} – {{ slot.end_time }}</span>
+            </div>
+            <div style="font-weight: 800; color: #fff; font-size: 1rem; margin-bottom: 4px;">
+                {{ slot.subject_name }}
+            </div>
+            <div style="font-size: 0.82rem; color: var(--text-secondary);">
+                🏛️ Room: <strong style="color: #38bdf8;">{{ slot.room_number }}</strong> • Year {{ slot.year }} {{ slot.department }}
+            </div>
+            <div style="margin-top: 12px;">
+                <a href="{{ url_for('faculty_attendance', course=slot.subject_code) }}" class="btn-primary" style="display: block; text-align: center; font-size: 0.82rem; padding: 6px 12px; background: #10b981;">
+                    <span>📊</span> Mark Attendance
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div style="text-align: center; padding: 20px; color: var(--text-muted);">
+        No scheduled lectures on {{ today_name }}.
+    </div>
+    {% endif %}
+</section>
+
+<!-- Full Weekly Schedule (Monday - Saturday) -->
+<section class="content-card">
+    <div class="card-header-row">
+        <h2 class="card-heading"><span>📅</span> Full Weekly Instruction Matrix</h2>
+        <span class="badge badge-indigo">Mon – Sat</span>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 20px;">
+        {% for day in days %}
+        {% set slots = timetable_by_day.get(day, []) %}
+        <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 14px; padding: 18px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.06); padding-bottom: 8px;">
+                <div style="font-size: 1.1rem; font-weight: 800; color: {% if day == today_name %}#34d399{% else %}#fff{% endif %};">
+                    {{ day }} {% if day == today_name %}<span class="badge badge-green" style="font-size: 0.7rem; margin-left: 6px;">TODAY</span>{% endif %}
+                </div>
+                <span style="font-size: 0.82rem; color: var(--text-muted);">{{ slots|length }} Period(s)</span>
+            </div>
+
+            {% if slots %}
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px;">
+                {% for slot in slots %}
+                <div style="background: rgba(14, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 10px; padding: 12px 14px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                        <span class="badge badge-indigo" style="font-size: 0.75rem;">{{ slot.subject_code }}</span>
+                        <span style="font-size: 0.75rem; color: #38bdf8; font-weight: 600;">{{ slot.start_time }} – {{ slot.end_time }}</span>
+                    </div>
+                    <div style="font-weight: 700; color: #e2e8f0; font-size: 0.9rem;">
+                        {{ slot.subject_name }}
+                    </div>
+                    <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 4px;">
+                        Room: <strong style="color: #cbd5e1;">{{ slot.room_number }}</strong>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div style="color: var(--text-muted); font-size: 0.82rem; font-style: italic;">
+                No lecture classes allocated.
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

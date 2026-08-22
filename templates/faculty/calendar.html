@@ -1,0 +1,54 @@
+{% extends "faculty/base_faculty.html" %}
+
+{% block title %}Official Academic Calendar{% endblock %}
+
+{% block faculty_content %}
+<div class="page-header-block">
+    <div class="page-title-group">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+            <span class="badge badge-green">CENTRAL ACADEMIC SCHEDULE</span>
+            <span class="badge badge-indigo">Academic Year 2026–2027 (Semester 5)</span>
+        </div>
+        <h1><span>🗓️</span> Institutional Academic Calendar &amp; Milestones</h1>
+        <p>Official university schedule: commencement of terms, mid-term examinations, technical symposiums, holidays, and semester examinations.</p>
+    </div>
+</div>
+
+<!-- Calendar Events List -->
+<section class="content-card">
+    <div class="card-header-row">
+        <h2 class="card-heading"><span>📅</span> Key Semester Milestones &amp; Dates</h2>
+        <span class="badge badge-purple">{{ events|length }} Official Events</span>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 14px;">
+        {% for ev in events %}
+        <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 12px; padding: 18px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+            <div style="display: flex; align-items: center; gap: 16px;">
+                <div style="width: 52px; height: 52px; border-radius: 14px; background: {% if ev.event_type == 'Holiday' %}rgba(244, 63, 94, 0.15){% elif ev.event_type == 'Exam' %}rgba(251, 191, 36, 0.15){% elif ev.event_type == 'Event' %}rgba(168, 85, 247, 0.15){% else %}rgba(16, 185, 129, 0.15){% endif %}; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">
+                    {% if ev.event_type == 'Holiday' %}🏖️{% elif ev.event_type == 'Exam' %}📝{% elif ev.event_type == 'Event' %}🎪{% else %}📚{% endif %}
+                </div>
+                <div>
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                        <strong style="color: #fff; font-size: 1.05rem;">{{ ev.title }}</strong>
+                        <span class="badge {% if ev.event_type == 'Holiday' %}badge-red{% elif ev.event_type == 'Exam' %}badge-yellow{% elif ev.event_type == 'Event' %}badge-purple{% else %}badge-green{% endif %}">
+                            {{ ev.event_type }}
+                        </span>
+                    </div>
+                    <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 0;">
+                        {{ ev.description }}
+                    </p>
+                </div>
+            </div>
+
+            <div style="text-align: right;">
+                <div style="font-size: 0.95rem; font-weight: 700; color: #38bdf8;">
+                    {{ ev.start_date }} {% if ev.start_date != ev.end_date %}– {{ ev.end_date }}{% endif %}
+                </div>
+                <div style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">{{ ev.semester }}</div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

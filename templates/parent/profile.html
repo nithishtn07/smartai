@@ -1,0 +1,185 @@
+{% extends "parent/base_parent.html" %}
+
+{% block title %}Parent Profile & Settings{% endblock %}
+
+{% block parent_content %}
+<div class="page-header-block">
+    <div class="page-title-group">
+        <h1><span>⚙️</span> Parent Profile &amp; Account Settings</h1>
+        <p>Manage guardian contact details, view linked student credentials, and configure security preferences.</p>
+    </div>
+    
+    <div>
+        <a href="{{ url_for('parent_logout') }}" class="btn-secondary" style="border-color: rgba(239, 68, 68, 0.3); color: #fca5a5;">
+            <span>🚪</span> Sign Out
+        </a>
+    </div>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 20px;">
+    
+    <!-- 1. Parent Guardian Profile Card -->
+    <div class="content-card">
+        <div class="card-header-row">
+            <h2 class="card-heading"><span>👤</span> Parent / Guardian Information</h2>
+            <span class="badge badge-purple">{{ parent.relationship|default('Father') }}</span>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid var(--glass-border);">
+            <div class="parent-avatar" style="width: 54px; height: 54px; font-size: 1.4rem;">
+                {{ parent.name[:1] }}
+            </div>
+            <div>
+                <h3 style="font-size: 1.15rem; font-weight: 800; color: #fff; margin: 0 0 2px;">{{ parent.name }}</h3>
+                <div style="font-size: 0.8rem; color: var(--parent-primary); font-family: var(--font-mono);">Parent ID: {{ parent.parent_id }}</div>
+                <div style="font-size: 0.78rem; color: var(--text-muted);">Registered Email: {{ parent.email }}</div>
+            </div>
+        </div>
+
+        <form method="POST" action="{{ url_for('parent_profile') }}">
+            <input type="hidden" name="action_type" value="update_info">
+
+            <div class="form-group">
+                <label for="phone" class="form-label">Phone / Mobile Number</label>
+                <input 
+                    type="text" 
+                    id="phone" 
+                    name="phone" 
+                    class="form-input" 
+                    value="{{ parent.phone }}" 
+                    required
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="occupation" class="form-label">Occupation / Profession</label>
+                <input 
+                    type="text" 
+                    id="occupation" 
+                    name="occupation" 
+                    class="form-input" 
+                    value="{{ parent.occupation|default('') }}" 
+                    placeholder="e.g. Civil Engineer / Doctor / Business"
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="address" class="form-label">Residential Address</label>
+                <textarea 
+                    id="address" 
+                    name="address" 
+                    class="form-textarea" 
+                    style="min-height: 80px;"
+                >{{ parent.address|default('') }}</textarea>
+            </div>
+
+            <button type="submit" class="btn-primary" style="width: 100%;">
+                Save Profile Changes
+            </button>
+        </form>
+    </div>
+
+    <!-- 2. Linked Student Profile Summary (Tamper-Proof Read Only) -->
+    <div class="content-card">
+        <div class="card-header-row">
+            <h2 class="card-heading"><span>🎓</span> Linked Ward Profile (Read-Only)</h2>
+            <span class="badge badge-green">Verified Official Record</span>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 20px; padding-bottom: 16px; border-bottom: 1px solid var(--glass-border);">
+            <div style="width: 50px; height: 50px; border-radius: 14px; background: linear-gradient(135deg, #0284c7, #38bdf8); display: flex; align-items: center; justify-content: center; font-size: 1.4rem; color: #fff; font-weight: 800;">
+                {{ student.name[:1] }}
+            </div>
+            <div>
+                <h3 style="font-size: 1.1rem; font-weight: 800; color: #fff; margin: 0 0 2px;">{{ student.name }}</h3>
+                <div style="font-size: 0.8rem; color: #38bdf8; font-family: var(--font-mono);">Reg No: {{ student.register_number }}</div>
+            </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 12px; font-size: 0.88rem;">
+            <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.03);">
+                <span style="color: var(--text-muted);">Academic Program:</span>
+                <strong style="color: var(--text-primary);">{{ student.program|default('B.Tech') }} {{ student.department }}</strong>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.03);">
+                <span style="color: var(--text-muted);">Current Year &amp; Semester:</span>
+                <strong style="color: var(--text-primary);">Year {{ student.year }} (Semester {{ student.semester|default(5) }}, Sec {{ student.section|default('A') }})</strong>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.03);">
+                <span style="color: var(--text-muted);">Student Official Email:</span>
+                <span style="color: #38bdf8; font-family: var(--font-mono);">{{ student.email }}</span>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.03);">
+                <span style="color: var(--text-muted);">Cumulative CGPA:</span>
+                <strong style="color: #34d399; font-family: var(--font-mono);">{{ student.cgpa|default('8.75') }} / 10.0</strong>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.03);">
+                <span style="color: var(--text-muted);">Hostel Accommodation:</span>
+                <span style="color: var(--text-primary);">{{ hostel.block_name|default('Block B') }} (Room {{ hostel.room_no|default('304') }})</span>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; padding: 6px 0;">
+                <span style="color: var(--text-muted);">Enrollment Date:</span>
+                <span style="color: var(--text-secondary); font-family: var(--font-mono);">{{ student.join_date|default('2023-08-01') }}</span>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Security & Password Change Card -->
+<section class="content-card" style="margin-top: 20px; max-width: 600px;">
+    <div class="card-header-row">
+        <h2 class="card-heading"><span>🔒</span> Change Parent Account Password</h2>
+        <span class="badge badge-purple">Encrypted Credentials</span>
+    </div>
+
+    <form method="POST" action="{{ url_for('parent_profile') }}">
+        <input type="hidden" name="action_type" value="change_password">
+
+        <div class="form-group">
+            <label for="current_password" class="form-label">Current Password</label>
+            <input 
+                type="password" 
+                id="current_password" 
+                name="current_password" 
+                class="form-input" 
+                placeholder="Enter current password" 
+                required
+            >
+        </div>
+
+        <div class="form-group">
+            <label for="new_password" class="form-label">New Password (Min 6 characters)</label>
+            <input 
+                type="password" 
+                id="new_password" 
+                name="new_password" 
+                class="form-input" 
+                placeholder="Enter new strong password" 
+                required
+            >
+        </div>
+
+        <div class="form-group">
+            <label for="confirm_password" class="form-label">Confirm New Password</label>
+            <input 
+                type="password" 
+                id="confirm_password" 
+                name="confirm_password" 
+                class="form-input" 
+                placeholder="Re-enter new password" 
+                required
+            >
+        </div>
+
+        <button type="submit" class="btn-primary">
+            <span>🔐</span> Update Account Password
+        </button>
+    </form>
+</section>
+{% endblock %}

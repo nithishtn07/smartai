@@ -1,0 +1,154 @@
+{% extends "emergency/base_emergency.html" %}
+
+{% block title %}Emergency Incident History — CampusGuard AI{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="/static/css/emergency.css">
+
+<div class="page-header-block">
+    <div class="page-title-group">
+        <h1><span>📋</span> Emergency Incident Archive &amp; Audit History</h1>
+        <p>Comprehensive historical ledger of all campus distress alerts, triage responses, and resolution reports.</p>
+    </div>
+    <div style="display: flex; gap: 10px;">
+        <a href="/emergency/analytics" class="btn-secondary" style="font-size: 0.82rem; padding: 8px 14px;">
+            <span>📊</span> Safety Analytics
+        </a>
+    </div>
+</div>
+
+<!-- Search & Filter Controls -->
+<section class="content-card" style="margin-bottom: 24px;">
+    <form method="GET" action="/emergency/history" class="form-grid" style="grid-template-columns: 2fr 1fr 1fr 1fr auto; gap: 12px; align-items: flex-end;">
+        <div class="form-group" style="margin: 0;">
+            <label class="form-label" style="font-size: 0.78rem;">Search Keywords / ID / Location</label>
+            <input type="text" name="q" class="form-input" placeholder="e.g. EMG-2026-000101, Lab 2, Nithish..." value="{{ q_search }}">
+        </div>
+
+        <div class="form-group" style="margin: 0;">
+            <label class="form-label" style="font-size: 0.78rem;">Category</label>
+            <select name="category" class="form-select">
+                <option value="">All Categories</option>
+                <option value="Personal Safety" {% if q_category == 'Personal Safety' %}selected{% endif %}>Personal Safety</option>
+                <option value="Medical Emergency" {% if q_category == 'Medical Emergency' %}selected{% endif %}>Medical Emergency</option>
+                <option value="Fire/Safety" {% if q_category == 'Fire/Safety' %}selected{% endif %}>Fire/Safety</option>
+                <option value="Security" {% if q_category == 'Security' %}selected{% endif %}>Security</option>
+                <option value="Campus Infrastructure" {% if q_category == 'Campus Infrastructure' %}selected{% endif %}>Campus Infrastructure</option>
+            </select>
+        </div>
+
+        <div class="form-group" style="margin: 0;">
+            <label class="form-label" style="font-size: 0.78rem;">Severity</label>
+            <select name="severity" class="form-select">
+                <option value="">All Severities</option>
+                <option value="CRITICAL" {% if q_severity == 'CRITICAL' %}selected{% endif %}>Critical</option>
+                <option value="HIGH" {% if q_severity == 'HIGH' %}selected{% endif %}>High</option>
+                <option value="MEDIUM" {% if q_severity == 'MEDIUM' %}selected{% endif %}>Medium</option>
+                <option value="LOW" {% if q_severity == 'LOW' %}selected{% endif %}>Low</option>
+            </select>
+        </div>
+
+        <div class="form-group" style="margin: 0;">
+            <label class="form-label" style="font-size: 0.78rem;">Status</label>
+            <select name="status" class="form-select">
+                <option value="">All Statuses</option>
+                <option value="TRIGGERED" {% if q_status == 'TRIGGERED' %}selected{% endif %}>Triggered</option>
+                <option value="ACKNOWLEDGED" {% if q_status == 'ACKNOWLEDGED' %}selected{% endif %}>Acknowledged</option>
+                <option value="EN_ROUTE" {% if q_status == 'EN_ROUTE' %}selected{% endif %}>En Route</option>
+                <option value="ON_SCENE" {% if q_status == 'ON_SCENE' %}selected{% endif %}>On Scene</option>
+                <option value="RESOLVED" {% if q_status == 'RESOLVED' %}selected{% endif %}>Resolved</option>
+                <option value="CLOSED" {% if q_status == 'CLOSED' %}selected{% endif %}>Closed</option>
+            </select>
+        </div>
+
+        <button type="submit" class="btn-primary" style="padding: 10px 18px;">
+            <span>🔍</span> Filter
+        </button>
+    </form>
+</section>
+
+<!-- History Table -->
+<section class="content-card">
+    <div class="card-header-row">
+        <h3 class="card-heading"><span>📜</span> Recorded Emergency Incidents ({{ emergencies|length }})</h3>
+        <span class="badge badge-purple">Verified Audit Records</span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="data-table" style="width: 100%; border-collapse: collapse; font-size: 0.86rem;">
+            <thead>
+                <tr style="border-bottom: 1px solid var(--glass-border); text-align: left; color: var(--text-muted);">
+                    <th style="padding: 12px 10px;">Emergency ID</th>
+                    <th style="padding: 12px 10px;">Reporter</th>
+                    <th style="padding: 12px 10px;">Category &amp; Zone</th>
+                    <th style="padding: 12px 10px;">Severity</th>
+                    <th style="padding: 12px 10px;">Status</th>
+                    <th style="padding: 12px 10px;">Assigned Unit</th>
+                    <th style="padding: 12px 10px;">Date &amp; Time</th>
+                    <th style="padding: 12px 10px; text-align: right;">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for e in emergencies %}
+                <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.04);">
+                    <td style="padding: 12px 10px; font-family: var(--font-mono); font-weight: 700; color: #818cf8;">
+                        <a href="/emergency/incident/{{ e.emergency_id }}" style="color: inherit; text-decoration: none;">
+                            {{ e.emergency_id }}
+                        </a>
+                    </td>
+                    <td style="padding: 12px 10px;">
+                        <strong style="color: white;">{{ e.reporter_name }}</strong>
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">{{ e.user_role|upper }}</div>
+                    </td>
+                    <td style="padding: 12px 10px;">
+                        <div style="color: #fbbf24; font-weight: 600;">{{ e.category }}</div>
+                        <div style="font-size: 0.76rem; color: var(--text-secondary);">{{ e.campus_zone|default(e.location) }}</div>
+                    </td>
+                    <td style="padding: 12px 10px;">
+                        {% if e.severity == 'CRITICAL' %}
+                            <span class="severity-badge-critical">CRITICAL</span>
+                        {% elif e.severity == 'HIGH' %}
+                            <span class="severity-badge-high">HIGH</span>
+                        {% elif e.severity == 'MEDIUM' %}
+                            <span class="severity-badge-medium">MEDIUM</span>
+                        {% else %}
+                            <span class="severity-badge-low">LOW</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 12px 10px;">
+                        {% if e.status == 'TRIGGERED' %}
+                            <span class="badge" style="background: rgba(239, 68, 68, 0.2); color: #fca5a5;">TRIGGERED</span>
+                        {% elif e.status == 'ACKNOWLEDGED' %}
+                            <span class="badge" style="background: rgba(245, 158, 11, 0.2); color: #fcd34d;">ACKNOWLEDGED</span>
+                        {% elif e.status in ['RESPONDER_ASSIGNED', 'EN_ROUTE'] %}
+                            <span class="badge" style="background: rgba(56, 189, 248, 0.2); color: #7dd3fc;">EN ROUTE</span>
+                        {% elif e.status == 'ON_SCENE' %}
+                            <span class="badge" style="background: rgba(192, 132, 252, 0.2); color: #e9d5ff;">ON SCENE</span>
+                        {% else %}
+                            <span class="badge" style="background: rgba(16, 185, 129, 0.2); color: #6ee7b7;">RESOLVED</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 12px 10px; color: #38bdf8;">
+                        {{ e.assigned_responder|default('Unassigned') }}
+                    </td>
+                    <td style="padding: 12px 10px; color: var(--text-muted); font-size: 0.78rem;">
+                        {{ e.created_at }}
+                    </td>
+                    <td style="padding: 12px 10px; text-align: right;">
+                        <a href="/emergency/incident/{{ e.emergency_id }}" class="btn-secondary" style="padding: 4px 10px; font-size: 0.76rem;">
+                            View Dossier &rarr;
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" style="text-align: center; padding: 30px; color: var(--text-muted);">
+                        No emergency incidents matched the filter query.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

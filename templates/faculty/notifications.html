@@ -1,0 +1,105 @@
+{% extends "faculty/base_faculty.html" %}
+
+{% block title %}Faculty Notification Center{% endblock %}
+
+{% block faculty_content %}
+<div class="page-header-block">
+    <div class="page-title-group">
+        <h1><span>🔔</span> Faculty Notification Center</h1>
+        <p>Institutional announcements, urgent safety alerts, student leave applications, and academic notices.</p>
+    </div>
+    
+    <div style="display: flex; gap: 12px; align-items: center;">
+        <span class="badge badge-green" style="font-size: 0.88rem; padding: 8px 16px;">
+            {{ unread_count }} Unread Alert{% if unread_count != 1 %}s{% endif %}
+        </span>
+        {% if unread_count > 0 %}
+            <form method="POST" action="{{ url_for('faculty_notifications_read_all') }}" style="display: inline;">
+                <button type="submit" class="btn-secondary" style="font-size: 0.84rem; padding: 7px 14px;">
+                    ✓ Mark All as Read
+                </button>
+            </form>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Filter Pills -->
+<div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px;">
+    <a href="{{ url_for('faculty_notifications', category='all') }}" 
+       style="padding: 8px 16px; border-radius: var(--pill-radius); text-decoration: none; font-size: 0.84rem; font-weight: 700; border: 1px solid var(--glass-border); {% if category_filter == 'all' %}background: linear-gradient(135deg, #10b981, #059669); color: #fff; border-color: transparent;{% else %}background: rgba(255, 255, 255, 0.04); color: var(--text-secondary);{% endif %}">
+        All Notifications
+    </a>
+    <a href="{{ url_for('faculty_notifications', category='Emergency') }}" 
+       style="padding: 8px 16px; border-radius: var(--pill-radius); text-decoration: none; font-size: 0.84rem; font-weight: 700; border: 1px solid var(--glass-border); {% if category_filter == 'Emergency' %}background: var(--sos-gradient); color: #fff; border-color: transparent;{% else %}background: rgba(239, 68, 68, 0.1); color: #fca5a5; border-color: rgba(239, 68, 68, 0.3);{% endif %}">
+        🚨 Safety &amp; Emergency
+    </a>
+    <a href="{{ url_for('faculty_notifications', category='Leave') }}" 
+       style="padding: 8px 16px; border-radius: var(--pill-radius); text-decoration: none; font-size: 0.84rem; font-weight: 700; border: 1px solid var(--glass-border); {% if category_filter == 'Leave' %}background: linear-gradient(135deg, #10b981, #059669); color: #fff; border-color: transparent;{% else %}background: rgba(255, 255, 255, 0.04); color: var(--text-secondary);{% endif %}">
+        🏢 Leave Requests
+    </a>
+    <a href="{{ url_for('faculty_notifications', category='Announcement') }}" 
+       style="padding: 8px 16px; border-radius: var(--pill-radius); text-decoration: none; font-size: 0.84rem; font-weight: 700; border: 1px solid var(--glass-border); {% if category_filter == 'Announcement' %}background: linear-gradient(135deg, #10b981, #059669); color: #fff; border-color: transparent;{% else %}background: rgba(255, 255, 255, 0.04); color: var(--text-secondary);{% endif %}">
+        📢 Announcements
+    </a>
+</div>
+
+<!-- Notification Feed List -->
+<div style="display: flex; flex-direction: column; gap: 14px;">
+    {% for alert in alerts %}
+    <div class="content-card" style="padding: 20px 24px; {% if not alert.is_read %}border-color: rgba(16, 185, 129, 0.4); background: rgba(20, 27, 45, 0.9); box-shadow: 0 0 20px rgba(16, 185, 129, 0.15);{% endif %}">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px;">
+            
+            <div style="display: flex; gap: 16px; align-items: flex-start; flex: 1; min-width: 280px;">
+                <div style="width: 44px; height: 44px; border-radius: 12px; background: {% if alert.priority == 'Critical' %}rgba(239, 68, 68, 0.2){% elif alert.priority == 'High' %}rgba(251, 191, 36, 0.2){% else %}rgba(16, 185, 129, 0.2){% endif %}; display: flex; align-items: center; justify-content: center; font-size: 1.4rem;">
+                    {% if alert.category == 'Emergency' %}🚨{% elif alert.category == 'Leave' %}🏢{% elif alert.category == 'Academic' %}📚{% else %}📢{% endif %}
+                </div>
+
+                <div style="flex: 1;">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 4px; flex-wrap: wrap;">
+                        <span class="badge {% if alert.priority == 'Critical' %}badge-red{% elif alert.priority == 'High' %}badge-yellow{% else %}badge-green{% endif %}">
+                            {{ alert.priority }} Priority
+                        </span>
+                        <span class="badge badge-indigo">{{ alert.category }}</span>
+                        {% if not alert.is_read %}
+                            <span class="badge badge-cyan" style="font-size: 0.68rem;">NEW</span>
+                        {% endif %}
+                    </div>
+
+                    <h3 style="font-size: 1.05rem; font-weight: 800; color: var(--text-primary); margin: 6px 0;">
+                        {{ alert.title }}
+                    </h3>
+
+                    <p style="color: var(--text-secondary); font-size: 0.88rem; line-height: 1.5; margin: 0 0 8px;">
+                        {{ alert.message }}
+                    </p>
+
+                    <div style="font-size: 0.76rem; color: var(--text-muted); font-family: var(--font-mono);">
+                        Timestamp: {{ alert.created_at }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Single Mark As Read Action -->
+            <div>
+                {% if not alert.is_read %}
+                    <form method="POST" action="{{ url_for('faculty_notifications_read_single', notif_id=alert.id) }}">
+                        <button type="submit" class="btn-secondary" style="font-size: 0.78rem; padding: 6px 12px;">
+                            Mark as Read
+                        </button>
+                    </form>
+                {% else %}
+                    <span style="font-size: 0.78rem; color: var(--text-muted);">✓ Read</span>
+                {% endif %}
+            </div>
+
+        </div>
+    </div>
+    {% else %}
+    <div class="content-card" style="text-align: center; padding: 48px; color: var(--text-muted);">
+        <div style="font-size: 2.5rem; margin-bottom: 12px;">📭</div>
+        <h3 style="font-size: 1.1rem; color: #fff; margin-bottom: 4px;">No notifications in this category</h3>
+        <p style="font-size: 0.86rem; margin: 0;">You are all caught up with faculty announcements and alerts.</p>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

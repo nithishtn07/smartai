@@ -1,0 +1,175 @@
+{% extends "parent/base_parent.html" %}
+
+{% block title %}Examinations & Results{% endblock %}
+
+{% block parent_content %}
+<div class="page-header-block">
+    <div class="page-title-group">
+        <h1><span>🎯</span> Examinations Schedule &amp; Results</h1>
+        <p>Upcoming final assessment tests (FAT), examination venues, hall ticket eligibility status, and previous assessment results.</p>
+    </div>
+    
+    <div>
+        {% if eligible_for_exams %}
+            <span class="badge badge-green" style="font-size: 0.88rem; padding: 8px 16px;">✓ Hall Ticket Eligible (Attendance: {{ overall_pct }}%)</span>
+        {% else %}
+            <span class="badge badge-red" style="font-size: 0.88rem; padding: 8px 16px;">⚠️ Hall Ticket On Hold (Attendance &lt; 75%)</span>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Examination Eligibility Banner Card -->
+<section class="content-card" style="background: linear-gradient(135deg, rgba(14, 19, 32, 0.95) 0%, rgba(20, 27, 45, 0.9) 100%); border-color: {% if eligible_for_exams %}var(--parent-border){% else %}rgba(239, 68, 68, 0.4){% endif %};">
+    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 20px;">
+        <div style="display: flex; align-items: center; gap: 18px;">
+            <div style="width: 52px; height: 52px; border-radius: 14px; background: rgba(147, 51, 234, 0.15); border: 1px solid var(--parent-border); display: flex; align-items: center; justify-content: center; font-size: 1.8rem;">
+                🎟️
+            </div>
+            <div>
+                <h3 style="font-size: 1.15rem; font-weight: 800; color: var(--text-primary); margin-bottom: 2px;">
+                    Semester 5 Final Assessment Examination (FAT)
+                </h3>
+                <p style="color: var(--text-secondary); font-size: 0.86rem; margin: 0;">
+                    Eligibility criteria: Minimum <strong>75.0% aggregate attendance</strong> and clearance of institutional assessment dues.
+                </p>
+            </div>
+        </div>
+
+        <div>
+            {% if eligible_for_exams %}
+                <button type="button" class="btn-primary" onclick="openModal('hallticket-modal')">
+                    <span>🪪</span> View Digital Hall Ticket
+                </button>
+            {% else %}
+                <div style="color: #fca5a5; font-size: 0.84rem; font-weight: 700;">
+                    Eligibility Pending Attendance Shortage
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+<!-- Upcoming Examinations Timetable -->
+<section class="content-card">
+    <div class="card-header-row">
+        <h2 class="card-heading"><span>📅</span> Upcoming Examinations Timetable</h2>
+        <span class="badge badge-purple">{{ exams|length }} Scheduled Papers</span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="portal-table">
+            <thead>
+                <tr>
+                    <th>Exam Type</th>
+                    <th>Course Code &amp; Subject</th>
+                    <th>Date</th>
+                    <th>Time Window</th>
+                    <th>Venue</th>
+                    <th>Hall / Room</th>
+                    <th>Allotted Seat</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for exam in exams %}
+                <tr>
+                    <td><span class="badge badge-indigo">{{ exam.exam_type }}</span></td>
+                    <td>
+                        <div style="font-weight: 700; color: var(--text-primary);">{{ exam.course_name }}</div>
+                        <div style="font-size: 0.78rem; color: var(--text-muted); font-family: var(--font-mono);">{{ exam.course_code }}</div>
+                    </td>
+                    <td style="font-family: var(--font-mono); font-weight: 700; color: #c084fc;">{{ exam.exam_date }}</td>
+                    <td style="font-size: 0.84rem; color: var(--text-secondary);">{{ exam.exam_time }}</td>
+                    <td>{{ exam.venue }}</td>
+                    <td><strong>{{ exam.room_number }}</strong></td>
+                    <td>
+                        <span class="badge badge-cyan" style="font-family: var(--font-mono);">{{ exam.seat_number }}</span>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 24px;">No upcoming exams scheduled at this time.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<!-- Past Assessment Results -->
+<section class="content-card">
+    <div class="card-header-row">
+        <h2 class="card-heading"><span>📜</span> Assessment Results &amp; Marks Breakdown</h2>
+        <span class="badge badge-green">Official Evaluations</span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="portal-table">
+            <thead>
+                <tr>
+                    <th>Course Code</th>
+                    <th>Course Title</th>
+                    <th>CAT 1 (50)</th>
+                    <th>CAT 2 (50)</th>
+                    <th>FAT Exam (100)</th>
+                    <th>Final Grade</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for m in marks %}
+                <tr>
+                    <td style="font-family: var(--font-mono); font-weight: 700; color: var(--parent-primary);">{{ m.course_code }}</td>
+                    <td style="font-weight: 600; color: var(--text-primary);">{{ m.course_name }}</td>
+                    <td style="font-family: var(--font-mono);">{{ m.cat1 }}</td>
+                    <td style="font-family: var(--font-mono);">{{ m.cat2 }}</td>
+                    <td style="font-family: var(--font-mono); font-weight: 700; color: #c084fc;">{{ m.fat }}</td>
+                    <td>
+                        <span class="badge {% if m.grade == 'S' %}badge-green{% elif m.grade in ['A+', 'A'] %}badge-purple{% else %}badge-yellow{% endif %}">
+                            {{ m.grade }} ({{ m.grade_points }})
+                        </span>
+                    </td>
+                    <td><span class="badge badge-green">{{ m.status }}</span></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<!-- Hall Ticket Modal -->
+<div class="modal-overlay" id="hallticket-modal">
+    <div class="modal-card" style="max-width: 600px;">
+        <div class="modal-header">
+            <h3 class="modal-title">🪪 Official Examination Hall Ticket</h3>
+            <button type="button" class="modal-close" onclick="closeModal('hallticket-modal')">✕</button>
+        </div>
+
+        <div style="background: rgba(10, 14, 26, 0.95); border: 1px solid var(--parent-border); border-radius: 12px; padding: 20px; font-size: 0.86rem; line-height: 1.6; margin-bottom: 20px;">
+            <div style="text-align: center; border-bottom: 1px dashed var(--glass-border); padding-bottom: 12px; margin-bottom: 14px;">
+                <h4 style="font-size: 1.15rem; color: #fff; margin: 0;">CampusGuard AI Institute of Technology</h4>
+                <p style="color: var(--parent-primary); font-size: 0.8rem; font-weight: 700; margin: 2px 0 0;">Semester 5 Final Assessment Examination Pass</p>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
+                <div><span style="color: var(--text-muted);">Student:</span> <strong style="color: #fff;">{{ student.name }}</strong></div>
+                <div><span style="color: var(--text-muted);">Register No:</span> <strong style="color: #c084fc; font-family: var(--font-mono);">{{ student.register_number }}</strong></div>
+                <div><span style="color: var(--text-muted);">Program:</span> <span style="color: #fff;">{{ student.program|default('B.Tech') }} {{ student.department }}</span></div>
+                <div><span style="color: var(--text-muted);">Attendance:</span> <span style="color: #34d399; font-weight: 700;">{{ overall_pct }}% (Eligible)</span></div>
+            </div>
+
+            <div style="font-size: 0.78rem; color: var(--text-muted); border-top: 1px dashed var(--glass-border); padding-top: 10px;">
+                Candidate must carry this Hall Ticket and Institution RFID ID Card to Exam Hall 3. Report 15 minutes prior to commencement.
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 12px;">
+            <button type="button" class="btn-primary" style="flex: 1;" onclick="window.print()">
+                🖨️ Print Hall Ticket
+            </button>
+            <button type="button" class="btn-secondary" onclick="closeModal('hallticket-modal')">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}

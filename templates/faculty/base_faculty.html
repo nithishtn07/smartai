@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="CampusGuard AI - Faculty Portal. Smart Academic Management, Attendance, Marks, Leaves and Safety.">
+    <meta name="theme-color" content="#06080e">
+    
+    <title>{% block title %}Faculty Portal{% endblock %} | CampusGuard AI</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Socket.IO CDN -->
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+
+    <!-- Universal Real-time & Toast Styles -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/campusguard-toast.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/parent.css') }}">
+    
+    <style>
+        :root {
+            --parent-primary: #10b981;
+            --parent-primary-rgb: 16, 185, 129;
+            --parent-primary-hover: #059669;
+            --parent-secondary: #06b6d4;
+            --parent-accent: #34d399;
+            --parent-gradient: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            --parent-border: rgba(16, 185, 129, 0.28);
+            --parent-glow: rgba(16, 185, 129, 0.18);
+        }
+        .faculty-badge {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(6, 182, 212, 0.2));
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            color: #34d399;
+        }
+    </style>
+    
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+    <!-- Ambient Glowing Background -->
+    <div class="ambient-background" aria-hidden="true">
+        <div class="glow-orb" style="background: radial-gradient(circle, rgba(16, 185, 129, 0.15) 0%, transparent 70%); top: -100px; left: -100px; width: 500px; height: 500px; position: fixed; border-radius: 50%; pointer-events: none; z-index: 0;"></div>
+        <div class="glow-orb" style="background: radial-gradient(circle, rgba(6, 182, 212, 0.12) 0%, transparent 70%); bottom: -100px; right: -100px; width: 600px; height: 600px; position: fixed; border-radius: 50%; pointer-events: none; z-index: 0;"></div>
+    </div>
+
+    <!-- Mobile Drawer Overlay -->
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+    <div class="portal-layout">
+
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar" id="parent-sidebar" aria-label="Faculty Navigation">
+            <a href="{{ url_for('faculty_dashboard') }}" class="sidebar-brand">
+                <div class="brand-icon" style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3);">
+                    <span style="font-size: 1.3rem;">👨‍🏫</span>
+                </div>
+                <span class="brand-name">CampusGuard <span class="brand-badge faculty-badge">FACULTY</span></span>
+            </a>
+
+            <nav class="sidebar-nav">
+                <!-- 1. OVERVIEW & SCHEDULE -->
+                <span class="nav-category">Overview &amp; Schedule</span>
+                
+                <a href="{{ url_for('faculty_dashboard') }}" class="nav-link {% if active_page == 'dashboard' %}active{% endif %}" id="nav-dashboard">
+                    <span>🏠</span> <span class="nav-text">Dashboard</span>
+                </a>
+                <a href="{{ url_for('faculty_timetable') }}" class="nav-link {% if active_page == 'timetable' %}active{% endif %}" id="nav-timetable">
+                    <span>📅</span> <span class="nav-text">My Timetable</span>
+                </a>
+                <a href="{{ url_for('faculty_calendar') }}" class="nav-link {% if active_page == 'calendar' %}active{% endif %}" id="nav-calendar">
+                    <span>🗓️</span> <span class="nav-text">Academic Calendar</span>
+                </a>
+
+                <!-- 2. ACADEMIC GOVERNANCE & MENTORING -->
+                <span class="nav-category">Academic Governance</span>
+
+                <a href="{{ url_for('faculty_subjects') }}" class="nav-link {% if active_page == 'subjects' %}active{% endif %}" id="nav-subjects">
+                    <span>📚</span> <span class="nav-text">My Subjects</span>
+                </a>
+                <a href="{{ url_for('faculty_classes') }}" class="nav-link {% if active_page == 'classes' %}active{% endif %}" id="nav-classes">
+                    <span>🏛️</span> <span class="nav-text">My Classes</span>
+                </a>
+                <a href="{{ url_for('faculty_students') }}" class="nav-link {% if active_page == 'students' %}active{% endif %}" id="nav-students">
+                    <span>🎓</span> <span class="nav-text">My Students</span>
+                </a>
+                <a href="{{ url_for('faculty_mentoring') }}" class="nav-link {% if active_page == 'mentoring' %}active{% endif %}" id="nav-mentoring">
+                    <span>🛡️</span> <span class="nav-text">Mentoring &amp; Risk Alerts</span>
+                </a>
+
+                <!-- 3. ASSESSMENTS & INSTRUCTION -->
+                <span class="nav-category">Teaching &amp; Assessments</span>
+
+                <a href="{{ url_for('faculty_attendance') }}" class="nav-link {% if active_page == 'attendance' %}active{% endif %}" id="nav-attendance">
+                    <span>📊</span> <span class="nav-text">Class Attendance</span>
+                </a>
+                <a href="{{ url_for('faculty_attendance_analytics') }}" class="nav-link {% if active_page == 'attendance_analytics' %}active{% endif %}" id="nav-attendance-analytics">
+                    <span>📈</span> <span class="nav-text">Attendance Analytics</span>
+                </a>
+                <a href="{{ url_for('faculty_marks') }}" class="nav-link {% if active_page == 'marks' %}active{% endif %}" id="nav-marks">
+                    <span>📝</span> <span class="nav-text">Marks &amp; Gradebook</span>
+                </a>
+                <a href="{{ url_for('faculty_marks_performance') }}" class="nav-link {% if active_page == 'marks_performance' %}active{% endif %}" id="nav-marks-performance">
+                    <span>🎯</span> <span class="nav-text">Academic Performance</span>
+                </a>
+                <a href="{{ url_for('faculty_assignments') }}" class="nav-link {% if active_page == 'assignments' %}active{% endif %}" id="nav-assignments">
+                    <span>📋</span> <span class="nav-text">Assignments</span>
+                </a>
+                <a href="{{ url_for('faculty_materials') }}" class="nav-link {% if active_page == 'materials' %}active{% endif %}" id="nav-materials">
+                    <span>📖</span> <span class="nav-text">Learning Materials</span>
+                </a>
+                <a href="{{ url_for('faculty_lab') }}" class="nav-link {% if active_page == 'lab' %}active{% endif %}" id="nav-lab">
+                    <span>🧪</span> <span class="nav-text">Lab Management</span>
+                </a>
+                <a href="{{ url_for('faculty_exams') }}" class="nav-link {% if active_page == 'exams' %}active{% endif %}" id="nav-exams">
+                    <span>📝</span> <span class="nav-text">Examinations</span>
+                </a>
+                <a href="{{ url_for('faculty_leaves') }}" class="nav-link {% if active_page == 'leaves' %}active{% endif %}" id="nav-leaves">
+                    <span>🏢</span> <span class="nav-text">Leave Requests</span>
+                </a>
+
+                <!-- 4. COMMUNICATION & AI INTELLIGENCE -->
+                <span class="nav-category">Communication &amp; AI</span>
+                
+                <a href="{{ url_for('faculty_announcements') }}" class="nav-link {% if active_page == 'announcements' %}active{% endif %}" id="nav-announcements">
+                    <span>📢</span> <span class="nav-text">Announcements</span>
+                </a>
+                <a href="{{ url_for('faculty_messages') }}" class="nav-link {% if active_page == 'messages' %}active{% endif %}" id="nav-messages">
+                    <span>💬</span> <span class="nav-text">Messages Hub</span>
+                </a>
+                <a href="{{ url_for('faculty_notifications') }}" class="nav-link {% if active_page == 'notifications' %}active{% endif %}" id="nav-notifications">
+                    <span>🔔</span> <span class="nav-text">Notification Center</span>
+                </a>
+                <a href="{{ url_for('faculty_insights') }}" class="nav-link {% if active_page == 'insights' %}active{% endif %}" id="nav-insights">
+                    <span>🤖</span> <span class="nav-text">AI Academic Insights</span>
+                </a>
+                <a href="{{ url_for('faculty_reports') }}" class="nav-link {% if active_page == 'reports' %}active{% endif %}" id="nav-reports">
+                    <span>📊</span> <span class="nav-text">Reports &amp; Exports</span>
+                </a>
+                <a href="{{ url_for('faculty_feedback') }}" class="nav-link {% if active_page == 'feedback' %}active{% endif %}" id="nav-feedback">
+                    <span>🎫</span> <span class="nav-text">Feedback / Requests</span>
+                </a>
+
+                <!-- 5. ACCOUNT -->
+                <span class="nav-category">Account Settings</span>
+                <a href="{{ url_for('faculty_profile') }}" class="nav-link {% if active_page == 'profile' %}active{% endif %}" id="nav-profile">
+                    <span>⚙️</span> <span class="nav-text">Profile &amp; Security</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <a href="/" class="portal-switch-link" title="Open Main Landing Gateway">
+                    <span>🌐</span> <span>Campus Gateway</span>
+                </a>
+                <a href="{{ url_for('faculty_logout') }}" class="logout-link" id="btn-logout" aria-label="Sign out">
+                    <span>🚪</span> <span>Sign Out</span>
+                </a>
+            </div>
+        </aside>
+
+        <!-- Main Content Wrapper -->
+        <div class="main-wrapper">
+            
+            <!-- Topbar Header -->
+            <header class="topbar">
+                <div class="topbar-left">
+                    <button type="button" class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Toggle menu">
+                        ☰
+                    </button>
+
+                    <!-- Connection Status Indicator -->
+                    <div class="conn-status-pill">
+                        <span class="conn-dot"></span>
+                        <span>Live Connected</span>
+                    </div>
+
+                    <!-- Department Pill -->
+                    <div class="hide-mobile" style="font-size: 0.82rem; color: var(--text-muted); padding-left: 12px; border-left: 1px solid var(--glass-border);">
+                        <span>{{ faculty.department if faculty else 'Dept of Computer Science & Engineering' }}</span>
+                    </div>
+                </div>
+
+                <div class="topbar-right">
+                    <!-- Notification Bell with Dropdown -->
+                    <div class="notif-bell-wrapper">
+                        <button type="button" class="notif-bell-btn" id="notif-bell-btn" aria-label="View notifications">
+                            <span>🔔</span>
+                            <span class="notif-badge-pill" id="notif-badge-count">0</span>
+                        </button>
+
+                        <div class="notif-dropdown-menu" id="notif-dropdown-menu">
+                            <div class="notif-dropdown-header">
+                                <span class="notif-dropdown-title"><span>🔔</span> Notifications</span>
+                                <button type="button" class="notif-clear-all-btn" onclick="markAllNotificationsRead()">Mark all read</button>
+                            </div>
+                            <div class="notif-items-list" id="notif-dropdown-items">
+                                <div class="notif-empty-state">Loading alerts...</div>
+                            </div>
+                            <a href="{{ url_for('faculty_notifications') }}" class="notif-view-all-link">View All Notifications →</a>
+                        </div>
+                    </div>
+
+                    <!-- Faculty User Profile Pill -->
+                    <div class="topbar-user-pill">
+                        <div class="user-avatar" style="background: linear-gradient(135deg, #10b981, #059669);">
+                            {{ faculty.name[:1] if faculty else 'F' }}
+                        </div>
+                        <div class="user-info hide-mobile">
+                            <span class="user-name">{{ faculty.name if faculty else 'Faculty Advisor' }}</span>
+                            <span class="user-role">ID: {{ faculty.faculty_id if faculty else 'FAC001' }}</span>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Flash Messaging Bar -->
+            {% with flash_msgs = get_flashed_messages(with_categories=true) %}
+                {% if flash_msgs %}
+                    <div class="flash-container">
+                        {% for category, msg in flash_msgs %}
+                            <div class="flash-alert flash-{{ category }}">
+                                <span class="flash-icon">
+                                    {% if category == 'success' %}✓{% elif category == 'error' %}⚠️{% else %}ℹ️{% endif %}
+                                </span>
+                                <span class="flash-text">{{ msg }}</span>
+                                <button type="button" class="flash-close" onclick="this.parentElement.remove()">✕</button>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+
+            <!-- Dynamic Content Body -->
+            <main class="page-content" id="main-content">
+                {% block content %}
+                {% block faculty_content %}{% endblock %}
+                {% endblock %}
+            </main>
+
+            <!-- Minimal Footer -->
+            <footer style="padding: 20px 32px; border-top: 1px solid var(--glass-border); color: var(--text-muted); font-size: 0.8rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                <div>© 2026 CampusGuard AI — Unified Smart Campus ERP</div>
+                <div style="display: flex; gap: 16px;">
+                    <span>🛡️ Faculty ERP Node Active</span>
+                    <span>24/7 Security Helpline: +91 91234 56780</span>
+                </div>
+            </footer>
+
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        window.CURRENT_USER_ROLE = 'faculty';
+        window.CURRENT_USER_ID = {{ faculty.id if faculty else 1 }};
+    </script>
+    <script src="{{ url_for('static', filename='js/parent.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/campusguard-realtime.js') }}"></script>
+    
+</body>
+</html>

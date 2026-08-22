@@ -1,148 +1,288 @@
 {% extends "student/base_student.html" %}
 
-{% block title %}Emergency SOS Console{% endblock %}
+{% block title %}Emergency SOS Console — CampusGuard AI{% endblock %}
 
 {% block student_content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/emergency.css') }}">
+
 <div class="page-header-block">
     <div class="page-title-group">
-        <h1><span>🚨</span> High-Priority Emergency SOS Console</h1>
-        <p>Instantaneous distress beacon routing to Campus Security Quick Response and Medical Units.</p>
+        <h1><span>🚨</span> Campus Emergency Response System</h1>
+        <p>Instantaneous high-priority distress routing with GPS telemetry, multi-unit triage, and live responder dispatch.</p>
+    </div>
+    <div style="display: flex; gap: 10px; align-items: center;">
+        <button type="button" class="btn-secondary" style="font-size: 0.82rem; padding: 8px 14px;" onclick="openIncidentHistoryModal()">
+            <span>📋</span> Incident History
+        </button>
     </div>
 </div>
 
 {% if active_sos %}
-<!-- Live 5-Stage Dispatch Status Timeline Tracker -->
-<section class="content-card" style="border: 2px solid #ef4444; background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(15, 23, 42, 0.95) 100%);">
+<!-- ========================================================================= -->
+<!-- ACTIVE EMERGENCY LIVE DISPATCH TRACKER -->
+<!-- ========================================================================= -->
+<section id="active-emergency-tracker-card" class="content-card" style="border: 2px solid #ef4444; background: linear-gradient(135deg, rgba(239, 68, 68, 0.16) 0%, rgba(14, 19, 32, 0.96) 100%);">
     <div class="card-header-row">
-        <div style="display: flex; align-items: center; gap: 12px;">
-            <div class="status-pulse" style="background: #ef4444; box-shadow: 0 0 14px #ef4444; width: 12px; height: 12px;"></div>
-            <h2 class="card-heading" style="color: #fca5a5; font-size: 1.3rem;">
+        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+            <div class="beacon-dot"></div>
+            <h2 class="card-heading" style="color: #fca5a5; font-size: 1.25rem;">
                 🚨 EMERGENCY SOS ACTIVE: {{ active_sos.incident_id }}
             </h2>
         </div>
-        <span class="badge badge-red">LIVE DISTRESS SIGNAL</span>
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <span class="beacon-pulse">
+                <span class="beacon-dot"></span> LIVE DISTRESS SIGNAL
+            </span>
+        </div>
     </div>
 
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 24px; font-size: 0.88rem;">
+    <!-- Live Status Indicator -->
+    <div style="margin-bottom: 18px;">
+        <div id="live-status-pill" class="live-status-pill {% if active_sos.status == 'TRIGGERED' or active_sos.status == 'ACTIVE' %}status-triggered{% elif active_sos.status == 'ACKNOWLEDGED' %}status-acknowledged{% elif active_sos.status in ['RESPONDER_ASSIGNED', 'ASSIGNED'] %}status-assigned{% elif active_sos.status == 'EN_ROUTE' %}status-enroute{% elif active_sos.status == 'ON_SCENE' %}status-onscene{% elif active_sos.status in ['RESOLVED', 'CLOSED'] %}status-resolved{% else %}status-triggered{% endif %}">
+            {% if active_sos.status in ['ACTIVE', 'TRIGGERED'] %}
+                <span class="beacon-dot"></span> 🟢 Response Team Notified
+            {% elif active_sos.status == 'ACKNOWLEDGED' %}
+                <span>✓</span> 🔵 Incident Acknowledged
+            {% elif active_sos.status in ['RESPONDER_ASSIGNED', 'ASSIGNED'] %}
+                <span>⚡</span> 🟡 Response Unit Assigned
+            {% elif active_sos.status == 'EN_ROUTE' %}
+                <span>🚗</span> 🚑 Responder En Route
+            {% elif active_sos.status == 'ON_SCENE' %}
+                <span>📍</span> 📍 Responder On Scene
+            {% elif active_sos.status in ['RESOLVED', 'CLOSED'] %}
+                <span>🛡️</span> 🛡️ Emergency Resolved
+            {% else %}
+                <span class="beacon-dot"></span> 🟢 Response Team Notified
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Quick Telemetry Grid -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 22px; font-size: 0.86rem; background: rgba(0,0,0,0.3); padding: 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.06);">
         <div>Emergency ID: <strong style="color: white; font-family: var(--font-mono);">{{ active_sos.incident_id }}</strong></div>
-        <div>Broadcast Location: <strong style="color: white;">{{ active_sos.location }}</strong></div>
-        <div>GPS Coordinates: <strong style="color: #34d399; font-family: var(--font-mono);">{% if active_sos.latitude %}{{ active_sos.latitude }}, {{ active_sos.longitude }}{% else %}Perimeter Cell Gateway{% endif %}</strong></div>
-        <div>Activated At: <strong style="color: white; font-family: var(--font-mono);">{{ active_sos.created_at[:16] }}</strong></div>
+        <div>Category: <strong style="color: #fbbf24;">{{ active_sos.category|default(active_sos.emergency_type|default('Personal Safety')) }}</strong></div>
+        <div>Location: <strong style="color: white;">{{ active_sos.location|default('Campus Safe Zone') }}</strong></div>
+        <div>GPS Coordinates: <strong style="color: #34d399; font-family: var(--font-mono);">{% if active_sos.latitude and active_sos.latitude != 0.0 %}{{ active_sos.latitude|round(4) }}, {{ active_sos.longitude|round(4) }}{% else %}Location without GPS{% endif %}</strong></div>
+        <div>Activated At: <strong style="color: white; font-family: var(--font-mono);">{{ active_sos.created_at[:16] if active_sos.created_at else 'Just now' }}</strong></div>
+        <div>Assigned Unit: <strong id="live-assigned-unit" style="color: #38bdf8;">{{ active_sos.assigned_to|default(active_sos.assigned_responder|default('Awaiting assignment')) }}</strong></div>
     </div>
 
-    <!-- 5-Stage Dispatch Timeline -->
-    <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--text-primary); margin-bottom: 16px;">
+    <!-- 6-Stage Dynamic Dispatch Timeline -->
+    <h3 style="font-size: 0.95rem; font-weight: 700; color: var(--text-primary); margin-bottom: 12px;">
         🛡️ Live Response &amp; Dispatch Timeline
-    </h4>
+    </h3>
 
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 24px;">
-        <div style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4); border-radius: 10px; padding: 12px; text-align: center;">
-            <div style="color: #34d399; font-weight: 800; font-size: 1.1rem; margin-bottom: 4px;">✓</div>
-            <strong style="color: #34d399; font-size: 0.85rem;">1. SOS Activated</strong>
+    <div class="emergency-timeline-grid">
+        <div id="step-triggered" class="timeline-step-card completed">
+            <div class="step-icon">✓</div>
+            <span class="step-label">1. Triggered</span>
+            <div class="step-time">{{ active_sos.created_at[11:16] if active_sos.created_at else 'Completed' }}</div>
         </div>
-        <div style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4); border-radius: 10px; padding: 12px; text-align: center;">
-            <div style="color: #34d399; font-weight: 800; font-size: 1.1rem; margin-bottom: 4px;">✓</div>
-            <strong style="color: #34d399; font-size: 0.85rem;">2. Incident Recorded</strong>
+        <div id="step-acknowledged" class="timeline-step-card {% if active_sos.status in ['ACKNOWLEDGED', 'RESPONDING', 'ASSIGNED', 'RESPONDER_ASSIGNED', 'EN_ROUTE', 'ON_SCENE', 'RESOLVED', 'CLOSED'] %}completed{% else %}active{% endif %}">
+            <div class="step-icon">{% if active_sos.status in ['ACKNOWLEDGED', 'RESPONDING', 'ASSIGNED', 'RESPONDER_ASSIGNED', 'EN_ROUTE', 'ON_SCENE', 'RESOLVED', 'CLOSED'] %}✓{% else %}⏳{% endif %}</div>
+            <span class="step-label">2. Acknowledged</span>
+            <div class="step-time">{% if active_sos.status not in ['ACTIVE', 'TRIGGERED'] %}Confirmed{% else %}Waiting for response team{% endif %}</div>
         </div>
-        <div style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4); border-radius: 10px; padding: 12px; text-align: center;">
-            <div style="color: #34d399; font-weight: 800; font-size: 1.1rem; margin-bottom: 4px;">✓</div>
-            <strong style="color: #34d399; font-size: 0.85rem;">3. Security Notified</strong>
+        <div id="step-assigned" class="timeline-step-card {% if active_sos.status in ['RESPONDING', 'ASSIGNED', 'RESPONDER_ASSIGNED', 'EN_ROUTE', 'ON_SCENE', 'RESOLVED', 'CLOSED'] %}completed{% elif active_sos.status == 'ACKNOWLEDGED' %}active{% else %}pending{% endif %}">
+            <div class="step-icon">⚡</div>
+            <span class="step-label">3. Assigned</span>
+            <div class="step-time">{% if active_sos.assigned_to and active_sos.assigned_to != 'Unassigned' and active_sos.assigned_to != 'Awaiting assignment' %}{{ active_sos.assigned_to }}{% else %}Waiting{% endif %}</div>
         </div>
-        <div style="background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.4); border-radius: 10px; padding: 12px; text-align: center;">
-            <div style="color: #38bdf8; font-weight: 800; font-size: 1.1rem; margin-bottom: 4px;">⚡</div>
-            <strong style="color: #38bdf8; font-size: 0.85rem;">4. Responder Assigned</strong>
+        <div id="step-enroute" class="timeline-step-card {% if active_sos.status in ['EN_ROUTE', 'ON_SCENE', 'RESOLVED', 'CLOSED'] %}completed{% elif active_sos.status in ['RESPONDING', 'ASSIGNED', 'RESPONDER_ASSIGNED'] %}active{% else %}pending{% endif %}">
+            <div class="step-icon">🚗</div>
+            <span class="step-label">4. En Route</span>
+            <div class="step-time">{% if active_sos.status in ['EN_ROUTE', 'ON_SCENE', 'RESOLVED', 'CLOSED'] %}En Route (ETA ~4m){% else %}Waiting{% endif %}</div>
         </div>
-        <div style="background: rgba(255, 255, 255, 0.04); border: 1px solid var(--glass-border); border-radius: 10px; padding: 12px; text-align: center; opacity: 0.7;">
-            <div style="color: #94a3b8; font-weight: 800; font-size: 1.1rem; margin-bottom: 4px;">⏳</div>
-            <strong style="color: #94a3b8; font-size: 0.85rem;">5. Resolved</strong>
+        <div id="step-onscene" class="timeline-step-card {% if active_sos.status in ['ON_SCENE', 'RESOLVED', 'CLOSED'] %}completed{% elif active_sos.status == 'EN_ROUTE' %}active{% else %}pending{% endif %}">
+            <div class="step-icon">📍</div>
+            <span class="step-label">5. On Scene</span>
+            <div class="step-time">{% if active_sos.status in ['ON_SCENE', 'RESOLVED', 'CLOSED'] %}On Scene{% else %}Waiting{% endif %}</div>
+        </div>
+        <div id="step-resolved" class="timeline-step-card {% if active_sos.status in ['RESOLVED', 'CLOSED'] %}completed{% elif active_sos.status == 'ON_SCENE' %}active{% else %}pending{% endif %}">
+            <div class="step-icon">🛡️</div>
+            <span class="step-label">6. Resolved</span>
+            <div class="step-time">{% if active_sos.status in ['RESOLVED', 'CLOSED'] %}Resolved{% else %}Pending{% endif %}</div>
         </div>
     </div>
 
-    <!-- Stand Down SOS Form -->
-    <form method="POST" action="{{ url_for('student_emergency_cancel', incident_id=active_sos.incident_id) }}">
-        <button type="submit" class="btn-secondary" style="background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.2);">
+    <!-- Actions Strip -->
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-top: 18px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.08);">
+        <a href="/emergency/incident/{{ active_sos.incident_id }}" class="btn-secondary" style="font-size: 0.85rem;">
+            <span>📄</span> View Full Incident Dossier &amp; Notes
+        </a>
+
+        <!-- Stand Down SOS Trigger -->
+        <button type="button" class="btn-secondary" style="background: rgba(255, 255, 255, 0.08); border-color: rgba(255, 255, 255, 0.25); color: #fca5a5;" onclick="openStandDownModal('{{ active_sos.incident_id }}')">
             <span>🛡️</span> False Alarm / Stand Down (Mark Safe)
         </button>
-    </form>
+    </div>
 </section>
 
 {% else %}
 
-<!-- SOS Beacon Activation Card -->
-<section class="content-card" style="text-align: center; padding: 48px 24px; border: 2px dashed rgba(239, 68, 68, 0.4);">
-    <div style="max-width: 580px; margin: 0 auto;">
-        <div style="width: 90px; height: 90px; margin: 0 auto 20px; border-radius: 50%; background: rgba(239, 68, 68, 0.2); border: 2px solid #ef4444; display: flex; align-items: center; justify-content: center; font-size: 3rem; box-shadow: 0 0 35px rgba(239, 68, 68, 0.5);">
+<!-- ========================================================================= -->
+<!-- NEUTRAL READY STATE EMERGENCY CARD -->
+<!-- ========================================================================= -->
+<section class="content-card" style="text-align: center; padding: 42px 24px; border: 1px solid rgba(239, 68, 68, 0.35); background: linear-gradient(135deg, rgba(239, 68, 68, 0.08) 0%, rgba(14, 19, 32, 0.95) 100%);">
+    <div style="max-width: 600px; margin: 0 auto;">
+        
+        <div style="width: 72px; height: 72px; border-radius: 20px; background: rgba(239, 68, 68, 0.18); border: 1px solid rgba(239, 68, 68, 0.4); display: flex; align-items: center; justify-content: center; font-size: 2.4rem; margin: 0 auto 16px; box-shadow: 0 0 30px rgba(239, 68, 68, 0.25);">
             🚨
         </div>
 
-        <h2 style="font-size: 1.7rem; font-weight: 800; color: white; margin-bottom: 10px;">
-            Emergency Distress Beacon
+        <h2 style="font-size: 1.7rem; font-weight: 800; color: white; margin-bottom: 6px;">
+            🚨 EMERGENCY SOS
         </h2>
-        <p style="color: var(--text-secondary); font-size: 0.95rem; line-height: 1.5; margin-bottom: 24px;">
-            Pressing the button below records an emergency incident, attaches your location coordinates (if permitted), and transmits an immediate high-priority distress alert to the Campus Security Command Console.
-        </p>
-
-        <div id="sos-loc-status" style="font-size: 0.85rem; color: #38bdf8; margin-bottom: 20px;">
-            📍 Detecting Device GPS Location...
+        
+        <div style="margin-bottom: 12px;">
+            <span class="badge badge-emerald" style="font-size: 0.84rem; padding: 4px 12px;">
+                🟢 Status: Ready
+            </span>
         </div>
 
-        <!-- Open Confirmation Modal Button -->
-        <button type="button" class="btn-danger" style="font-size: 1.15rem; padding: 16px 36px; border-radius: 99px; box-shadow: 0 10px 30px rgba(239, 68, 68, 0.6);" onclick="openModal('sos-confirm-modal')">
-            🚨 ACTIVATE EMERGENCY SOS
-        </button>
-    </div>
-</section>
-
-<!-- 2-Step Confirmation Modal -->
-<div class="portal-modal-backdrop" id="sos-confirm-modal">
-    <div class="portal-modal-content" style="max-width: 480px; text-align: center;">
-        <div style="font-size: 3rem; margin-bottom: 12px;">⚠️</div>
-        <h3 style="font-size: 1.35rem; font-weight: 800; color: #fca5a5; margin-bottom: 8px;">
-            Confirm Emergency SOS Activation
-        </h3>
-        <p style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.5; margin-bottom: 24px;">
-            Are you sure you want to activate the Emergency SOS Beacon? A high-priority emergency alert will be dispatched to campus security personnel with your location telemetry.
+        <p style="color: #f1f5f9; font-size: 1.05rem; font-weight: 600; margin-bottom: 6px;">
+            No active emergency
+        </p>
+        <p style="color: var(--text-secondary); font-size: 0.92rem; line-height: 1.5; margin-bottom: 28px;">
+            Activate SOS if you require immediate campus assistance. Activating SOS will open a confirmation window to transmit your emergency signal and location to Campus Security &amp; Medical Units.
         </p>
 
-        <form id="sos-activation-form" method="POST" action="{{ url_for('student_emergency') }}">
-            <input type="hidden" name="location" id="sos-location" value="Academic / Campus Perimeter">
-            <input type="hidden" name="latitude" id="sos-lat" value="">
-            <input type="hidden" name="longitude" id="sos-lng" value="">
+        <!-- Prominent Manual SOS Button -->
+        <button type="button" class="btn-danger" style="font-size: 1.05rem; font-weight: 800; padding: 14px 34px; border-radius: 99px; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); box-shadow: 0 0 35px rgba(239, 68, 68, 0.5), 0 4px 15px rgba(0, 0, 0, 0.4); cursor: pointer;" onclick="openEmergencySOSModal()">
+            <span>🚨</span> ACTIVATE EMERGENCY SOS
+        </button>
 
-            <div style="display: flex; justify-content: center; gap: 14px;">
-                <button type="button" class="btn-secondary" onclick="closeModal('sos-confirm-modal')">
-                    Cancel
-                </button>
-                <button type="submit" class="btn-danger" style="background: #dc2626;">
-                    Confirm &amp; Activate SOS 🚨
-                </button>
-            </div>
-        </form>
+        <div style="margin-top: 20px; font-size: 0.82rem; color: var(--text-muted);">
+            ⚡ 24/7 Monitored by Central Security Control &amp; Quick Response Units
+        </div>
+
     </div>
-</div>
+</section>
 
 {% endif %}
 
-<!-- 24/7 Hotlines Strip -->
+<!-- ========================================================================= -->
+<!-- 24/7 VERIFIED CAMPUS EMERGENCY CONTACTS -->
+<!-- ========================================================================= -->
 <section class="content-card" style="margin-top: 24px;">
     <div class="card-header-row">
-        <h3 class="card-heading"><span>📞</span> 24/7 Campus Emergency Hotlines</h3>
-        <span class="badge badge-green">Always Available</span>
+        <h3 class="card-heading"><span>📞</span> 24/7 Verified Campus Emergency Contacts</h3>
+        <span class="badge badge-green">Always Operational</span>
     </div>
 
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px;">
-        <div style="padding: 12px; background: rgba(6, 8, 14, 0.4); border-radius: 10px; border: 1px solid var(--glass-border);">
-            <div style="font-size: 0.8rem; color: var(--text-muted);">Campus Security HQ</div>
-            <strong style="color: #38bdf8; font-size: 0.95rem;">+91 91234 56780</strong>
+        <div style="padding: 14px; background: rgba(6, 8, 14, 0.4); border-radius: 12px; border: 1px solid var(--glass-border);">
+            <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 2px;">Campus Security Command</div>
+            <strong style="color: #38bdf8; font-size: 1rem; font-family: var(--font-mono);">+91 91234 56780</strong>
+            <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 4px;">Main Gate Control Tower</div>
         </div>
-        <div style="padding: 12px; background: rgba(6, 8, 14, 0.4); border-radius: 10px; border: 1px solid var(--glass-border);">
-            <div style="font-size: 0.8rem; color: var(--text-muted);">Emergency Medical Pavilion</div>
-            <strong style="color: #34d399; font-size: 0.95rem;">+91 91234 56781</strong>
+        <div style="padding: 14px; background: rgba(6, 8, 14, 0.4); border-radius: 12px; border: 1px solid var(--glass-border);">
+            <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 2px;">Campus Health Center</div>
+            <strong style="color: #34d399; font-size: 1rem; font-family: var(--font-mono);">+91 91234 56781</strong>
+            <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 4px;">Health Pavilion Block A</div>
         </div>
-        <div style="padding: 12px; background: rgba(6, 8, 14, 0.4); border-radius: 10px; border: 1px solid var(--glass-border);">
-            <div style="font-size: 0.8rem; color: var(--text-muted);">Women's Safety Officer</div>
-            <strong style="color: #c084fc; font-size: 0.95rem;">+91 91234 56782</strong>
+        <div style="padding: 14px; background: rgba(6, 8, 14, 0.4); border-radius: 12px; border: 1px solid var(--glass-border);">
+            <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 2px;">Women's Safety &amp; Welfare</div>
+            <strong style="color: #c084fc; font-size: 1rem; font-family: var(--font-mono);">+91 91234 56782</strong>
+            <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 4px;">Student Welfare Office</div>
+        </div>
+        <div style="padding: 14px; background: rgba(6, 8, 14, 0.4); border-radius: 12px; border: 1px solid var(--glass-border);">
+            <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 2px;">Fire &amp; Electrical Safety</div>
+            <strong style="color: #f87171; font-size: 1rem; font-family: var(--font-mono);">+91 91234 56783</strong>
+            <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 4px;">Facilities Command</div>
         </div>
     </div>
 </section>
+
+<!-- ========================================================================= -->
+<!-- STAND DOWN CONFIRMATION MODAL -->
+<!-- ========================================================================= -->
+<div id="sos-stand-down-modal" class="emergency-modal-overlay" style="display: none;">
+    <div class="emergency-modal-content" style="max-width: 480px;">
+        <div class="emergency-modal-header">
+            <h2 style="font-size: 1.25rem; font-weight: 800; color: #34d399; margin: 0;">🛡️ Confirm Stand Down (Mark Safe)</h2>
+            <button type="button" class="emergency-modal-close" onclick="closeStandDownModal()">✕</button>
+        </div>
+        <div class="emergency-modal-body">
+            <p style="color: #f1f5f9; font-size: 0.94rem; line-height: 1.5; margin-bottom: 12px;">
+                Are you sure you want to mark yourself safe?
+            </p>
+            <div style="padding: 14px; background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.35); border-radius: 12px; font-size: 0.86rem; color: #fcd34d; line-height: 1.5;">
+                ⚠️ The emergency team may already be responding. Marking yourself safe will notify them that the situation has changed.
+            </div>
+        </div>
+        <div class="emergency-modal-footer">
+            <button type="button" class="btn-secondary" onclick="closeStandDownModal()">CANCEL</button>
+            <button type="button" class="btn-primary" onclick="confirmStandDown()" style="background: #10b981; font-weight: 700;">YES, I'M SAFE</button>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- INCIDENT HISTORY MODAL -->
+<!-- ========================================================================= -->
+<div id="sos-history-modal" class="emergency-modal-overlay" style="display: none;">
+    <div class="emergency-modal-content" style="max-width: 720px;">
+        <div class="emergency-modal-header">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span>📋</span>
+                <h2 style="font-size: 1.25rem; font-weight: 800; color: #fff; margin: 0;">My Emergency Incident History</h2>
+            </div>
+            <button type="button" class="emergency-modal-close" onclick="closeIncidentHistoryModal()">✕</button>
+        </div>
+        <div class="emergency-modal-body">
+            <div class="table-responsive">
+                <table class="data-table" style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
+                    <thead>
+                        <tr style="border-bottom: 1px solid var(--glass-border); text-align: left; color: var(--text-muted);">
+                            <th style="padding: 10px;">Incident ID</th>
+                            <th style="padding: 10px;">Date &amp; Time</th>
+                            <th style="padding: 10px;">Category</th>
+                            <th style="padding: 10px;">Location</th>
+                            <th style="padding: 10px;">Status</th>
+                            <th style="padding: 10px;">Unit</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for h in incident_history|default([]) %}
+                        <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.04);">
+                            <td style="padding: 10px; font-family: var(--font-mono); color: #818cf8; font-weight: 700;">{{ h.emergency_id or h.incident_id }}</td>
+                            <td style="padding: 10px; color: var(--text-muted);">{{ h.created_at[:16] if h.created_at else 'Recent' }}</td>
+                            <td style="padding: 10px; color: #fbbf24;">{{ h.category or 'Personal Safety' }}</td>
+                            <td style="padding: 10px;">{{ h.campus_zone or h.location or 'Campus Safe Zone' }}</td>
+                            <td style="padding: 10px;"><span class="badge {% if h.status in ['RESOLVED', 'CLOSED'] %}badge-emerald{% elif h.status in ['CANCELLED', 'STAND_DOWN'] %}badge-purple{% else %}badge-rose{% endif %}">{{ h.status }}</span></td>
+                            <td style="padding: 10px; color: #38bdf8;">{{ h.assigned_responder or h.assigned_to or 'QRT Unit' }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="6" style="text-align: center; padding: 24px; color: var(--text-muted);">No prior emergency incidents recorded.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="emergency-modal-footer">
+            <button type="button" class="btn-secondary" onclick="closeIncidentHistoryModal()">Close</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openIncidentHistoryModal() {
+        const m = document.getElementById('sos-history-modal');
+        if (m) m.style.display = 'flex';
+    }
+    function closeIncidentHistoryModal() {
+        const m = document.getElementById('sos-history-modal');
+        if (m) m.style.display = 'none';
+    }
+
+    {% if active_sos %}
+    if (typeof initStudentEmergencyListener === 'function') {
+        initStudentEmergencyListener('{{ active_sos.incident_id }}');
+    }
+    {% endif %}
+</script>
 {% endblock %}
+

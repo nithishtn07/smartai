@@ -1,0 +1,195 @@
+{% extends "faculty/base_faculty.html" %}
+
+{% block title %}{{ student.name }} — 360° Academic Profile{% endblock %}
+
+{% block faculty_content %}
+<!-- Student Header Card -->
+<section class="content-card" style="background: linear-gradient(135deg, rgba(14, 19, 32, 0.95) 0%, rgba(20, 27, 45, 0.9) 100%); border-color: rgba(16, 185, 129, 0.3);">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px;">
+        
+        <div style="display: flex; align-items: center; gap: 20px;">
+            <div style="width: 72px; height: 72px; border-radius: 20px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); display: flex; align-items: center; justify-content: center; font-size: 2.2rem; font-weight: 800; color: #fff; box-shadow: 0 0 25px rgba(59, 130, 246, 0.3);">
+                {{ student.name[:1] }}
+            </div>
+            <div>
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 4px; flex-wrap: wrap;">
+                    <span class="badge badge-green">STUDENT</span>
+                    <span class="badge badge-indigo" style="font-family: monospace;">{{ student.register_number }}</span>
+                    <span style="color: var(--text-muted); font-size: 0.82rem;">{{ student.department }} • Year {{ student.year }} (Sem {{ student.semester }})</span>
+                </div>
+                <h1 style="font-size: 1.6rem; font-weight: 800; color: #fff; margin: 0 0 4px;">
+                    {{ student.name }}
+                </h1>
+                <p style="color: var(--text-secondary); font-size: 0.88rem; margin: 0;">
+                    📧 {{ student.email }} • 📱 {{ student.phone }} • Section: {{ student.section|default('A') }}
+                </p>
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+            <a href="{{ url_for('faculty_students') }}" class="btn-secondary">
+                ← Back to Student Directory
+            </a>
+            <a href="{{ url_for('faculty_messages') }}" class="btn-primary" style="background: linear-gradient(135deg, #10b981, #059669);">
+                <span>💬</span> Message Student / Parent
+            </a>
+        </div>
+
+    </div>
+</section>
+
+<!-- Linked Parent Card & Academic Performance Summary -->
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+
+    <!-- Parent & Guardian Info -->
+    <section class="content-card" style="margin-bottom: 0;">
+        <div class="card-header-row">
+            <h2 class="card-heading"><span>👨‍👧</span> Linked Parent &amp; Guardian Info</h2>
+            <span class="badge badge-indigo">Emergency Contact</span>
+        </div>
+
+        {% if parent %}
+        <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 12px; padding: 16px;">
+            <div style="font-size: 1.05rem; font-weight: 800; color: #fff; margin-bottom: 4px;">
+                {{ parent.name }} <span class="badge badge-green" style="font-size: 0.72rem; margin-left: 6px;">{{ parent.relationship }}</span>
+            </div>
+            <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 4px;">
+                📧 Email: <strong style="color: #cbd5e1;">{{ parent.email }}</strong>
+            </div>
+            <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 4px;">
+                📱 Phone: <strong style="color: #34d399;">{{ parent.phone }}</strong>
+            </div>
+            {% if parent.address %}
+            <div style="font-size: 0.82rem; color: var(--text-muted); margin-top: 8px;">
+                🏠 Address: {{ parent.address }}
+            </div>
+            {% endif %}
+        </div>
+        {% else %}
+        <div style="text-align: center; padding: 20px; color: var(--text-muted);">
+            No parent profile linked currently.
+        </div>
+        {% endif %}
+    </section>
+
+    <!-- Academic Standing Overview -->
+    <section class="content-card" style="margin-bottom: 0;">
+        <div class="card-header-row">
+            <h2 class="card-heading"><span>📈</span> Academic Standing</h2>
+            <span class="badge badge-green">CGPA &amp; Credits</span>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 12px; padding: 14px; text-align: center;">
+                <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Cumulative CGPA</div>
+                <div style="font-size: 1.8rem; font-weight: 800; color: #38bdf8; margin-top: 4px;">
+                    {{ student.cgpa|default(8.75) }}
+                </div>
+                <div style="font-size: 0.78rem; color: #34d399;">Scale: 10.0</div>
+            </div>
+
+            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 12px; padding: 14px; text-align: center;">
+                <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Semester SGPA</div>
+                <div style="font-size: 1.8rem; font-weight: 800; color: #a855f7; margin-top: 4px;">
+                    {{ student.sgpa|default(8.90) }}
+                </div>
+                <div style="font-size: 0.78rem; color: var(--text-muted);">Current Sem</div>
+            </div>
+        </div>
+    </section>
+
+</div>
+
+<!-- Attendance Roster -->
+<section class="content-card">
+    <div class="card-header-row">
+        <h2 class="card-heading"><span>📊</span> Subject-Wise Attendance Breakdown</h2>
+        <span class="badge badge-indigo">All Enrolled Courses</span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="portal-table">
+            <thead>
+                <tr>
+                    <th>Subject Code</th>
+                    <th>Subject Name</th>
+                    <th>Held</th>
+                    <th>Attended</th>
+                    <th>Missed</th>
+                    <th>Percentage</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in attendance %}
+                <tr>
+                    <td><span class="badge badge-indigo" style="font-family: monospace;">{{ a.subject_code }}</span></td>
+                    <td><strong style="color: #fff;">{{ a.subject_name }}</strong></td>
+                    <td>{{ a.classes_held }}</td>
+                    <td style="color: #34d399; font-weight: 700;">{{ a.classes_attended }}</td>
+                    <td style="color: #f43f5e;">{{ a.classes_missed }}</td>
+                    <td>
+                        <strong style="font-size: 1rem; color: {% if a.attendance_pct >= 85 %}#34d399{% elif a.attendance_pct >= 75 %}#fbbf24{% else %}#f43f5e{% endif %};">
+                            {{ a.attendance_pct }}%
+                        </strong>
+                    </td>
+                    <td>
+                        <span class="badge {% if a.attendance_pct >= 75 %}badge-green{% else %}badge-red{% endif %}">
+                            {% if a.attendance_pct >= 75 %}Compliant{% else %}Shortage Alert{% endif %}
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<!-- Marks Transcript -->
+<section class="content-card">
+    <div class="card-header-row">
+        <h2 class="card-heading"><span>📝</span> Academic Assessment Scores</h2>
+        <span class="badge badge-green">Official Transcript</span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="portal-table">
+            <thead>
+                <tr>
+                    <th>Course</th>
+                    <th>CAT 1 (50)</th>
+                    <th>CAT 2 (50)</th>
+                    <th>Quiz (10)</th>
+                    <th>Assignment (10)</th>
+                    <th>FAT (100)</th>
+                    <th>Grade</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for m in marks %}
+                <tr>
+                    <td>
+                        <strong style="color: #fff;">{{ m.course_name }}</strong>
+                        <div style="font-size: 0.75rem; color: var(--text-muted); font-family: monospace;">{{ m.course_code }}</div>
+                    </td>
+                    <td>{{ m.cat1 }}</td>
+                    <td>{{ m.cat2 }}</td>
+                    <td>{{ m.quiz }}</td>
+                    <td>{{ m.assignment }}</td>
+                    <td>{{ m.fat }}</td>
+                    <td>
+                        <span class="badge badge-indigo" style="font-weight: 800; font-size: 0.9rem;">{{ m.grade }}</span>
+                    </td>
+                    <td>
+                        <span class="badge {% if m.status == 'PASS' or m.status == 'Published' %}badge-green{% else %}badge-red{% endif %}">
+                            {{ m.status }}
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,188 @@
+{% extends "parent/base_parent.html" %}
+
+{% block title %}Attendance Analytics & Safe Margins{% endblock %}
+
+{% block parent_content %}
+<div class="page-header-block">
+    <div class="page-title-group">
+        <h1><span>📊</span> Attendance Analytics &amp; Compliance</h1>
+        <p>Real-time subject-wise presence, safe absence margin calculations, and daily classroom log entries.</p>
+    </div>
+    
+    <div>
+        {% if overall_pct >= 85 %}
+            <span class="badge badge-green" style="font-size: 0.88rem; padding: 8px 16px;">✓ Excellent Standing ({{ overall_pct }}%)</span>
+        {% elif overall_pct >= 75 %}
+            <span class="badge badge-yellow" style="font-size: 0.88rem; padding: 8px 16px;">⚠️ Minimum Compliance ({{ overall_pct }}%)</span>
+        {% else %}
+            <span class="badge badge-red" style="font-size: 0.88rem; padding: 8px 16px;">🚨 Attendance Shortage Warning ({{ overall_pct }}%)</span>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Attendance Aggregate Overview Banner -->
+<section class="content-card" style="background: linear-gradient(135deg, rgba(14, 19, 32, 0.95) 0%, rgba(20, 27, 45, 0.9) 100%); border-color: var(--parent-border);">
+    <div style="display: flex; align-items: center; gap: 32px; flex-wrap: wrap;">
+        
+        <!-- Circular Progress Gauge -->
+        <div class="progress-circle" style="--pct: {{ overall_pct }}; width: 140px; height: 140px;">
+            <div class="progress-circle-inner" style="width: 112px; height: 112px;">
+                <span class="progress-pct-text" style="font-size: 1.6rem; color: {% if overall_pct >= 85 %}#34d399{% elif overall_pct >= 75 %}#fbbf24{% else %}#f87171{% endif %};">
+                    {{ overall_pct }}%
+                </span>
+                <span class="progress-label">AGGREGATE</span>
+            </div>
+        </div>
+
+        <div style="flex: 1; min-width: 260px;">
+            <h2 style="font-size: 1.3rem; font-weight: 800; color: var(--text-primary); margin-bottom: 6px;">
+                Semester 5 Presence Analytics
+            </h2>
+            <p style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.5; margin-bottom: 16px;">
+                Institutional mandatory threshold is <strong>75.0%</strong>. Students maintaining over 85% earn academic grace credits for extracurricular participation.
+            </p>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px;">
+                <div style="background: rgba(10, 14, 26, 0.6); border: 1px solid var(--glass-border); border-radius: 10px; padding: 10px 14px;">
+                    <div style="font-size: 0.76rem; color: var(--text-muted);">Total Classes</div>
+                    <div style="font-size: 1.3rem; font-weight: 800; font-family: var(--font-mono); color: var(--text-primary);">{{ total_held }}</div>
+                </div>
+                <div style="background: rgba(10, 14, 26, 0.6); border: 1px solid var(--glass-border); border-radius: 10px; padding: 10px 14px;">
+                    <div style="font-size: 0.76rem; color: var(--text-muted);">Attended</div>
+                    <div style="font-size: 1.3rem; font-weight: 800; font-family: var(--font-mono); color: #34d399;">{{ total_attended }}</div>
+                </div>
+                <div style="background: rgba(10, 14, 26, 0.6); border: 1px solid var(--glass-border); border-radius: 10px; padding: 10px 14px;">
+                    <div style="font-size: 0.76rem; color: var(--text-muted);">Absences</div>
+                    <div style="font-size: 1.3rem; font-weight: 800; font-family: var(--font-mono); color: #f87171;">{{ total_missed }}</div>
+                </div>
+                <div style="background: rgba(10, 14, 26, 0.6); border: 1px solid var(--glass-border); border-radius: 10px; padding: 10px 14px;">
+                    <div style="font-size: 0.76rem; color: var(--text-muted);">Course Count</div>
+                    <div style="font-size: 1.3rem; font-weight: 800; font-family: var(--font-mono); color: #c084fc;">{{ records|length }}</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</section>
+
+<!-- Low Attendance Alert (if any course is under 75%) -->
+{% for item in records %}
+    {% if item.attendance_pct < 75 %}
+        <div class="alert-box alert-error">
+            <span>⚠️</span>
+            <div>
+                <strong>Attendance Shortage Alert:</strong> {{ item.subject_name }} ({{ item.subject_code }}) has an attendance of <strong>{{ item.attendance_pct }}%</strong> which is below the mandatory 75% threshold. Please counsel the student to attend upcoming classes regularly.
+            </div>
+        </div>
+    {% endif %}
+{% endfor %}
+
+<!-- Course-by-Course Attendance Table & Safe Margins -->
+<section class="content-card">
+    <div class="card-header-row">
+        <h2 class="card-heading"><span>📚</span> Course Breakdown &amp; Safe Absence Margin</h2>
+        <span class="badge badge-purple">AI Smart Prediction</span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="portal-table">
+            <thead>
+                <tr>
+                    <th>Course Code &amp; Title</th>
+                    <th>Conducted</th>
+                    <th>Attended</th>
+                    <th>Missed</th>
+                    <th>Attendance %</th>
+                    <th>Safe Absence Margin</th>
+                    <th>Compliance Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in records %}
+                {% set safe_bunks = ((item.classes_attended - (0.75 * item.classes_held)) / 0.75)|int %}
+                <tr>
+                    <td>
+                        <div style="font-weight: 700; color: var(--text-primary);">{{ item.subject_name }}</div>
+                        <div style="font-size: 0.78rem; color: var(--text-muted); font-family: var(--font-mono);">{{ item.subject_code }}</div>
+                    </td>
+                    <td><strong>{{ item.classes_held }}</strong></td>
+                    <td style="color: #34d399; font-weight: 700;">{{ item.classes_attended }}</td>
+                    <td style="color: #f87171; font-weight: 700;">{{ item.classes_missed }}</td>
+                    <td>
+                        <div style="font-weight: 800; font-family: var(--font-mono); font-size: 1.05rem; {% if item.attendance_pct >= 85 %}color: #34d399;{% elif item.attendance_pct >= 75 %}color: #fbbf24;{% else %}color: #f87171;{% endif %}">
+                            {{ item.attendance_pct }}%
+                        </div>
+                    </td>
+                    <td>
+                        {% if safe_bunks > 0 %}
+                            <span style="color: #34d399; font-weight: 700; font-size: 0.86rem;">Can safely miss <strong>{{ safe_bunks }}</strong> class{% if safe_bunks > 1 %}es{% endif %}</span>
+                        {% elif safe_bunks == 0 %}
+                            <span style="color: #fbbf24; font-weight: 700; font-size: 0.86rem;">On the boundary (0 safe leaves)</span>
+                        {% else %}
+                            <span style="color: #f87171; font-weight: 700; font-size: 0.86rem;">Must attend next <strong>{{ (safe_bunks * -1) }}</strong> classes</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if item.attendance_pct >= 85 %}
+                            <span class="badge badge-green">Good (≥85%)</span>
+                        {% elif item.attendance_pct >= 75 %}
+                            <span class="badge badge-yellow">Borderline (75-84%)</span>
+                        {% else %}
+                            <span class="badge badge-red">Critical (&lt;75%)</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 24px;">No attendance records found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<!-- Daily Attendance Logs History Table -->
+<section class="content-card">
+    <div class="card-header-row">
+        <h2 class="card-heading"><span>📜</span> Recent Lecture Attendance &amp; Topic Logs</h2>
+        <span class="badge badge-indigo">Biometric &amp; Faculty Logged</span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="portal-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Course Code &amp; Title</th>
+                    <th>Lecture Topic Covered</th>
+                    <th>Presence Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in attendance_logs %}
+                <tr>
+                    <td style="font-family: var(--font-mono); font-size: 0.85rem; color: var(--text-muted);">{{ log.date }}</td>
+                    <td>
+                        <strong style="color: var(--text-primary);">{{ log.course_name }}</strong>
+                        <span style="color: var(--text-muted); font-size: 0.78rem; font-family: var(--font-mono);">({{ log.course_code }})</span>
+                    </td>
+                    <td style="font-size: 0.88rem; color: var(--text-secondary);">{{ log.topic }}</td>
+                    <td>
+                        {% if log.status == 'Present' %}
+                            <span class="badge badge-green">✓ Present</span>
+                        {% else %}
+                            <span class="badge badge-red">✕ Absent</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="4" style="text-align: center; color: var(--text-muted); padding: 24px;">No recent lecture logs available.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

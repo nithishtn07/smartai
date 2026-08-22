@@ -1,0 +1,174 @@
+{% extends "faculty/base_faculty.html" %}
+
+{% block title %}Academic Performance Analytics{% endblock %}
+
+{% block faculty_content %}
+<div class="page-header-block">
+    <div class="page-title-group">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+            <span class="badge badge-green">ACADEMIC INTELLIGENCE</span>
+            <span class="badge badge-indigo">Semester 5</span>
+        </div>
+        <h1><span>🎯</span> Academic Performance &amp; Grade Trajectory</h1>
+        <p>Continuous assessment test analytics, grade distribution, at-risk student detection, and top achievers.</p>
+    </div>
+    
+    <div style="display: flex; gap: 10px;">
+        <a href="{{ url_for('faculty_marks') }}" class="btn-primary" style="background: linear-gradient(135deg, #10b981, #059669);">
+            <span>📝</span> Publish Marks
+        </a>
+    </div>
+</div>
+
+<!-- Component Average Cards -->
+<div class="kpi-grid">
+    <div class="kpi-card">
+        <div class="kpi-icon-wrap" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">
+            📊
+        </div>
+        <div class="kpi-data">
+            <div class="kpi-label">CAT 1 Average</div>
+            <div class="kpi-value" style="color: #34d399;">{{ avg_cat1 }}/50</div>
+            <div class="kpi-subtext">Continuous Assessment 1</div>
+        </div>
+    </div>
+
+    <div class="kpi-card">
+        <div class="kpi-icon-wrap" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8;">
+            📈
+        </div>
+        <div class="kpi-data">
+            <div class="kpi-label">CAT 2 Average</div>
+            <div class="kpi-value" style="color: #38bdf8;">{{ avg_cat2 }}/50</div>
+            <div class="kpi-subtext">Continuous Assessment 2</div>
+        </div>
+    </div>
+
+    <div class="kpi-card">
+        <div class="kpi-icon-wrap" style="background: rgba(168, 85, 247, 0.15); color: #a855f7;">
+            🎯
+        </div>
+        <div class="kpi-data">
+            <div class="kpi-label">FAT Exam Average</div>
+            <div class="kpi-value" style="color: #a855f7;">{{ avg_fat }}/100</div>
+            <div class="kpi-subtext">Final Assessment Score</div>
+        </div>
+    </div>
+
+    <div class="kpi-card">
+        <div class="kpi-icon-wrap" style="background: rgba(244, 63, 94, 0.15); color: #f43f5e;">
+            ⚠️
+        </div>
+        <div class="kpi-data">
+            <div class="kpi-label">Academic Support List</div>
+            <div class="kpi-value" style="color: #f43f5e;">{{ needs_support|length }}</div>
+            <div class="kpi-subtext">Requiring Remedial Guidance</div>
+        </div>
+    </div>
+</div>
+
+<!-- Grade Distribution Matrix -->
+<section class="content-card">
+    <div class="card-header-row">
+        <h2 class="card-heading"><span>📊</span> Grade Distribution Spectrum</h2>
+        <span class="badge badge-indigo">{{ marks_data|length }} Students Evaluated</span>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 14px;">
+        <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 12px; padding: 14px; text-align: center;">
+            <div style="font-size: 0.8rem; color: #34d399; font-weight: 700;">Grade S (Outstanding)</div>
+            <div style="font-size: 1.8rem; font-weight: 800; color: #fff; margin-top: 4px;">{{ grade_dist.get('S', 0) }}</div>
+            <div style="font-size: 0.72rem; color: var(--text-muted);">90–100% Score</div>
+        </div>
+
+        <div style="background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 12px; padding: 14px; text-align: center;">
+            <div style="font-size: 0.8rem; color: #38bdf8; font-weight: 700;">Grade A+ (Excellent)</div>
+            <div style="font-size: 1.8rem; font-weight: 800; color: #fff; margin-top: 4px;">{{ grade_dist.get('A+', 0) }}</div>
+            <div style="font-size: 0.72rem; color: var(--text-muted);">80–89% Score</div>
+        </div>
+
+        <div style="background: rgba(168, 85, 247, 0.1); border: 1px solid rgba(168, 85, 247, 0.3); border-radius: 12px; padding: 14px; text-align: center;">
+            <div style="font-size: 0.8rem; color: #a855f7; font-weight: 700;">Grade A (Very Good)</div>
+            <div style="font-size: 1.8rem; font-weight: 800; color: #fff; margin-top: 4px;">{{ grade_dist.get('A', 0) }}</div>
+            <div style="font-size: 0.72rem; color: var(--text-muted);">70–79% Score</div>
+        </div>
+
+        <div style="background: rgba(251, 191, 36, 0.1); border: 1px solid rgba(251, 191, 36, 0.3); border-radius: 12px; padding: 14px; text-align: center;">
+            <div style="font-size: 0.8rem; color: #fbbf24; font-weight: 700;">Grade B (Good)</div>
+            <div style="font-size: 1.8rem; font-weight: 800; color: #fff; margin-top: 4px;">{{ grade_dist.get('B', 0) }}</div>
+            <div style="font-size: 0.72rem; color: var(--text-muted);">60–69% Score</div>
+        </div>
+
+        <div style="background: rgba(203, 213, 225, 0.05); border: 1px solid rgba(203, 213, 225, 0.15); border-radius: 12px; padding: 14px; text-align: center;">
+            <div style="font-size: 0.8rem; color: #cbd5e1; font-weight: 700;">Grade C (Pass)</div>
+            <div style="font-size: 1.8rem; font-weight: 800; color: #fff; margin-top: 4px;">{{ grade_dist.get('C', 0) }}</div>
+            <div style="font-size: 0.72rem; color: var(--text-muted);">50–59% Score</div>
+        </div>
+
+        <div style="background: rgba(244, 63, 94, 0.1); border: 1px solid rgba(244, 63, 94, 0.3); border-radius: 12px; padding: 14px; text-align: center;">
+            <div style="font-size: 0.8rem; color: #f43f5e; font-weight: 700;">Grade F (Arrear)</div>
+            <div style="font-size: 1.8rem; font-weight: 800; color: #f43f5e; margin-top: 4px;">{{ grade_dist.get('F', 0) }}</div>
+            <div style="font-size: 0.72rem; color: var(--text-muted);">&lt; 50% Score</div>
+        </div>
+    </div>
+</section>
+
+<!-- 2-Column: Top Achievers & Academic Support Watchlist -->
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+
+    <!-- Top Achievers -->
+    <section class="content-card" style="margin-bottom: 0;">
+        <div class="card-header-row">
+            <h2 class="card-heading"><span>🏆</span> Top Academic Achievers</h2>
+            <span class="badge badge-green">Grade S &amp; A+</span>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+            {% for s in top_performers[:5] %}
+            <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 10px; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <strong style="color: #fff; font-size: 0.92rem;">{{ s.student_name }}</strong>
+                    <div style="font-size: 0.76rem; color: var(--text-muted); font-family: monospace;">{{ s.register_number }} • {{ s.course_code }}</div>
+                </div>
+                <div style="text-align: right;">
+                    <span class="badge badge-green" style="font-size: 0.85rem; font-weight: 800;">Grade {{ s.grade }}</span>
+                    <div style="font-size: 0.75rem; color: #38bdf8; margin-top: 2px;">FAT: {{ s.fat }}/100</div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <!-- Support Watchlist -->
+    <section class="content-card" style="margin-bottom: 0;">
+        <div class="card-header-row">
+            <h2 class="card-heading"><span>⚠️</span> Remedial Support Watchlist</h2>
+            <span class="badge badge-amber">{{ needs_support|length }} Students</span>
+        </div>
+
+        {% if needs_support %}
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+            {% for s in needs_support %}
+            <div style="background: rgba(244, 63, 94, 0.08); border: 1px solid rgba(244, 63, 94, 0.2); border-radius: 10px; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <strong style="color: #fff; font-size: 0.92rem;">{{ s.student_name }}</strong>
+                    <div style="font-size: 0.76rem; color: var(--text-muted); font-family: monospace;">{{ s.register_number }} • {{ s.course_code }}</div>
+                </div>
+                <div style="text-align: right;">
+                    <span class="badge badge-red">Grade {{ s.grade }} ({{ s.fat }}/100)</span>
+                    <div style="margin-top: 4px;">
+                        <a href="{{ url_for('faculty_student_view', student_id=s.student_id) }}" class="btn-secondary" style="font-size: 0.72rem; padding: 2px 8px;">View Profile</a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div style="text-align: center; padding: 32px; color: #34d399;">
+            ✓ All students are in good academic standing across all assessment components!
+        </div>
+        {% endif %}
+    </section>
+
+</div>
+{% endblock %}

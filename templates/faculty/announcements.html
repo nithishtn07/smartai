@@ -1,0 +1,123 @@
+{% extends "faculty/base_faculty.html" %}
+
+{% block title %}Course Announcements &amp; Circulars{% endblock %}
+
+{% block faculty_content %}
+<div class="page-header-block">
+    <div class="page-title-group">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+            <span class="badge badge-green">FACULTY BROADCASTS</span>
+            <span class="badge badge-indigo">Multi-Portal Sync</span>
+        </div>
+        <h1><span>📢</span> Course Announcements &amp; Circulars</h1>
+        <p>Publish classroom circulars, lab schedule changes, deadline extensions, and exam notices to your students and parents.</p>
+    </div>
+    
+    <div>
+        <button type="button" class="btn-primary" onclick="openModal('create-announcement-modal')" style="background: linear-gradient(135deg, #10b981, #059669);">
+            <span>➕</span> Publish Announcement
+        </button>
+    </div>
+</div>
+
+<!-- Published Announcements Feed -->
+<section class="content-card">
+    <div class="card-header-row">
+        <h2 class="card-heading"><span>📜</span> Active Institutional &amp; Course Circulars</h2>
+        <span class="badge badge-indigo">{{ announcements|length }} Circulars</span>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 14px;">
+        {% for a in announcements %}
+        <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 12px; padding: 18px;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
+                <div>
+                    <span class="badge badge-indigo" style="margin-right: 6px;">{{ a.category }}</span>
+                    <span class="badge {% if a.priority == 'Urgent' or a.priority == 'High' %}badge-red{% else %}badge-green{% endif %}">{{ a.priority }}</span>
+                    <span class="badge badge-cyan" style="margin-left: 6px;">Audience: {{ a.target_audience|default('All') }}</span>
+                </div>
+                <div style="font-size: 0.78rem; color: var(--text-muted); font-family: monospace;">
+                    {{ a.created_at }}
+                </div>
+            </div>
+
+            <h3 style="font-size: 1.1rem; font-weight: 800; color: #fff; margin: 0 0 6px;">
+                {{ a.title }}
+            </h3>
+
+            <p style="font-size: 0.88rem; color: var(--text-secondary); line-height: 1.6; margin: 0 0 10px;">
+                {{ a.description }}
+            </p>
+
+            <div style="font-size: 0.78rem; color: var(--text-muted);">
+                Published by: <strong style="color: #cbd5e1;">{{ a.author_name|default('Administration') }}</strong>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
+<!-- Publish Announcement Modal -->
+<div class="modal-overlay" id="create-announcement-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); align-items: center; justify-content: center; z-index: 1000;">
+    <div class="modal-card" style="background: #0f172a; border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 16px; padding: 24px; max-width: 520px; width: 90%;">
+        <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h3 class="modal-title" style="color: #fff; margin: 0; font-size: 1.15rem;">📢 Publish Course Announcement</h3>
+            <button type="button" class="modal-close" onclick="closeModal('create-announcement-modal')" style="background: none; border: none; color: #fff; font-size: 1.2rem; cursor: pointer;">✕</button>
+        </div>
+
+        <form method="POST" action="{{ url_for('faculty_announcements_create') }}">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                <div class="form-group">
+                    <label class="form-label" style="display: block; color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 4px;">Course Code</label>
+                    <select name="course_code" class="form-select" required style="width: 100%; padding: 8px 12px; border-radius: 8px; background: #1e293b; border: 1px solid rgba(255,255,255,0.1); color: #fff;">
+                        {% for c in courses %}
+                            <option value="{{ c.course_code }}">{{ c.course_code }} - {{ c.course_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" style="display: block; color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 4px;">Priority</label>
+                    <select name="priority" class="form-select" style="width: 100%; padding: 8px 12px; border-radius: 8px; background: #1e293b; border: 1px solid rgba(255,255,255,0.1); color: #fff;">
+                        <option value="Normal">Normal</option>
+                        <option value="High">High</option>
+                        <option value="Urgent">Urgent</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 12px;">
+                <label class="form-label" style="display: block; color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 4px;">Announcement Title</label>
+                <input type="text" name="title" placeholder="e.g. Tomorrow's DBMS Lecture shifted to Room AB-302" required style="width: 100%; padding: 8px 12px; border-radius: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff;">
+            </div>
+
+            <div class="form-group" style="margin-bottom: 12px;">
+                <label class="form-label" style="display: block; color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 4px;">Target Audience</label>
+                <select name="target_audience" class="form-select" style="width: 100%; padding: 8px 12px; border-radius: 8px; background: #1e293b; border: 1px solid rgba(255,255,255,0.1); color: #fff;">
+                    <option value="Students & Parents">Enrolled Students &amp; Parents</option>
+                    <option value="Students Only">Students Only</option>
+                    <option value="All">Campus Wide</option>
+                </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 16px;">
+                <label class="form-label" style="display: block; color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 4px;">Message Details</label>
+                <textarea name="description" class="form-textarea" rows="4" placeholder="Enter circular details, instructions or deadlines..." required style="width: 100%; padding: 8px 12px; border-radius: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff;"></textarea>
+            </div>
+
+            <button type="submit" class="btn-primary" style="width: 100%; justify-content: center; background: linear-gradient(135deg, #10b981, #059669); padding: 10px; font-size: 0.95rem;">
+                <span>📢</span> Broadcast Announcement
+            </button>
+        </form>
+    </div>
+</div>
+
+<script>
+function openModal(id) {
+    document.getElementById(id).style.display = 'flex';
+}
+function closeModal(id) {
+    document.getElementById(id).style.display = 'none';
+}
+</script>
+{% endblock %}

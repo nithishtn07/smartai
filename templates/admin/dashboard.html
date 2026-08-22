@@ -1,0 +1,323 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}Central Command Dashboard{% endblock %}
+
+{% block content %}
+
+<!-- Top Status & Alert Banner Strip -->
+<div class="alert-banner-strip">
+    <a href="{{ url_for('admin_safety') }}" class="alert-banner-card" style="border-left: 4px solid #ef4444;">
+        <div class="alert-banner-icon" style="background: rgba(239, 68, 68, 0.15); color: #f87171;">🚨</div>
+        <div>
+            <div style="font-size: 1.25rem; font-weight: 800; color: #fff;">{{ active_sos_count|default(0) }} Active SOS</div>
+            <div style="font-size: 0.78rem; color: #fca5a5;">Real-time Distress Beacons</div>
+        </div>
+    </a>
+
+    <a href="{{ url_for('admin_attendance') }}" class="alert-banner-card" style="border-left: 4px solid #f59e0b;">
+        <div class="alert-banner-icon" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24;">⚠️</div>
+        <div>
+            <div style="font-size: 1.25rem; font-weight: 800; color: #fff;">{{ low_att_count|default(0) }} Below 75%</div>
+            <div style="font-size: 0.78rem; color: #fcd34d;">Attendance Watchlist</div>
+        </div>
+    </a>
+
+    <a href="{{ url_for('admin_fees') }}" class="alert-banner-card" style="border-left: 4px solid #38bdf8;">
+        <div class="alert-banner-icon" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8;">💰</div>
+        <div>
+            <div style="font-size: 1.25rem; font-weight: 800; color: #fff;">₹{{ "{:,.0f}".format(pending_fees_total|default(0)) }}</div>
+            <div style="font-size: 0.78rem; color: #7dd3fc;">Pending Fee Dues</div>
+        </div>
+    </a>
+
+    <a href="{{ url_for('admin_leaves') }}" class="alert-banner-card" style="border-left: 4px solid #a855f7;">
+        <div class="alert-banner-icon" style="background: rgba(168, 85, 247, 0.15); color: #c084fc;">📝</div>
+        <div>
+            <div style="font-size: 1.25rem; font-weight: 800; color: #fff;">{{ pending_leaves_count|default(0) }} Requests</div>
+            <div style="font-size: 0.78rem; color: #d8b4fe;">Pending Outpass / Leaves</div>
+        </div>
+    </a>
+</div>
+
+<!-- Welcome Header & Quick Actions -->
+<div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 24px;">
+    <div>
+        <h1 style="font-size: 1.6rem; font-weight: 800; color: #fff; margin-bottom: 4px;">Institutional Control Center</h1>
+        <p style="color: var(--text-secondary); font-size: 0.88rem;">Autonomous Real-time ERP Coordination, Incident Response, &amp; Academic Governance</p>
+    </div>
+
+    <!-- Quick Action Triggers -->
+    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <a href="{{ url_for('admin_students') }}" class="btn-secondary" style="padding: 10px 16px; font-size: 0.85rem;">
+            <span>+</span> Add Student
+        </a>
+        <a href="{{ url_for('admin_announcements') }}" class="btn-primary" style="padding: 10px 16px; font-size: 0.85rem; background: linear-gradient(135deg, #6366f1, #4f46e5);">
+            <span>📢</span> Broadcast Alert
+        </a>
+        <a href="{{ url_for('admin_reports') }}" class="btn-secondary" style="padding: 10px 16px; font-size: 0.85rem;">
+            <span>📄</span> Generate Report
+        </a>
+    </div>
+</div>
+
+<!-- KPI Metrics Grid -->
+<div class="kpi-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 18px; margin-bottom: 28px;">
+    
+    <div class="kpi-card" style="background: rgba(14, 19, 32, 0.8); border: 1px solid var(--glass-border); border-radius: 16px; padding: 20px;">
+        <div style="display: flex; justify-content: space-between; color: var(--text-muted); font-size: 0.82rem; font-weight: 700; text-transform: uppercase;">
+            <span>Students</span>
+            <span>🎓</span>
+        </div>
+        <div style="font-size: 1.8rem; font-weight: 800; color: #fff; margin-top: 8px;">{{ total_students|default(1) }}</div>
+        <div style="color: #34d399; font-size: 0.78rem; margin-top: 4px;">100% Enrolled &amp; Active</div>
+    </div>
+
+    <div class="kpi-card" style="background: rgba(14, 19, 32, 0.8); border: 1px solid var(--glass-border); border-radius: 16px; padding: 20px;">
+        <div style="display: flex; justify-content: space-between; color: var(--text-muted); font-size: 0.82rem; font-weight: 700; text-transform: uppercase;">
+            <span>Parents</span>
+            <span>👨‍👩‍👧</span>
+        </div>
+        <div style="font-size: 1.8rem; font-weight: 800; color: #fff; margin-top: 8px;">{{ total_parents|default(1) }}</div>
+        <div style="color: #c084fc; font-size: 0.78rem; margin-top: 4px;">Connected &amp; Verified</div>
+    </div>
+
+    <div class="kpi-card" style="background: rgba(14, 19, 32, 0.8); border: 1px solid var(--glass-border); border-radius: 16px; padding: 20px;">
+        <div style="display: flex; justify-content: space-between; color: var(--text-muted); font-size: 0.82rem; font-weight: 700; text-transform: uppercase;">
+            <span>Faculty</span>
+            <span>👨‍🏫</span>
+        </div>
+        <div style="font-size: 1.8rem; font-weight: 800; color: #fff; margin-top: 8px;">{{ total_faculty|default(1) }}</div>
+        <div style="color: #38bdf8; font-size: 0.78rem; margin-top: 4px;">Assigned Advisors</div>
+    </div>
+
+    <div class="kpi-card" style="background: rgba(14, 19, 32, 0.8); border: 1px solid var(--glass-border); border-radius: 16px; padding: 20px;">
+        <div style="display: flex; justify-content: space-between; color: var(--text-muted); font-size: 0.82rem; font-weight: 700; text-transform: uppercase;">
+            <span>Campus Attendance</span>
+            <span>📊</span>
+        </div>
+        <div style="font-size: 1.8rem; font-weight: 800; color: #fff; margin-top: 8px;">{{ "{:.1f}%".format(avg_attendance|default(88.5)) }}</div>
+        <div style="color: #34d399; font-size: 0.78rem; margin-top: 4px;">Institution Average</div>
+    </div>
+
+    <div class="kpi-card" style="background: rgba(14, 19, 32, 0.8); border: 1px solid var(--glass-border); border-radius: 16px; padding: 20px;">
+        <div style="display: flex; justify-content: space-between; color: var(--text-muted); font-size: 0.82rem; font-weight: 700; text-transform: uppercase;">
+            <span>Active Courses</span>
+            <span>📚</span>
+        </div>
+        <div style="font-size: 1.8rem; font-weight: 800; color: #fff; margin-top: 8px;">{{ total_courses|default(5) }}</div>
+        <div style="color: #818cf8; font-size: 0.78rem; margin-top: 4px;">Fall 2026 Curriculum</div>
+    </div>
+</div>
+
+<!-- Charts & Analytics Section -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 20px; margin-bottom: 28px;">
+    
+    <!-- Chart 1: Subject Attendance Compliance -->
+    <div style="background: rgba(14, 19, 32, 0.8); border: 1px solid var(--glass-border); border-radius: 18px; padding: 22px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h3 style="font-size: 1.05rem; font-weight: 700; color: #fff;">Subject Attendance Compliance</h3>
+            <span class="badge badge-purple">Real-Time DB</span>
+        </div>
+        <div style="height: 220px; position: relative;">
+            <canvas id="attendanceChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Chart 2: Institutional Safety & Emergency Status -->
+    <div style="background: rgba(14, 19, 32, 0.8); border: 1px solid var(--glass-border); border-radius: 18px; padding: 22px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h3 style="font-size: 1.05rem; font-weight: 700; color: #fff;">Campus Safety Incident Resolution</h3>
+            <span class="badge badge-indigo">QRT Engine</span>
+        </div>
+        <div style="height: 220px; position: relative;">
+            <canvas id="safetyChart"></canvas>
+        </div>
+    </div>
+
+</div>
+
+<!-- Active SOS Incidents Queue -->
+<div style="background: rgba(14, 19, 32, 0.85); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 18px; padding: 24px; margin-bottom: 28px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 10px;">
+        <div>
+            <h2 style="font-size: 1.25rem; font-weight: 800; color: #fca5a5; display: flex; align-items: center; gap: 8px;">
+                <span>🚨</span> Real-Time Emergency SOS Queue &amp; Response
+            </h2>
+            <p style="font-size: 0.82rem; color: var(--text-secondary); margin-top: 2px;">4-Stage Response State Machine: Active &rarr; Acknowledged &rarr; Responding &rarr; Resolved</p>
+        </div>
+        <a href="{{ url_for('admin_safety') }}" class="btn-secondary" style="font-size: 0.82rem; padding: 8px 14px;">Full Safety Radar →</a>
+    </div>
+
+    {% if incidents %}
+    <div class="table-responsive">
+        <table class="data-table" style="width: 100%; border-collapse: collapse; font-size: 0.88rem;">
+            <thead>
+                <tr style="border-bottom: 1px solid var(--glass-border); text-align: left; color: var(--text-muted);">
+                    <th style="padding: 12px 10px;">Incident ID</th>
+                    <th style="padding: 12px 10px;">Student</th>
+                    <th style="padding: 12px 10px;">Location</th>
+                    <th style="padding: 12px 10px;">Status</th>
+                    <th style="padding: 12px 10px;">Timestamp</th>
+                    <th style="padding: 12px 10px; text-align: right;">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for inc in incidents %}
+                <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.04);">
+                    <td style="padding: 14px 10px; font-family: var(--font-mono); color: #818cf8;">{{ inc.incident_id }}</td>
+                    <td style="padding: 14px 10px;">
+                        <strong style="color: var(--text-primary);">{{ inc.student_name|default('Nithish Nagaraj') }}</strong>
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">{{ inc.register_number|default('STU001') }}</div>
+                    </td>
+                    <td style="padding: 14px 10px; color: var(--text-secondary);">{{ inc.location|default('Campus North Block') }}</td>
+                    <td style="padding: 14px 10px;">
+                        {% if inc.status == 'ACTIVE' %}
+                            <span class="badge" style="background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.4);">ACTIVE</span>
+                        {% elif inc.status == 'ACKNOWLEDGED' %}
+                            <span class="badge" style="background: rgba(245, 158, 11, 0.2); color: #fcd34d; border: 1px solid rgba(245, 158, 11, 0.4);">ACKNOWLEDGED</span>
+                        {% elif inc.status == 'RESPONDING' %}
+                            <span class="badge" style="background: rgba(56, 189, 248, 0.2); color: #7dd3fc; border: 1px solid rgba(56, 189, 248, 0.4);">RESPONDING</span>
+                        {% else %}
+                            <span class="badge" style="background: rgba(52, 211, 153, 0.2); color: #6ee7b7; border: 1px solid rgba(52, 211, 153, 0.4);">RESOLVED</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 14px 10px; color: var(--text-muted); font-size: 0.8rem;">{{ inc.created_at }}</td>
+                    <td style="padding: 14px 10px; text-align: right;">
+                        <form method="POST" action="{{ url_for('admin_sos_status_update') }}" style="display: inline-flex; gap: 6px;">
+                            <input type="hidden" name="incident_id" value="{{ inc.incident_id }}">
+                            {% if inc.status == 'ACTIVE' %}
+                                <input type="hidden" name="new_status" value="ACKNOWLEDGED">
+                                <button type="submit" class="btn-primary" style="padding: 6px 12px; font-size: 0.78rem; background: #f59e0b;">Acknowledge</button>
+                            {% elif inc.status == 'ACKNOWLEDGED' %}
+                                <input type="hidden" name="new_status" value="RESPONDING">
+                                <button type="submit" class="btn-primary" style="padding: 6px 12px; font-size: 0.78rem; background: #38bdf8;">Dispatch QRT</button>
+                            {% elif inc.status == 'RESPONDING' %}
+                                <input type="hidden" name="new_status" value="RESOLVED">
+                                <button type="submit" class="btn-primary" style="padding: 6px 12px; font-size: 0.78rem; background: #10b981;">Resolve</button>
+                            {% else %}
+                                <span style="font-size: 0.75rem; color: #34d399;">✓ Safe Closed</span>
+                            {% endif %}
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div style="text-align: center; padding: 30px; color: var(--text-muted);">
+        <span>🛡️</span> All campus sectors clear. Zero active SOS distress beacons.
+    </div>
+    {% endif %}
+</div>
+
+<!-- Two-Column Stream: Announcements & Recent Audit Logs -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px;">
+    
+    <!-- Active Announcements Stream -->
+    <div style="background: rgba(14, 19, 32, 0.8); border: 1px solid var(--glass-border); border-radius: 18px; padding: 22px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h3 style="font-size: 1.05rem; font-weight: 700; color: #fff;">📢 Live Broadcast Announcements</h3>
+            <a href="{{ url_for('admin_announcements') }}" style="color: var(--parent-primary); font-size: 0.82rem; text-decoration: none; font-weight: 600;">Manage →</a>
+        </div>
+        
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+            {% for ann in announcements %}
+            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--glass-border); border-radius: 12px; padding: 14px;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px;">
+                    <strong style="color: var(--text-primary); font-size: 0.9rem;">{{ ann.title }}</strong>
+                    <span class="badge badge-purple" style="font-size: 0.7rem;">{{ ann.target_audience }}</span>
+                </div>
+                <p style="font-size: 0.82rem; color: var(--text-secondary); line-height: 1.4; margin-bottom: 6px;">{{ ann.description }}</p>
+                <div style="font-size: 0.72rem; color: var(--text-muted);">Published: {{ ann.created_at }}</div>
+            </div>
+            {% else %}
+            <div style="color: var(--text-muted); font-size: 0.85rem; text-align: center; padding: 20px;">No recent announcements.</div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- ERP Audit Stream -->
+    <div style="background: rgba(14, 19, 32, 0.8); border: 1px solid var(--glass-border); border-radius: 18px; padding: 22px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h3 style="font-size: 1.05rem; font-weight: 700; color: #fff;">📜 Recent ERP Activity Trail</h3>
+            <a href="{{ url_for('admin_audit_logs') }}" style="color: var(--parent-primary); font-size: 0.82rem; text-decoration: none; font-weight: 600;">All Logs ({{ total_logs|default(0) }}) →</a>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+            {% for log in activity_logs %}
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.82rem; padding: 10px; background: rgba(255, 255, 255, 0.02); border-radius: 10px;">
+                <div>
+                    <span style="font-weight: 700; color: #818cf8;">{{ log.user_name }}</span>
+                    <span style="color: var(--text-muted);">({{ log.user_role }}):</span>
+                    <span style="color: var(--text-secondary);">{{ log.action }}</span>
+                </div>
+                <div style="color: var(--text-muted); font-size: 0.72rem;">{{ log.created_at }}</div>
+            </div>
+            {% else %}
+            <div style="color: var(--text-muted); font-size: 0.85rem; text-align: center; padding: 20px;">No logged activities.</div>
+            {% endfor %}
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // Attendance Chart
+        const ctxAtt = document.getElementById('attendanceChart');
+        if (ctxAtt) {
+            new Chart(ctxAtt, {
+                type: 'bar',
+                data: {
+                    labels: ['DBMS (CS301)', 'OS (CS302)', 'Data Science (CS303)', 'Networks (CS304)', 'Software Eng (CS305)'],
+                    datasets: [{
+                        label: 'Attendance Compliance %',
+                        data: [92.5, 84.2, 77.1, 95.2, 91.7],
+                        backgroundColor: ['rgba(56, 189, 248, 0.6)', 'rgba(52, 211, 153, 0.6)', 'rgba(251, 191, 36, 0.6)', 'rgba(192, 132, 252, 0.6)', 'rgba(99, 102, 241, 0.6)'],
+                        borderColor: ['#38bdf8', '#34d399', '#fbbf24', '#c084fc', '#6366f1'],
+                        borderWidth: 1.5,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { min: 0, max: 100, grid: { color: 'rgba(255,255,255,0.06)' }, ticks: { color: '#94a3b8' } },
+                        x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 10 } } }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        // Safety Resolution Chart
+        const ctxSafe = document.getElementById('safetyChart');
+        if (ctxSafe) {
+            new Chart(ctxSafe, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Resolved & Verified', 'Active Radar', 'Responding (QRT)'],
+                    datasets: [{
+                        data: [95, 2, 3],
+                        backgroundColor: ['#10b981', '#ef4444', '#38bdf8'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { color: '#94a3b8', boxWidth: 12, padding: 14 } }
+                    },
+                    cutout: '70%'
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

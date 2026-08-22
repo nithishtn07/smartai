@@ -1,0 +1,81 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}Hostel Outpass & Leave Management{% endblock %}
+
+{% block content %}
+
+<!-- Header -->
+<div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 24px;">
+    <div>
+        <h1 style="font-size: 1.6rem; font-weight: 800; color: #fff; margin-bottom: 4px;">Hostel Outpass &amp; Leave Requests</h1>
+        <p style="color: var(--text-secondary); font-size: 0.88rem;">Review, authorize, and audit student campus departure permits with automatic parent notification.</p>
+    </div>
+
+    <div>
+        <span class="badge badge-purple" style="font-size: 0.85rem; padding: 6px 14px;">Institutional Workflow</span>
+    </div>
+</div>
+
+<!-- Leaves Table -->
+<div style="background: rgba(14, 19, 32, 0.85); border: 1px solid var(--glass-border); border-radius: 18px; padding: 24px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
+        <h3 style="font-size: 1.1rem; font-weight: 700; color: #fff;">Student Outpass Records ({{ leaves|length }})</h3>
+        <span class="badge badge-indigo">Direct Approval Gateway</span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="data-table" style="width: 100%; border-collapse: collapse; font-size: 0.88rem;">
+            <thead>
+                <tr style="border-bottom: 1px solid var(--glass-border); text-align: left; color: var(--text-muted);">
+                    <th style="padding: 12px 10px;">Student Name</th>
+                    <th style="padding: 12px 10px;">Reg No</th>
+                    <th style="padding: 12px 10px;">Leave Type</th>
+                    <th style="padding: 12px 10px;">Duration</th>
+                    <th style="padding: 12px 10px;">Reason</th>
+                    <th style="padding: 12px 10px;">Status</th>
+                    <th style="padding: 12px 10px; text-align: right;">Authorization Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for l in leaves %}
+                <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.04);">
+                    <td style="padding: 14px 10px; font-weight: 700; color: #fff;">{{ l.student_name }}</td>
+                    <td style="padding: 14px 10px; font-family: var(--font-mono); color: #818cf8;">{{ l.register_number }}</td>
+                    <td style="padding: 14px 10px; color: var(--text-primary); font-weight: 600;">{{ l.leave_type }}</td>
+                    <td style="padding: 14px 10px; color: var(--text-secondary); font-size: 0.82rem;">{{ l.from_date }} &rarr; {{ l.to_date }}</td>
+                    <td style="padding: 14px 10px; color: var(--text-muted); font-size: 0.82rem;">{{ l.reason }}</td>
+                    <td style="padding: 14px 10px;">
+                        <span class="badge {% if l.status == 'Approved' %}badge-emerald{% elif l.status == 'Pending' %}badge-amber{% else %}badge-rose{% endif %}">
+                            {{ l.status }}
+                        </span>
+                    </td>
+                    <td style="padding: 14px 10px; text-align: right;">
+                        {% if l.status == 'Pending' %}
+                        <div style="display: inline-flex; gap: 6px;">
+                            <form method="POST" action="{{ url_for('admin_leaves_action', leave_id=l.id) }}">
+                                <input type="hidden" name="action_type" value="Approved">
+                                <button type="submit" class="btn-primary" style="padding: 6px 12px; font-size: 0.78rem; background: #10b981;">
+                                    ✓ Approve
+                                </button>
+                            </form>
+                            <form method="POST" action="{{ url_for('admin_leaves_action', leave_id=l.id) }}">
+                                <input type="hidden" name="action_type" value="Rejected">
+                                <button type="submit" class="btn-secondary" style="padding: 6px 10px; font-size: 0.78rem; color: #f87171;">
+                                    ✕ Reject
+                                </button>
+                            </form>
+                        </div>
+                        {% else %}
+                        <span style="font-size: 0.78rem; color: var(--text-muted);">Processed</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="7" style="text-align: center; padding: 30px; color: var(--text-muted);">No student leave requests submitted.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}

@@ -30,7 +30,7 @@ class TestMasterCampusGuardERP(unittest.TestCase):
 
         resp_dash = self.client.get('/student/dashboard')
         self.assertEqual(resp_dash.status_code, 200)
-        self.assertIn(b'Nithish Kumar', resp_dash.data)
+        self.assertIn(b'Nithish Nagaraj', resp_dash.data)
         self.assertIn(b'STU001', resp_dash.data)
         self.assertIn(b'8.75', resp_dash.data) # CGPA
         print("[PASS] 1. Core Auth & Dynamic Dashboard verified.")
@@ -43,7 +43,7 @@ class TestMasterCampusGuardERP(unittest.TestCase):
 
         # Update contact info
         resp_post = self.client.post('/student/profile', data={
-            'name': 'Nithish Kumar',
+            'name': 'Nithish Nagaraj',
             'email': 'student@example.com',
             'phone': '+91 98765 00000',
             'parent_name': 'R. S. Kumar',
@@ -206,7 +206,7 @@ class TestMasterCampusGuardERP(unittest.TestCase):
         resp_sec = self.client.get('/security/dashboard')
         self.assertEqual(resp_sec.status_code, 200)
         self.assertIn(b'Hostel Block B', resp_sec.data)
-        self.assertIn(b'Nithish Kumar', resp_sec.data)
+        self.assertIn(b'Nithish Nagaraj', resp_sec.data)
 
         # Find incident id
         conn = sqlite3.connect('database.db')
@@ -232,6 +232,8 @@ class TestMasterCampusGuardERP(unittest.TestCase):
         route_data = json.loads(resp_route.data)
         self.assertIn('path_description', route_data)
 
+        with self.client.session_transaction() as sess:
+            sess['admin_id'] = 1
         resp_admin = self.client.get('/admin/analytics')
         self.assertEqual(resp_admin.status_code, 200)
         self.assertIn(b'Campus Safety Briefing', resp_admin.data)

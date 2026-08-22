@@ -1,0 +1,113 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}Central Attendance Monitor{% endblock %}
+
+{% block content %}
+
+<!-- Header -->
+<div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 24px;">
+    <div>
+        <h1 style="font-size: 1.6rem; font-weight: 800; color: #fff; margin-bottom: 4px;">Institutional Attendance Monitor</h1>
+        <p style="color: var(--text-secondary); font-size: 0.88rem;">Real-time sync between Faculty Roll Calls, Student Portals, and Parent Alerts.</p>
+    </div>
+
+    <div>
+        <span class="badge badge-emerald" style="font-size: 0.85rem; padding: 6px 14px;">Campus Average: {{ "{:.1f}%".format(avg_att|default(88.5)) }}</span>
+    </div>
+</div>
+
+<!-- Low Attendance Alert Watchlist (<75%) -->
+<div style="background: rgba(14, 19, 32, 0.85); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 18px; padding: 24px; margin-bottom: 28px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 10px;">
+        <div>
+            <h2 style="font-size: 1.25rem; font-weight: 800; color: #fcd34d; display: flex; align-items: center; gap: 8px;">
+                <span>⚠️</span> Low Attendance Watchlist (&lt; {{ threshold|default(75.0) }}% Threshold)
+            </h2>
+            <p style="font-size: 0.82rem; color: var(--text-secondary); margin-top: 2px;">Students at risk of examination debarment requiring immediate parent-ward advisement.</p>
+        </div>
+        <span class="badge badge-amber">{{ low_att_records|length }} At-Risk Records</span>
+    </div>
+
+    {% if low_att_records %}
+    <div class="table-responsive">
+        <table class="data-table" style="width: 100%; border-collapse: collapse; font-size: 0.88rem;">
+            <thead>
+                <tr style="border-bottom: 1px solid var(--glass-border); text-align: left; color: var(--text-muted);">
+                    <th style="padding: 12px 10px;">Student Name</th>
+                    <th style="padding: 12px 10px;">Register No</th>
+                    <th style="padding: 12px 10px;">Course Code</th>
+                    <th style="padding: 12px 10px;">Classes Attended</th>
+                    <th style="padding: 12px 10px;">Current %</th>
+                    <th style="padding: 12px 10px; text-align: right;">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in low_att_records %}
+                <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.04);">
+                    <td style="padding: 14px 10px; font-weight: 700; color: #fff;">{{ row.student_name }}</td>
+                    <td style="padding: 14px 10px; font-family: var(--font-mono); color: #818cf8;">{{ row.register_number }}</td>
+                    <td style="padding: 14px 10px; font-weight: 600; color: #fca5a5;">{{ row.subject_code }}</td>
+                    <td style="padding: 14px 10px; color: var(--text-secondary);">{{ row.classes_attended }} / {{ row.classes_held }}</td>
+                    <td style="padding: 14px 10px;">
+                        <span class="badge badge-rose">{{ "{:.1f}%".format(row.attendance_pct) }}</span>
+                    </td>
+                    <td style="padding: 14px 10px; text-align: right;">
+                        <form method="POST" action="{{ url_for('admin_attendance_send_warning', student_id=row.student_id) }}" style="display: inline;">
+                            <button type="submit" class="btn-primary" style="padding: 6px 12px; font-size: 0.78rem; background: #f59e0b;">
+                                📢 Dispatch Warning
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div style="text-align: center; padding: 25px; color: var(--text-muted);">
+        <span>✓</span> All students currently meet or exceed the {{ threshold|default(75.0) }}% institutional attendance requirement.
+    </div>
+    {% endif %}
+</div>
+
+<!-- Master Attendance Table -->
+<div style="background: rgba(14, 19, 32, 0.85); border: 1px solid var(--glass-border); border-radius: 18px; padding: 24px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
+        <h3 style="font-size: 1.1rem; font-weight: 700; color: #fff;">Master Course Attendance Registry ({{ all_attendance|length }})</h3>
+        <span class="badge badge-indigo">Synced to Faculty Roll Calls</span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="data-table" style="width: 100%; border-collapse: collapse; font-size: 0.88rem;">
+            <thead>
+                <tr style="border-bottom: 1px solid var(--glass-border); text-align: left; color: var(--text-muted);">
+                    <th style="padding: 12px 10px;">Student</th>
+                    <th style="padding: 12px 10px;">Course</th>
+                    <th style="padding: 12px 10px;">Faculty</th>
+                    <th style="padding: 12px 10px;">Attended / Total</th>
+                    <th style="padding: 12px 10px; text-align: right;">Attendance %</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for att in all_attendance %}
+                <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.04);">
+                    <td style="padding: 14px 10px;">
+                        <strong style="color: #fff;">{{ att.student_name }}</strong>
+                        <div style="font-size: 0.75rem; color: var(--text-muted); font-family: var(--font-mono);">{{ att.register_number }}</div>
+                    </td>
+                    <td style="padding: 14px 10px; color: var(--text-primary);">{{ att.subject_name }} ({{ att.subject_code }})</td>
+                    <td style="padding: 14px 10px; color: var(--text-secondary);">{{ att.faculty_name|default('Dr. Ramesh Rao') }}</td>
+                    <td style="padding: 14px 10px; color: var(--text-secondary);">{{ att.classes_attended }} / {{ att.classes_held }}</td>
+                    <td style="padding: 14px 10px; text-align: right;">
+                        <span class="badge {% if att.attendance_pct >= 85 %}badge-emerald{% elif att.attendance_pct >= 75 %}badge-amber{% else %}badge-rose{% endif %}">
+                            {{ "{:.1f}%".format(att.attendance_pct) }}
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}

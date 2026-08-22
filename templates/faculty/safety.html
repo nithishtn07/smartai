@@ -1,0 +1,115 @@
+{% extends "faculty/base_faculty.html" %}
+
+{% block title %}Campus Safety &amp; Emergency Advisory — Faculty Portal{% endblock %}
+
+{% block faculty_content %}
+<link rel="stylesheet" href="/static/css/emergency.css">
+
+<div class="page-header-block">
+    <div class="page-title-group">
+        <h1><span>🛡️</span> Faculty Campus Safety &amp; Emergency Advisory</h1>
+        <p>Departmental safety notices, laboratory emergency protocol directory, and fast-track hazard reporting.</p>
+    </div>
+    <div style="display: flex; gap: 10px;">
+        <button type="button" class="btn-primary" onclick="openModal('report-hazard-modal')">
+            <span>⚠️</span> Report Hazard / Incident
+        </button>
+    </div>
+</div>
+
+<!-- Active Departmental Advisories -->
+<section class="content-card" style="margin-bottom: 24px; border-left: 4px solid #38bdf8;">
+    <div class="card-header-row">
+        <h3 class="card-heading"><span>📢</span> Real-Time Campus Safety Advisories</h3>
+        <span class="badge badge-purple">Security Command Broadcast</span>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; margin-top: 10px;">
+        <div style="background: rgba(6, 8, 14, 0.4); border: 1px solid var(--glass-border); border-radius: 12px; padding: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <span class="badge badge-orange">ADVISORY</span>
+                <span style="font-size: 0.75rem; color: var(--text-muted); font-family: var(--font-mono);">Today 08:30 AM</span>
+            </div>
+            <h4 style="font-size: 0.95rem; font-weight: 700; color: white; margin: 0 0 6px;">Laboratory Chemical Safety Protocol</h4>
+            <p style="color: var(--text-secondary); font-size: 0.84rem; line-height: 1.4; margin: 0;">
+                All faculty conducting sessions in Chemistry &amp; Hardware Labs are reminded to ensure emergency eyewash stations and fire blankets are unobstructed.
+            </p>
+        </div>
+
+        <div style="background: rgba(6, 8, 14, 0.4); border: 1px solid var(--glass-border); border-radius: 12px; padding: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <span class="badge badge-green">VERIFIED</span>
+                <span style="font-size: 0.75rem; color: var(--text-muted); font-family: var(--font-mono);">Yesterday 16:00 PM</span>
+            </div>
+            <h4 style="font-size: 0.95rem; font-weight: 700; color: white; margin: 0 0 6px;">Emergency Evacuation Route Inspection</h4>
+            <p style="color: var(--text-secondary); font-size: 0.84rem; line-height: 1.4; margin: 0;">
+                North &amp; South wing stairwells inspected. Auto-illumination battery backups tested and confirmed at 100% operational charge.
+            </p>
+        </div>
+    </div>
+</section>
+
+<!-- 24/7 Security Helplines & Emergency Roster -->
+<section class="content-card" style="margin-bottom: 24px;">
+    <div class="card-header-row">
+        <h3 class="card-heading"><span>📞</span> Faculty Direct Emergency Dial Roster</h3>
+        <span class="badge badge-green">24/7 Active</span>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px;">
+        <div style="padding: 14px; background: rgba(6, 8, 14, 0.4); border-radius: 12px; border: 1px solid var(--glass-border);">
+            <div style="font-size: 0.8rem; color: var(--text-muted);">Security Control Tower</div>
+            <strong style="color: #38bdf8; font-size: 1.05rem; font-family: var(--font-mono);">+91 91234 56780</strong>
+            <div style="font-size: 0.74rem; color: #94a3b8; margin-top: 4px;">Main Gate Command</div>
+        </div>
+        <div style="padding: 14px; background: rgba(6, 8, 14, 0.4); border-radius: 12px; border: 1px solid var(--glass-border);">
+            <div style="font-size: 0.8rem; color: var(--text-muted);">Medical Rapid Unit</div>
+            <strong style="color: #34d399; font-size: 1.05rem; font-family: var(--font-mono);">+91 91234 56781</strong>
+            <div style="font-size: 0.74rem; color: #94a3b8; margin-top: 4px;">Health Pavilion Block A</div>
+        </div>
+        <div style="padding: 14px; background: rgba(6, 8, 14, 0.4); border-radius: 12px; border: 1px solid var(--glass-border);">
+            <div style="font-size: 0.8rem; color: var(--text-muted);">Estate &amp; Power Emergency</div>
+            <strong style="color: #fbbf24; font-size: 1.05rem; font-family: var(--font-mono);">+91 91234 56785</strong>
+            <div style="font-size: 0.74rem; color: #94a3b8; margin-top: 4px;">Substation &amp; Facilities</div>
+        </div>
+    </div>
+</section>
+
+<!-- Report Hazard Modal -->
+<div class="portal-modal-backdrop" id="report-hazard-modal">
+    <div class="portal-modal-content" style="max-width: 540px;">
+        <div class="card-header-row">
+            <h3 class="card-heading"><span>⚠️</span> Report Campus Safety Hazard</h3>
+            <button type="button" style="background: none; border: none; color: white; font-size: 1.2rem; cursor: pointer;" onclick="closeModal('report-hazard-modal')">✕</button>
+        </div>
+
+        <form method="POST" action="/api/emergency/create" class="portal-form">
+            <input type="hidden" name="severity" value="HIGH">
+            <div class="form-group">
+                <label class="form-label">Hazard Category</label>
+                <select name="category" class="form-select">
+                    <option value="Campus Infrastructure">Campus Infrastructure (Elevator / Electrical / Water)</option>
+                    <option value="Fire/Safety">Fire Hazard / Smoke / Gas Leak</option>
+                    <option value="Medical Emergency">Medical Incident / Student Injury</option>
+                    <option value="Security">Security Concern / Unauthorized Person</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Location / Building &amp; Room</label>
+                <input type="text" name="location" class="form-input" placeholder="e.g. CS Lab 2 or Main Academic Block 3rd Floor" required>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Detailed Description</label>
+                <textarea name="description" class="form-textarea" placeholder="Provide details of the hazard, immediate danger level, or required technician unit..." required></textarea>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 14px;">
+                <button type="button" class="btn-secondary" onclick="closeModal('report-hazard-modal')">Cancel</button>
+                <button type="submit" class="btn-primary">Transmit Hazard Report</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

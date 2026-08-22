@@ -1,0 +1,127 @@
+{% extends "faculty/base_faculty.html" %}
+
+{% block title %}Assignment Submissions &amp; Evaluation{% endblock %}
+
+{% block faculty_content %}
+<div class="page-header-block">
+    <div class="page-title-group">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+            <span class="badge badge-indigo" style="font-family: monospace;">{{ assignment.course_code }}</span>
+            <span class="badge badge-green">Max Score: {{ assignment.max_marks }} Marks</span>
+        </div>
+        <h1><span>📋</span> {{ assignment.title }}</h1>
+        <p>Due Date: <strong>{{ assignment.due_date }}</strong> • Status: {{ assignment.status }}</p>
+    </div>
+    
+    <div>
+        <a href="{{ url_for('faculty_assignments') }}" class="btn-secondary">
+            ← Back to All Assignments
+        </a>
+    </div>
+</div>
+
+<!-- Assignment Specification Card -->
+<section class="content-card" style="background: linear-gradient(135deg, rgba(14, 19, 32, 0.95) 0%, rgba(20, 27, 45, 0.9) 100%); border-color: rgba(16, 185, 129, 0.3);">
+    <div class="card-header-row">
+        <h2 class="card-heading"><span>📝</span> Problem Statement &amp; Rubric</h2>
+        <span class="badge badge-indigo">Max Marks: {{ assignment.max_marks }}</span>
+    </div>
+
+    <p style="font-size: 0.92rem; color: #e2e8f0; line-height: 1.6; margin: 0 0 12px; white-space: pre-wrap;">
+        {{ assignment.description }}
+    </p>
+
+    <div style="font-size: 0.8rem; color: var(--text-muted);">
+        Assigned by Faculty Advisor: <strong>{{ assignment.faculty_name }}</strong>
+    </div>
+</section>
+
+<!-- Submissions & Grading Roster -->
+<section class="content-card">
+    <div class="card-header-row">
+        <h2 class="card-heading"><span>🎓</span> Student Submissions &amp; Evaluation Roster</h2>
+        <span class="badge badge-purple">{{ students|length }} Enrolled Students</span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="portal-table">
+            <thead>
+                <tr>
+                    <th>Student Name &amp; Reg No</th>
+                    <th>Department</th>
+                    <th>Submission Status</th>
+                    <th>Marks (Max {{ assignment.max_marks }})</th>
+                    <th>Feedback / Remarks</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in students %}
+                <tr>
+                    <td>
+                        <strong style="color: #fff;">{{ s.name }}</strong>
+                        <div style="font-size: 0.78rem; color: #38bdf8; font-family: monospace;">{{ s.register_number }}</div>
+                    </td>
+                    <td>{{ s.department }} (Year {{ s.year }})</td>
+                    <td>
+                        <span class="badge {% if assignment.status == 'Evaluated' %}badge-green{% elif assignment.status == 'Submitted' %}badge-cyan{% else %}badge-yellow{% endif %}">
+                            {{ assignment.status|default('Submitted') }}
+                        </span>
+                    </td>
+                    <td style="font-weight: 800; color: #34d399; font-size: 1.05rem;">
+                        {{ assignment.marks_obtained|default(45.0) }}/{{ assignment.max_marks }}
+                    </td>
+                    <td style="font-size: 0.84rem; color: var(--text-secondary); max-width: 250px;">
+                        {{ assignment.feedback|default('Comprehensive solution provided.') }}
+                    </td>
+                    <td>
+                        <button type="button" class="btn-primary" onclick="openGradingModal({{ s.id }}, '{{ s.name }}')" style="padding: 4px 12px; font-size: 0.78rem; background: linear-gradient(135deg, #10b981, #059669);">
+                            📝 Evaluate
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<!-- Grading Modal -->
+<div class="modal-overlay" id="grading-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); align-items: center; justify-content: center; z-index: 1000;">
+    <div class="modal-card" style="background: #0f172a; border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 16px; padding: 24px; max-width: 480px; width: 90%;">
+        <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h3 class="modal-title" style="color: #fff; margin: 0; font-size: 1.15rem;">📝 Grade Submission: <span id="modal-student-name" style="color: #34d399;"></span></h3>
+            <button type="button" class="modal-close" onclick="closeGradingModal()" style="background: none; border: none; color: #fff; font-size: 1.2rem; cursor: pointer;">✕</button>
+        </div>
+
+        <form method="POST" action="{{ url_for('faculty_assignments_evaluate', assignment_id=assignment.id) }}">
+            <input type="hidden" name="student_id" id="modal-student-id" value="1">
+
+            <div class="form-group" style="margin-bottom: 14px;">
+                <label for="marks_obtained" class="form-label" style="display: block; color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 6px;">Marks Awarded (Max {{ assignment.max_marks }})</label>
+                <input type="number" step="0.5" min="0" max="{{ assignment.max_marks }}" id="marks_obtained" name="marks_obtained" class="form-input" value="45.0" required style="width: 100%; padding: 8px 12px; border-radius: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff;">
+            </div>
+
+            <div class="form-group" style="margin-bottom: 18px;">
+                <label for="feedback" class="form-label" style="display: block; color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 6px;">Feedback &amp; Qualitative Notes</label>
+                <textarea id="feedback" name="feedback" class="form-textarea" rows="3" required style="width: 100%; padding: 8px 12px; border-radius: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff;">Excellent logic, thorough implementation and well-documented edge cases.</textarea>
+            </div>
+
+            <button type="submit" class="btn-primary" style="width: 100%; justify-content: center; background: linear-gradient(135deg, #10b981, #059669); padding: 10px; font-size: 0.9rem;">
+                <span>💾</span> Submit Evaluation &amp; Notify Student
+            </button>
+        </form>
+    </div>
+</div>
+
+<script>
+function openGradingModal(studentId, studentName) {
+    document.getElementById('modal-student-id').value = studentId;
+    document.getElementById('modal-student-name').innerText = studentName;
+    document.getElementById('grading-modal').style.display = 'flex';
+}
+function closeGradingModal() {
+    document.getElementById('grading-modal').style.display = 'none';
+}
+</script>
+{% endblock %}

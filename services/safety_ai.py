@@ -135,13 +135,14 @@ def analyze_campus_risk_patterns(incidents_list: list) -> dict:
     }
 
 
-def calculate_safe_route(from_loc: str, to_loc: str) -> dict:
+def calculate_safe_route(from_loc: str, to_loc: str, time_of_day: str = 'Night') -> dict:
     """
     Computes a CCTV-monitored, well-illuminated walking route between two campus points.
     """
     return {
         'origin': from_loc,
         'destination': to_loc,
+        'time_of_day': time_of_day,
         'path_description': f"Illuminated Safe Corridor: Exit {from_loc} → Central Quadrangle North Walkway (8 High-Lumen Lamps) → Security Command HQ Checkpoint → Direct Corridor to {to_loc}.",
         'walk_time': "4 to 6 Mins",
         'cctv_count': 18,

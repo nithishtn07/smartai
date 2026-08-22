@@ -114,7 +114,7 @@
             <div class="roles-grid">
 
                 <!-- 1. Student Card -->
-                <a href="/student/login" class="role-card card-student" id="card-student" aria-label="Enter Student Portal">
+                <a href="{{ url_for('student_login') }}" class="role-card card-student" id="card-student" aria-label="Enter Student Portal">
                     <div class="card-glow-bg"></div>
                     <div class="card-inner">
                         
@@ -147,7 +147,7 @@
                 </a>
 
                 <!-- 2. Faculty Card -->
-                <a href="/faculty/login" class="role-card card-faculty" id="card-faculty" aria-label="Enter Faculty Portal">
+                <a href="{{ url_for('faculty_login') }}" class="role-card card-faculty" id="card-faculty" aria-label="Enter Faculty Portal">
                     <div class="card-glow-bg"></div>
                     <div class="card-inner">
                         
@@ -180,7 +180,7 @@
                 </a>
 
                 <!-- 3. Parent Card -->
-                <a href="/parent/login" class="role-card card-parent" id="card-parent" aria-label="Enter Parent Portal">
+                <a href="{{ url_for('parent_login') }}" class="role-card card-parent" id="card-parent" aria-label="Enter Parent Portal">
                     <div class="card-glow-bg"></div>
                     <div class="card-inner">
                         
@@ -206,6 +206,39 @@
 
                         <div class="card-footer">
                             <span class="card-btn-text">Enter Parent Portal</span>
+                            <span class="btn-arrow-icon" aria-hidden="true">→</span>
+                        </div>
+
+                    </div>
+                </a>
+
+                <!-- 4. Admin Card -->
+                <a href="{{ url_for('admin_login') }}" class="role-card card-admin" id="card-admin" aria-label="Enter Admin Portal">
+                    <div class="card-glow-bg"></div>
+                    <div class="card-inner">
+                        
+                        <div class="card-header">
+                            <div class="role-icon-box" aria-hidden="true">
+                                <span class="role-emoji">🛡️</span>
+                            </div>
+                            <div class="corner-arrow" aria-hidden="true">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="7" y1="17" x2="17" y2="7"></line>
+                                    <polyline points="7 7 17 7 17 17"></polyline>
+                                </svg>
+                            </div>
+                        </div>
+
+                        <div class="card-body">
+                            <span class="role-tag">FOR ADMINISTRATORS</span>
+                            <h3 class="role-title">Admin Portal</h3>
+                            <p class="role-desc">
+                                Command safety operations, manage students, faculty, attendance, fees, exams and reports.
+                            </p>
+                        </div>
+
+                        <div class="card-footer">
+                            <span class="card-btn-text">Enter Admin Portal</span>
                             <span class="btn-arrow-icon" aria-hidden="true">→</span>
                         </div>
 

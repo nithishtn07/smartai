@@ -1,0 +1,232 @@
+{% extends "faculty/base_faculty.html" %}
+
+{% block title %}Attendance Analytics &amp; Compliance{% endblock %}
+
+{% block faculty_content %}
+<div class="page-header-block">
+    <div class="page-title-group">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+            <span class="badge badge-green">ANALYTICS ENGINE</span>
+            <span class="badge badge-indigo">Dynamic Threshold: {{ threshold }}%</span>
+        </div>
+        <h1><span>📈</span> Course Attendance Analytics &amp; Trends</h1>
+        <p>Comprehensive attendance metrics, cohort averages, shortage alerts, and repeated absence tracking.</p>
+    </div>
+    
+    <div style="display: flex; gap: 10px;">
+        <a href="{{ url_for('faculty_attendance') }}" class="btn-primary" style="background: linear-gradient(135deg, #10b981, #059669);">
+            <span>✍️</span> Take Roll Call
+        </a>
+    </div>
+</div>
+
+<!-- 4 High-Level Metric Cards -->
+<div class="kpi-grid">
+    <div class="kpi-card">
+        <div class="kpi-icon-wrap" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">
+            📊
+        </div>
+        <div class="kpi-data">
+            <div class="kpi-label">Class Average Attendance</div>
+            <div class="kpi-value" style="color: #34d399;">{{ class_avg }}%</div>
+            <div class="kpi-subtext">Across Assigned Subjects</div>
+        </div>
+    </div>
+
+    <div class="kpi-card">
+        <div class="kpi-icon-wrap" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8;">
+            🌟
+        </div>
+        <div class="kpi-data">
+            <div class="kpi-label">Exemplary (&gt;= 90%)</div>
+            <div class="kpi-value" style="color: #38bdf8;">{{ above_90_count }}</div>
+            <div class="kpi-subtext">Students in High Standing</div>
+        </div>
+    </div>
+
+    <div class="kpi-card">
+        <div class="kpi-icon-wrap" style="background: rgba(251, 191, 36, 0.15); color: #fbbf24;">
+            ⚖️
+        </div>
+        <div class="kpi-data">
+            <div class="kpi-label">Compliant ({{ threshold }}% – 90%)</div>
+            <div class="kpi-value" style="color: #fbbf24;">{{ between_75_90_count }}</div>
+            <div class="kpi-subtext">Meeting Threshold</div>
+        </div>
+    </div>
+
+    <div class="kpi-card">
+        <div class="kpi-icon-wrap" style="background: rgba(244, 63, 94, 0.15); color: #f43f5e;">
+            ⚠️
+        </div>
+        <div class="kpi-data">
+            <div class="kpi-label">Shortage (&lt; {{ threshold }}%)</div>
+            <div class="kpi-value" style="color: #f43f5e;">{{ below_threshold_count }}</div>
+            <div class="kpi-subtext">Requires Advisory Action</div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters Bar -->
+<section class="content-card" style="padding: 16px 20px;">
+    <form method="GET" action="{{ url_for('faculty_attendance_analytics') }}" style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
+        <div style="flex: 1; min-width: 180px;">
+            <label style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-bottom: 4px;">Subject</label>
+            <select name="subject" class="form-select" style="padding: 6px 12px; font-size: 0.85rem;">
+                <option value="all" {% if subject_filter == 'all' %}selected{% endif %}>All Assigned Courses</option>
+                {% for c in courses %}
+                <option value="{{ c.course_code }}" {% if subject_filter == c.course_code %}selected{% endif %}>{{ c.course_code }} - {{ c.course_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div style="flex: 1; min-width: 180px;">
+            <label style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-bottom: 4px;">Search Student</label>
+            <input type="text" name="q" value="{{ student_q }}" placeholder="Name or Reg No..." class="form-input" style="padding: 6px 12px; font-size: 0.85rem;">
+        </div>
+
+        <div style="margin-top: 18px;">
+            <button type="submit" class="btn-primary" style="padding: 8px 16px; font-size: 0.85rem; background: linear-gradient(135deg, #10b981, #059669);">
+                <span>🔍</span> Apply Filters
+            </button>
+        </div>
+    </form>
+</section>
+
+<!-- 2-Column: Subject-wise Summary & Repeated Absences -->
+<div style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 24px; margin-bottom: 24px;">
+
+    <!-- Subject Averages & Coverage -->
+    <section class="content-card" style="margin-bottom: 0;">
+        <div class="card-header-row">
+            <h2 class="card-heading"><span>📚</span> Subject Average Attendance Breakdown</h2>
+            <span class="badge badge-indigo">{{ subject_stats|length }} Courses</span>
+        </div>
+
+        <div class="table-responsive">
+            <table class="portal-table">
+                <thead>
+                    <tr>
+                        <th>Subject Code</th>
+                        <th>Subject Name</th>
+                        <th>Students</th>
+                        <th>Avg Attendance</th>
+                        <th>Compliance Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in subject_stats %}
+                    <tr>
+                        <td><span class="badge badge-indigo" style="font-family: monospace;">{{ s.subject_code }}</span></td>
+                        <td><strong style="color: #fff;">{{ s.subject_name }}</strong></td>
+                        <td>{{ s.student_count }}</td>
+                        <td>
+                            <strong style="color: {% if s.avg_pct >= 85 %}#34d399{% elif s.avg_pct >= threshold %}#fbbf24{% else %}#f43f5e{% endif %}; font-size: 1rem;">
+                                {{ s.avg_pct }}%
+                            </strong>
+                        </td>
+                        <td>
+                            <span class="badge {% if s.avg_pct >= threshold %}badge-green{% else %}badge-red{% endif %}">
+                                {% if s.avg_pct >= threshold %}Compliant{% else %}Risk Shortage{% endif %}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- Repeated Absences Watchlist -->
+    <section class="content-card" style="margin-bottom: 0;">
+        <div class="card-header-row">
+            <h2 class="card-heading"><span>⚠️</span> Repeated Absence Log</h2>
+            <span class="badge badge-red">{{ repeated_absences|length }} Logged</span>
+        </div>
+
+        {% if repeated_absences %}
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+            {% for r in repeated_absences %}
+            <div style="background: rgba(244, 63, 94, 0.08); border: 1px solid rgba(244, 63, 94, 0.2); border-radius: 10px; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <strong style="color: #fff; font-size: 0.9rem;">{{ r.student_name }}</strong>
+                    <div style="font-size: 0.76rem; color: var(--text-muted); font-family: monospace;">{{ r.register_number }} • {{ r.course_code }}</div>
+                </div>
+                <div style="text-align: right;">
+                    <span class="badge badge-red">{{ r.absent_count }} Missed Class{% if r.absent_count != 1 %}es{% endif %}</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div style="text-align: center; padding: 32px; color: #34d399;">
+            ✓ No repeated absence patterns detected in recent lectures!
+        </div>
+        {% endif %}
+    </section>
+
+</div>
+
+<!-- Student-wise Full Attendance Compliance Table -->
+<section class="content-card">
+    <div class="card-header-row">
+        <h2 class="card-heading"><span>🎓</span> Student-wise Attendance Compliance Roster</h2>
+        <span class="badge badge-purple">{{ att_records|length }} Records</span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="portal-table">
+            <thead>
+                <tr>
+                    <th>Student Name &amp; Reg No</th>
+                    <th>Subject</th>
+                    <th>Held</th>
+                    <th>Attended</th>
+                    <th>Missed</th>
+                    <th>Attendance %</th>
+                    <th>Threshold Compliance</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in att_records %}
+                <tr>
+                    <td>
+                        <strong style="color: #fff;">{{ a.student_name }}</strong>
+                        <div style="font-size: 0.78rem; color: #38bdf8; font-family: monospace;">{{ a.register_number }}</div>
+                    </td>
+                    <td><span class="badge badge-indigo">{{ a.subject_code }}</span></td>
+                    <td>{{ a.classes_held }}</td>
+                    <td style="color: #34d399; font-weight: 700;">{{ a.classes_attended }}</td>
+                    <td style="color: #f43f5e;">{{ a.classes_missed }}</td>
+                    <td>
+                        <strong style="font-size: 1.05rem; color: {% if a.attendance_pct >= 90 %}#38bdf8{% elif a.attendance_pct >= threshold %}#34d399{% else %}#f43f5e{% endif %};">
+                            {{ a.attendance_pct }}%
+                        </strong>
+                    </td>
+                    <td>
+                        <span class="badge {% if a.attendance_pct >= threshold %}badge-green{% else %}badge-red{% endif %}">
+                            {% if a.attendance_pct >= threshold %}✓ Eligible{% else %}⚠️ Shortage Alert{% endif %}
+                        </span>
+                    </td>
+                    <td>
+                        {% if a.attendance_pct < threshold %}
+                        <form method="POST" action="{{ url_for('faculty_attendance_send_warning', student_id=a.student_id) }}" style="display: inline;">
+                            <input type="hidden" name="course_code" value="{{ a.subject_code }}">
+                            <button type="submit" class="btn-secondary" style="padding: 4px 10px; font-size: 0.78rem; border-color: #f43f5e; color: #f43f5e;">
+                                🔔 Send Advisory
+                            </button>
+                        </form>
+                        {% else %}
+                        <a href="{{ url_for('faculty_student_view', student_id=a.student_id) }}" class="btn-secondary" style="padding: 4px 10px; font-size: 0.78rem;">
+                            View Profile
+                        </a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

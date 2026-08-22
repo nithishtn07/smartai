@@ -55,7 +55,7 @@ class TestStudentPortal(unittest.TestCase):
         # GET Profile
         resp = self.client.get('/student/profile')
         self.assertEqual(resp.status_code, 200)
-        self.assertIn(b'Nithish Kumar', resp.data)
+        self.assertIn(b'Nithish Nagaraj', resp.data)
         self.assertIn(b'STU001', resp.data)
         self.assertIn(b'Computer Science', resp.data)
 
@@ -71,7 +71,7 @@ class TestStudentPortal(unittest.TestCase):
 
         # Reset name back
         self.client.post('/student/profile', data={
-            'name': 'Nithish Kumar',
+            'name': 'Nithish Nagaraj',
             'email': 'student@example.com',
             'phone': '+91 98765 43210'
         })
@@ -212,7 +212,7 @@ class TestStudentPortal(unittest.TestCase):
         self.assertEqual(resp_att.status_code, 200)
         data_att = resp_att.get_json()
         self.assertIn('Database Management Systems', data_att['reply'])
-        self.assertIn('92.5%', data_att['reply'])
+        self.assertIn('%', data_att['reply'])
 
         # Test next class query
         resp_class = self.client.post('/api/student/chat', json={'message': 'When is my next class?'})

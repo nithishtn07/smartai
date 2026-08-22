@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="CampusGuard AI - Parent Portal. Real-time ward monitoring, academics, attendance, and campus safety.">
+    <meta name="theme-color" content="#06080e">
+    
+    <title>{% block title %}Parent Portal{% endblock %} | CampusGuard AI</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+
+    <!-- Chart.js for Rich Analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Socket.IO CDN -->
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/parent.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/campusguard-toast.css') }}">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23c084fc'%3E%3Cpath d='M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 2.18l7 3.12v4.7c0 4.54-3.13 8.78-7 9.88-3.87-1.1-7-5.34-7-9.88V6.3l7-3.12z'/%3E%3C/svg%3E">
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+    <!-- Ambient Glowing Background -->
+    <div class="ambient-background" aria-hidden="true">
+        <div class="glow-orb orb-primary"></div>
+        <div class="glow-orb orb-secondary"></div>
+    </div>
+
+    <!-- Mobile Drawer Overlay -->
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+    <div class="portal-layout">
+
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar" id="parent-sidebar" aria-label="Parent Navigation">
+            <a href="{{ url_for('parent_dashboard') }}" class="sidebar-brand">
+                <div class="brand-icon">
+                    <svg width="22" height="22" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M16 2L4 7V14C4 22 9.5 28.5 16 30C22.5 28.5 28 22 28 14V7L16 2Z" fill="#c084fc" fill-opacity="0.2" stroke="#c084fc" stroke-width="2"/>
+                        <circle cx="16" cy="15" r="4" fill="#c084fc"/>
+                    </svg>
+                </div>
+                <span class="brand-name">CampusGuard <span class="brand-badge">PARENT</span></span>
+            </a>
+
+            <nav class="sidebar-nav">
+                <!-- 1. WARD ACADEMICS & TRACKING -->
+                <span class="nav-category">Ward Academic Tracking</span>
+                
+                <a href="{{ url_for('parent_dashboard') }}" class="nav-link {% if active_page == 'dashboard' %}active{% endif %}" id="nav-dashboard">
+                    <span>🏠</span> <span class="nav-text">Dashboard</span>
+                </a>
+                <a href="{{ url_for('parent_academics') }}" class="nav-link {% if active_page == 'academics' %}active{% endif %}" id="nav-academics">
+                    <span>📚</span> <span class="nav-text">Academic Performance</span>
+                </a>
+                <a href="{{ url_for('parent_attendance') }}" class="nav-link {% if active_page == 'attendance' %}active{% endif %}" id="nav-attendance">
+                    <span>📊</span> <span class="nav-text">Attendance &amp; Margins</span>
+                </a>
+                <a href="{{ url_for('parent_timetable') }}" class="nav-link {% if active_page == 'timetable' %}active{% endif %}" id="nav-timetable">
+                    <span>📅</span> <span class="nav-text">Class Timetable</span>
+                </a>
+                <a href="{{ url_for('parent_exams') }}" class="nav-link {% if active_page == 'exams' %}active{% endif %}" id="nav-exams">
+                    <span>🎯</span> <span class="nav-text">Exams &amp; Results</span>
+                </a>
+
+                <!-- 2. FINANCE & RESIDENTIAL -->
+                <span class="nav-category">Finance &amp; Residential</span>
+                
+                <a href="{{ url_for('parent_fees') }}" class="nav-link {% if active_page == 'fees' %}active{% endif %}" id="nav-fees">
+                    <span>💳</span> <span class="nav-text">Fee Dues &amp; Ledger</span>
+                </a>
+                <a href="{{ url_for('parent_leave') }}" class="nav-link {% if active_page == 'leave' %}active{% endif %}" id="nav-leave">
+                    <span>🏢</span> <span class="nav-text">Leave &amp; Outpass</span>
+                </a>
+
+                <!-- 3. CAMPUS SAFETY & COMMUNICATION -->
+                <span class="nav-category">Safety &amp; Communication</span>
+                
+                <a href="{{ url_for('parent_safety') }}" class="nav-link nav-link-sos {% if active_page == 'safety' %}active{% endif %}" id="nav-safety">
+                    <span>🛡️</span> <span class="nav-text">Campus Safety &amp; SOS</span>
+                </a>
+                <a href="{{ url_for('parent_messages') }}" class="nav-link {% if active_page == 'messages' %}active{% endif %}" id="nav-messages">
+                    <span>💬</span> <span class="nav-text">Faculty Communication</span>
+                </a>
+                <a href="{{ url_for('parent_notifications') }}" class="nav-link {% if active_page == 'notifications' %}active{% endif %}" id="nav-notifications">
+                    <span>🔔</span> <span class="nav-text">Notification Center</span>
+                </a>
+
+                <!-- 4. ACCOUNT SETTINGS -->
+                <span class="nav-category">Account &amp; Ward</span>
+                <a href="{{ url_for('parent_profile') }}" class="nav-link {% if active_page == 'profile' %}active{% endif %}" id="nav-profile">
+                    <span>⚙️</span> <span class="nav-text">Profile &amp; Settings</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <a href="{{ url_for('student_login') }}" class="portal-switch-link" title="Open Student Portal">
+                    <span>🎓</span> <span>Switch to Student Login</span>
+                </a>
+                <a href="{{ url_for('parent_logout') }}" class="logout-link" id="btn-logout" aria-label="Sign out">
+                    <span>🚪</span> <span>Sign Out</span>
+                </a>
+            </div>
+        </aside>
+
+        <!-- Main Content Wrapper -->
+        <div class="main-wrapper">
+            
+            <!-- Topbar Header -->
+            <header class="topbar">
+                <div class="topbar-left">
+                    <button type="button" class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Toggle menu">
+                        ☰
+                    </button>
+
+                    <!-- Connection Status Indicator -->
+                    <div class="conn-status-pill">
+                        <span class="conn-dot"></span>
+                        <span>Live Connected</span>
+                    </div>
+
+                    <!-- Active Ward Pill -->
+                    {% if student %}
+                    <div class="topbar-student-pill" title="Linked Student Record">
+                        <div class="student-avatar-circle">
+                            {{ student.name[:1] }}
+                        </div>
+                        <div>
+                            <strong style="color: var(--text-primary);">{{ student.name }}</strong>
+                            <span class="hide-mobile" style="color: var(--text-muted); font-size: 0.78rem;">
+                                ({{ student.register_number }}) • {{ student.department }} Sem {{ student.semester|default(5) }}
+                            </span>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="topbar-right">
+                    <!-- Notification Bell with Dropdown -->
+                    <div class="notif-bell-wrapper">
+                        <button type="button" class="notif-bell-btn" id="notif-bell-btn" aria-label="View notifications">
+                            <span>🔔</span>
+                            <span class="notif-badge-pill" id="notif-badge-count">0</span>
+                        </button>
+
+                        <div class="notif-dropdown-menu" id="notif-dropdown-menu">
+                            <div class="notif-dropdown-header">
+                                <span class="notif-dropdown-title"><span>🔔</span> Notifications</span>
+                                <button type="button" class="notif-clear-all-btn" onclick="markAllNotificationsRead()">Mark all read</button>
+                            </div>
+                            <div class="notif-items-list" id="notif-dropdown-items">
+                                <div class="notif-empty-state">Loading notifications...</div>
+                            </div>
+                            <div class="notif-dropdown-footer">
+                                <a href="{{ url_for('parent_notifications') }}" class="notif-view-all-link">View All Notifications →</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Profile Link -->
+                    <a href="{{ url_for('parent_profile') }}" class="topbar-profile" title="View Parent Account">
+                        <div class="parent-avatar">
+                            {{ parent.name[:1] if parent else 'P' }}
+                        </div>
+                        <div class="hide-mobile" style="text-align: left;">
+                            <div style="font-size: 0.86rem; font-weight: 700; color: var(--text-primary);">{{ parent.name if parent else 'Parent' }}</div>
+                            <div style="font-size: 0.72rem; color: var(--parent-primary);">{{ parent.relationship|default('Guardian') }}</div>
+                        </div>
+                    </a>
+                </div>
+            </header>
+
+            <!-- Page Content Body -->
+            <main class="page-body">
+                
+                <!-- Flash Messages Banner -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert-box alert-{{ category if category in ['error', 'success', 'info'] else 'info' }}" role="alert">
+                                <span>{% if category == 'error' %}⚠️{% elif category == 'success' %}✓{% else %}ℹ️{% endif %}</span>
+                                <div>{{ message }}</div>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                {% block parent_content %}{% endblock %}
+
+            </main>
+
+            <!-- Minimal Footer -->
+            <footer style="padding: 20px 32px; border-top: 1px solid var(--glass-border); color: var(--text-muted); font-size: 0.8rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+                <div>© 2026 CampusGuard AI — Enterprise Safe Campus ERP</div>
+                <div style="display: flex; gap: 16px;">
+                    <span>🛡️ Live Parent-Ward Link Verified</span>
+                    <span>24/7 Security Helpline: +91 91234 56780</span>
+                </div>
+            </footer>
+
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        window.CURRENT_USER_ROLE = 'parent';
+        window.CURRENT_USER_ID = {{ parent.id if parent else 0 }};
+    </script>
+    <script src="{{ url_for('static', filename='js/parent.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/campusguard-realtime.js') }}"></script>
+    {% block extra_scripts %}{% endblock %}
+
+</body>
+</html>

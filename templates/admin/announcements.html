@@ -1,0 +1,145 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}Broadcast Announcements{% endblock %}
+
+{% block admin_content %}
+<div class="page-header-block">
+    <div class="page-title-group">
+        <h1><span>📢</span> Campus Announcements &amp; Broadcasts</h1>
+        <p>Publish targeted multi-role announcements to Students, Parents, and Faculty with real-time push distribution.</p>
+    </div>
+    
+    <div>
+        <button type="button" class="btn-primary" onclick="openModal('create-announcement-modal')" style="background: linear-gradient(135deg, #6366f1, #4f46e5);">
+            <span>➕</span> Publish New Announcement
+        </button>
+    </div>
+</div>
+
+<!-- Broadcast Announcements Feed Table -->
+<section class="content-card">
+    <div class="card-header-row">
+        <h2 class="card-heading"><span>📜</span> Published Announcements Registry</h2>
+        <span class="badge badge-purple">{{ announcements|length }} Broadcasts</span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="portal-table">
+            <thead>
+                <tr>
+                    <th>Broadcast Title</th>
+                    <th>Target Audience</th>
+                    <th>Category</th>
+                    <th>Priority</th>
+                    <th>Author</th>
+                    <th>Timestamp</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ann in announcements %}
+                <tr>
+                    <td>
+                        <strong style="color: var(--text-primary);">{{ ann.title }}</strong>
+                        <div style="font-size: 0.82rem; color: var(--text-secondary); margin-top: 2px;">{{ ann.description }}</div>
+                    </td>
+                    <td>
+                        <span class="badge {% if ann.target_audience == 'All' %}badge-green{% elif ann.target_audience in ['Students', 'Students only'] %}badge-cyan{% elif ann.target_audience in ['Parents', 'Parents only'] %}badge-purple{% else %}badge-indigo{% endif %}">
+                            {{ ann.target_audience }}
+                        </span>
+                    </td>
+                    <td><span class="badge badge-indigo">{{ ann.category }}</span></td>
+                    <td>
+                        <span class="badge {% if ann.priority == 'Critical' %}badge-red{% elif ann.priority == 'High' %}badge-yellow{% else %}badge-green{% endif %}">
+                            {{ ann.priority }}
+                        </span>
+                    </td>
+                    <td style="color: #38bdf8;">{{ ann.author_name }}</td>
+                    <td style="font-family: var(--font-mono); font-size: 0.82rem; color: var(--text-muted);">{{ ann.created_at }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 32px;">No announcements published yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<!-- Publish Announcement Modal -->
+<div class="modal-overlay" id="create-announcement-modal">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h3 class="modal-title">📢 Broadcast Campus Announcement</h3>
+            <button type="button" class="modal-close" onclick="closeModal('create-announcement-modal')">✕</button>
+        </div>
+
+        <form method="POST" action="{{ url_for('admin_announcements') }}">
+            <div class="form-group">
+                <label for="title" class="form-label">Announcement Title</label>
+                <input 
+                    type="text" 
+                    id="title" 
+                    name="title" 
+                    class="form-input" 
+                    placeholder="e.g. End-Semester Assessment Examination Schedule Published" 
+                    required
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="target_audience" class="form-label">Target Audience Distribution</label>
+                <select id="target_audience" name="target_audience" class="form-select" required>
+                    <option value="All">All Campus Roles (Students + Parents + Faculty)</option>
+                    <option value="Students">Students Only</option>
+                    <option value="Parents">Parents Only</option>
+                    <option value="Faculty">Faculty Only</option>
+                    <option value="Computer Science">Computer Science Department</option>
+                </select>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div class="form-group">
+                    <label for="category" class="form-label">Category</label>
+                    <select id="category" name="category" class="form-select" required>
+                        <option value="Academic">Academic Notice</option>
+                        <option value="Safety">Campus Safety &amp; Emergency</option>
+                        <option value="Maintenance">Facility Maintenance</option>
+                        <option value="General">General Announcement</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="priority" class="form-label">Priority Level</label>
+                    <select id="priority" name="priority" class="form-select" required>
+                        <option value="Normal">Normal</option>
+                        <option value="High">High</option>
+                        <option value="Critical">Critical</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="description" class="form-label">Announcement Content</label>
+                <textarea 
+                    id="description" 
+                    name="description" 
+                    class="form-textarea" 
+                    style="min-height: 120px;"
+                    placeholder="Type the full announcement details here..." 
+                    required
+                ></textarea>
+            </div>
+
+            <div style="display: flex; gap: 12px; margin-top: 20px;">
+                <button type="submit" class="btn-primary" style="flex: 1; background: linear-gradient(135deg, #6366f1, #4f46e5);">
+                    Broadcast to Selected Audience
+                </button>
+                <button type="button" class="btn-secondary" onclick="closeModal('create-announcement-modal')">
+                    Cancel
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

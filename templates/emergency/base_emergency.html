@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="CampusGuard AI — AI-Powered Smart Campus Emergency Response System">
+    <meta name="theme-color" content="#06080e">
+    <title>{% block title %}Emergency Response System{% endblock %} | CampusGuard AI</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <!-- Core Stylesheets -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/student-portal.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/emergency.css') }}">
+    
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ef4444'%3E%3Cpath d='M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 2.18l7 3.12v4.7c0 4.54-3.13 8.78-7 9.88-3.87-1.1-7-5.34-7-9.88V6.3l7-3.12z'/%3E%3C/svg%3E">
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+    <!-- Ambient Glowing Background -->
+    <div class="ambient-background" aria-hidden="true">
+        <div class="glow-orb orb-primary" style="background: radial-gradient(circle, rgba(239, 68, 68, 0.25) 0%, transparent 70%);"></div>
+        <div class="glow-orb orb-secondary" style="background: radial-gradient(circle, rgba(56, 189, 248, 0.2) 0%, transparent 70%);"></div>
+    </div>
+
+    <div style="min-height: 100vh; display: flex; flex-direction: column;">
+        <!-- Top Navigation Header -->
+        <header style="background: rgba(10, 15, 30, 0.92); backdrop-filter: blur(12px); border-bottom: 1px solid var(--glass-border); padding: 14px 28px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100;">
+            <div style="display: flex; align-items: center; gap: 16px;">
+                <a href="{% if actor.role == 'admin' %}/admin/dashboard{% elif actor.role == 'faculty' %}/faculty/dashboard{% elif actor.role == 'parent' %}/parent/dashboard{% else %}/student/dashboard{% endif %}" style="display: flex; align-items: center; gap: 10px; text-decoration: none; color: white; font-weight: 800; font-size: 1.15rem;">
+                    <span style="font-size: 1.4rem;">🚨</span>
+                    <span>CampusGuard <span style="color: #ef4444;">SOS Command</span></span>
+                </a>
+
+                <nav style="display: flex; gap: 8px; margin-left: 20px;">
+                    <a href="/student/emergency" class="btn-secondary" style="padding: 6px 12px; font-size: 0.8rem;">🚨 SOS Beacon</a>
+                    <a href="/emergency/history" class="btn-secondary" style="padding: 6px 12px; font-size: 0.8rem;">📋 History Archive</a>
+                    <a href="/emergency/analytics" class="btn-secondary" style="padding: 6px 12px; font-size: 0.8rem;">📊 Analytics</a>
+                    {% if actor.role == 'admin' %}
+                    <a href="/admin/safety" class="btn-secondary" style="padding: 6px 12px; font-size: 0.8rem; color: #fca5a5;">🛡️ Admin Command</a>
+                    {% endif %}
+                </nav>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <button type="button" class="sound-toggle-btn active" onclick="toggleEmergencyAudio(this)" style="padding: 6px 12px; font-size: 0.8rem;">
+                    <span>🔊</span> Audio Enabled
+                </button>
+                <div style="display: flex; align-items: center; gap: 8px; background: rgba(255,255,255,0.05); padding: 6px 12px; border-radius: 99px; border: 1px solid var(--glass-border);">
+                    <span style="font-size: 0.82rem; color: white; font-weight: 600;">{{ actor.name }}</span>
+                    <span class="badge badge-purple" style="font-size: 0.72rem; padding: 2px 6px;">{{ actor.role|upper }}</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Body -->
+        <main style="max-width: 1380px; width: 100%; margin: 0 auto; padding: 28px 24px; flex: 1;">
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="flash-messages-group" style="margin-bottom: 20px;">
+                        {% for category, message in messages %}
+                            <div class="flash-box flash-{{ category if category in ['success', 'error', 'info', 'danger'] else 'info' }}" role="alert">
+                                <span>{% if category in ['success'] %}✓{% elif category in ['error', 'danger'] %}⚠️{% else %}ℹ️{% endif %}</span>
+                                <div>{{ message }}</div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="{{ url_for('static', filename='js/emergency.js') }}"></script>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,110 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}Academics & Courses Management{% endblock %}
+
+{% block content %}
+
+<!-- Header & Add Course Trigger -->
+<div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 24px;">
+    <div>
+        <h1 style="font-size: 1.6rem; font-weight: 800; color: #fff; margin-bottom: 4px;">Academics &amp; Curriculum Catalog</h1>
+        <p style="color: var(--text-secondary); font-size: 0.88rem;">Manage departments, accredited courses, subject syllabi, and assigned faculty.</p>
+    </div>
+
+    <button type="button" class="btn-primary" onclick="document.getElementById('add-course-modal').style.display='flex'" style="background: linear-gradient(135deg, #6366f1, #4f46e5); padding: 10px 18px; font-size: 0.88rem;">
+        <span>+</span> Add New Course
+    </button>
+</div>
+
+<!-- Courses Data Table -->
+<div style="background: rgba(14, 19, 32, 0.85); border: 1px solid var(--glass-border); border-radius: 18px; padding: 24px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
+        <h3 style="font-size: 1.1rem; font-weight: 700; color: #fff;">Accredited Courses ({{ courses|length }})</h3>
+        <span class="badge badge-indigo">Semester 5 Curriculum</span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="data-table" style="width: 100%; border-collapse: collapse; font-size: 0.88rem;">
+            <thead>
+                <tr style="border-bottom: 1px solid var(--glass-border); text-align: left; color: var(--text-muted);">
+                    <th style="padding: 12px 10px;">Code</th>
+                    <th style="padding: 12px 10px;">Course Title</th>
+                    <th style="padding: 12px 10px;">Department</th>
+                    <th style="padding: 12px 10px;">Semester</th>
+                    <th style="padding: 12px 10px;">Credits</th>
+                    <th style="padding: 12px 10px;">Faculty in Charge</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in courses %}
+                <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.04);">
+                    <td style="padding: 14px 10px; font-family: var(--font-mono); font-weight: 700; color: #818cf8;">{{ c.course_code }}</td>
+                    <td style="padding: 14px 10px; font-weight: 700; color: #fff;">{{ c.course_name }}</td>
+                    <td style="padding: 14px 10px; color: var(--text-secondary);">{{ c.department }}</td>
+                    <td style="padding: 14px 10px; color: var(--text-secondary);">Semester {{ c.semester }}</td>
+                    <td style="padding: 14px 10px; font-weight: 700; color: #34d399;">{{ c.credits }} Credits</td>
+                    <td style="padding: 14px 10px; color: #38bdf8;">{{ c.faculty_name|default('Dr. Ramesh Rao') }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" style="text-align: center; padding: 30px; color: var(--text-muted);">No courses listed in catalog.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Add Course Modal -->
+<div id="add-course-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center; padding: 20px;">
+    <div style="background: #0e1320; border: 1px solid var(--parent-border); border-radius: 20px; max-width: 540px; width: 100%; padding: 28px; box-shadow: 0 25px 60px rgba(0,0,0,0.6);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h3 style="font-size: 1.25rem; font-weight: 800; color: #fff;">📚 Add New Course / Subject</h3>
+            <button type="button" onclick="document.getElementById('add-course-modal').style.display='none'" style="background: none; border: none; color: var(--text-muted); font-size: 1.3rem; cursor: pointer;">✕</button>
+        </div>
+
+        <form method="POST" action="{{ url_for('admin_academics_create') }}">
+            <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 14px; margin-bottom: 14px;">
+                <div>
+                    <label class="form-label">Course Code</label>
+                    <input type="text" name="code" class="form-input" placeholder="e.g. CS306" required>
+                </div>
+                <div>
+                    <label class="form-label">Course Name</label>
+                    <input type="text" name="name" class="form-input" placeholder="e.g. Cloud Computing" required>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+                <div>
+                    <label class="form-label">Department</label>
+                    <select name="department" class="form-input" required>
+                        <option value="Computer Science & Engineering">Computer Science (CSE)</option>
+                        <option value="Electronics & Communication">Electronics (ECE)</option>
+                        <option value="Information Technology">Information Tech (IT)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label">Semester</label>
+                    <input type="number" name="semester" class="form-input" value="5" min="1" max="8" required>
+                </div>
+                <div>
+                    <label class="form-label">Credits</label>
+                    <input type="number" name="credits" class="form-input" value="4" min="1" max="6" required>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label class="form-label">Faculty in Charge</label>
+                <input type="text" name="faculty_name" class="form-input" placeholder="e.g. Dr. Ramesh Rao" required>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" onclick="document.getElementById('add-course-modal').style.display='none'" class="btn-secondary">Cancel</button>
+                <button type="submit" class="btn-primary" style="background: linear-gradient(135deg, #6366f1, #4f46e5);">Add Course to Catalog</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}

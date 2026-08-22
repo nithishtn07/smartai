@@ -1,0 +1,218 @@
+{% extends "faculty/base_faculty.html" %}
+
+{% block title %}Classroom Attendance Management{% endblock %}
+
+{% block faculty_content %}
+<div class="page-header-block">
+    <div class="page-title-group">
+        <h1><span>📊</span> Course Attendance &amp; Roll-Call Center</h1>
+        <p>Conduct full class roll-calls, track threshold compliance, and dispatch automated warning alerts to students and parents.</p>
+    </div>
+    
+    <div>
+        <span class="badge badge-green" style="font-size: 0.88rem; padding: 8px 16px;">
+            Institutional Minimum: 75.0%
+        </span>
+    </div>
+</div>
+
+<!-- Course Selector Filter Strip -->
+<div style="display: flex; gap: 10px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 4px;">
+    {% for c in courses %}
+    <a href="{{ url_for('faculty_attendance', course=c.course_code) }}" 
+       class="btn-secondary {% if selected_course == c.course_code %}active{% endif %}"
+       style="{% if selected_course == c.course_code %}background: linear-gradient(135deg, #10b981, #059669); color: #fff; border-color: transparent;{% endif %} padding: 8px 16px; font-size: 0.85rem; text-decoration: none;">
+        📚 {{ c.course_code }} - {{ c.course_name }}
+    </a>
+    {% endfor %}
+</div>
+
+<!-- Mode 1: Interactive Full Class Roll-Call Card -->
+<section class="content-card" style="background: linear-gradient(135deg, rgba(14, 19, 32, 0.95) 0%, rgba(20, 27, 45, 0.9) 100%); border-color: rgba(16, 185, 129, 0.3);">
+    <div class="card-header-row">
+        <div>
+            <h2 class="card-heading"><span>✍️</span> Conduct Roll Call: {{ selected_course }}</h2>
+            <p style="font-size: 0.82rem; color: var(--text-muted); margin: 2px 0 0;">
+                Select status for each student and save the entire period roll call to the central database.
+            </p>
+        </div>
+        <div style="display: flex; gap: 8px;">
+            <button type="button" class="btn-secondary" onclick="markAllPresent()" style="padding: 6px 12px; font-size: 0.8rem;">
+                ✓ Mark All Present
+            </button>
+        </div>
+    </div>
+
+    <form method="POST" action="{{ url_for('faculty_attendance') }}" id="rollCallForm">
+        <input type="hidden" name="action_type" value="batch_roll_call">
+        <input type="hidden" name="course_code" value="{{ selected_course }}">
+
+        <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 16px; margin-bottom: 16px;">
+            <div class="form-group">
+                <label for="roll_date" class="form-label">Lecture Date</label>
+                <input type="date" id="roll_date" name="date" class="form-input" value="{{ today_date }}" required>
+            </div>
+            <div class="form-group">
+                <label for="roll_topic" class="form-label">Lecture Topic / Syllabus Covered</label>
+                <input type="text" id="roll_topic" name="topic" class="form-input" placeholder="e.g. Query Optimization & B+ Tree Indexing" required>
+            </div>
+        </div>
+
+        <div class="table-responsive" style="margin-bottom: 20px;">
+            <table class="portal-table">
+                <thead>
+                    <tr>
+                        <th>Register No</th>
+                        <th>Student Name</th>
+                        <th>Department</th>
+                        <th>Current Attendance</th>
+                        <th>Roll Call Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in students %}
+                    <tr>
+                        <td>
+                            <span class="badge badge-indigo" style="font-family: monospace;">{{ s.register_number }}</span>
+                        </td>
+                        <td>
+                            <strong style="color: #fff;">{{ s.name }}</strong>
+                        </td>
+                        <td>{{ s.department }}</td>
+                        <td>
+                            {% set cur_att = 85.0 %}
+                            {% for a in attendance_list if a.student_id == s.id %}
+                                {% set cur_att = a.attendance_pct %}
+                            {% endfor %}
+                            <span style="font-weight: 700; color: {% if cur_att >= 85 %}#34d399{% elif cur_att >= 75 %}#fbbf24{% else %}#f43f5e{% endif %};">
+                                {{ cur_att }}%
+                            </span>
+                        </td>
+                        <td>
+                            <div style="display: flex; gap: 16px; align-items: center;">
+                                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; color: #34d399; font-weight: 600; font-size: 0.88rem;">
+                                    <input type="radio" name="status_{{ s.id }}" value="Present" class="status-radio-present" checked>
+                                    Present
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; color: #f43f5e; font-weight: 600; font-size: 0.88rem;">
+                                    <input type="radio" name="status_{{ s.id }}" value="Absent" class="status-radio-absent">
+                                    Absent
+                                </label>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <button type="submit" class="btn-primary" style="background: linear-gradient(135deg, #10b981, #059669); font-size: 0.95rem; padding: 10px 24px;">
+            <span>💾</span> Save Roll Call &amp; Dispatch Sync Alerts
+        </button>
+    </form>
+</section>
+
+<!-- Student Attendance Roster & Safe Margins -->
+<section class="content-card">
+    <div class="card-header-row">
+        <h2 class="card-heading"><span>📋</span> Course Roster &amp; Compliance Watchlist</h2>
+        <span class="badge badge-purple">Real-Time Sync</span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="portal-table">
+            <thead>
+                <tr>
+                    <th>Student Name &amp; Reg No</th>
+                    <th>Subject Code</th>
+                    <th>Conducted</th>
+                    <th>Attended</th>
+                    <th>Missed</th>
+                    <th>Attendance %</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in attendance_list %}
+                <tr>
+                    <td>
+                        <strong style="color: #fff;">{{ a.student_name }}</strong>
+                        <div style="font-size: 0.78rem; color: var(--text-muted); font-family: monospace;">{{ a.register_number }}</div>
+                    </td>
+                    <td><span class="badge badge-indigo">{{ a.subject_code }}</span></td>
+                    <td>{{ a.classes_held }}</td>
+                    <td style="color: #34d399; font-weight: 700;">{{ a.classes_attended }}</td>
+                    <td style="color: #f43f5e;">{{ a.classes_missed }}</td>
+                    <td>
+                        <strong style="font-size: 1.05rem; color: {% if a.attendance_pct >= 85 %}#34d399{% elif a.attendance_pct >= 75 %}#fbbf24{% else %}#f43f5e{% endif %};">
+                            {{ a.attendance_pct }}%
+                        </strong>
+                    </td>
+                    <td>
+                        <span class="badge {% if a.attendance_pct >= 75 %}badge-green{% else %}badge-red{% endif %}">
+                            {% if a.attendance_pct >= 75 %}Compliant{% else %}⚠️ Shortage Alert{% endif %}
+                        </span>
+                    </td>
+                    <td>
+                        {% if a.attendance_pct < 75.0 %}
+                        <form method="POST" action="{{ url_for('faculty_attendance_send_warning', student_id=a.student_id) }}" style="display: inline;">
+                            <input type="hidden" name="course_code" value="{{ a.subject_code }}">
+                            <button type="submit" class="btn-secondary" style="padding: 4px 10px; font-size: 0.78rem; border-color: #f43f5e; color: #f43f5e;" title="Send Warning to Student & Parent">
+                                🔔 Send Warning
+                            </button>
+                        </form>
+                        {% else %}
+                        <span style="font-size: 0.8rem; color: #34d399;">✓ In Good Standing</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<!-- Recent Lecture Logs -->
+<section class="content-card">
+    <div class="card-header-row">
+        <h2 class="card-heading"><span>📜</span> Recent Lecture Logs &amp; Roll-Call History</h2>
+        <span class="badge badge-indigo">Classroom Archives</span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="portal-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Course</th>
+                    <th>Topic Covered</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in recent_logs %}
+                <tr>
+                    <td style="color: #cbd5e1;">{{ log.date }}</td>
+                    <td><span class="badge badge-indigo">{{ log.course_code }}</span></td>
+                    <td style="color: #fff;">{{ log.topic }}</td>
+                    <td>
+                        <span class="badge {% if log.status == 'Present' %}badge-green{% else %}badge-red{% endif %}">
+                            {{ log.status }}
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<script>
+function markAllPresent() {
+    document.querySelectorAll('.status-radio-present').forEach(radio => {
+        radio.checked = true;
+    });
+}
+</script>
+{% endblock %}

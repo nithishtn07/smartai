@@ -1,0 +1,102 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}Direct Messages Center{% endblock %}
+
+{% block content %}
+
+<!-- Header & Compose Modal Trigger -->
+<div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 24px;">
+    <div>
+        <h1 style="font-size: 1.6rem; font-weight: 800; color: #fff; margin-bottom: 4px;">Admin Communication &amp; Messages Hub</h1>
+        <p style="color: var(--text-secondary); font-size: 0.88rem;">Dispatch direct administrative notices to Students, Parents, or Faculty members.</p>
+    </div>
+
+    <button type="button" class="btn-primary" onclick="document.getElementById('compose-msg-modal').style.display='flex'" style="background: linear-gradient(135deg, #6366f1, #4f46e5); padding: 10px 18px; font-size: 0.88rem;">
+        <span>✉️</span> Compose Message
+    </button>
+</div>
+
+<!-- Messages Table -->
+<div style="background: rgba(14, 19, 32, 0.85); border: 1px solid var(--glass-border); border-radius: 18px; padding: 24px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
+        <h3 style="font-size: 1.1rem; font-weight: 700; color: #fff;">Communication Stream ({{ messages|length }})</h3>
+        <span class="badge badge-purple">Multi-Portal Messaging</span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="data-table" style="width: 100%; border-collapse: collapse; font-size: 0.88rem;">
+            <thead>
+                <tr style="border-bottom: 1px solid var(--glass-border); text-align: left; color: var(--text-muted);">
+                    <th style="padding: 12px 10px;">Sender</th>
+                    <th style="padding: 12px 10px;">Recipient</th>
+                    <th style="padding: 12px 10px;">Subject</th>
+                    <th style="padding: 12px 10px;">Message Content</th>
+                    <th style="padding: 12px 10px; text-align: right;">Timestamp</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for m in messages %}
+                <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.04);">
+                    <td style="padding: 14px 10px;">
+                        <strong style="color: #fff;">{{ m.sender_name }}</strong>
+                        <div style="font-size: 0.75rem; color: #818cf8;">{{ m.sender_role }}</div>
+                    </td>
+                    <td style="padding: 14px 10px;">
+                        <strong style="color: var(--text-primary);">{{ m.receiver_name }}</strong>
+                        <div style="font-size: 0.75rem; color: #34d399;">{{ m.receiver_role }}</div>
+                    </td>
+                    <td style="padding: 14px 10px; font-weight: 600; color: #fff;">{{ m.subject }}</td>
+                    <td style="padding: 14px 10px; color: var(--text-secondary); max-width: 300px;">{{ m.content }}</td>
+                    <td style="padding: 14px 10px; color: var(--text-muted); font-size: 0.8rem; text-align: right;">{{ m.sent_at|default(m.timestamp) }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="5" style="text-align: center; padding: 30px; color: var(--text-muted);">No messages logged.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Compose Message Modal -->
+<div id="compose-msg-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center; padding: 20px;">
+    <div style="background: #0e1320; border: 1px solid var(--parent-border); border-radius: 20px; max-width: 520px; width: 100%; padding: 28px; box-shadow: 0 25px 60px rgba(0,0,0,0.6);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h3 style="font-size: 1.25rem; font-weight: 800; color: #fff;">✉️ Compose Direct Notice</h3>
+            <button type="button" onclick="document.getElementById('compose-msg-modal').style.display='none'" style="background: none; border: none; color: var(--text-muted); font-size: 1.3rem; cursor: pointer;">✕</button>
+        </div>
+
+        <form method="POST" action="{{ url_for('admin_messages') }}">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+                <div>
+                    <label class="form-label">Recipient Role</label>
+                    <select name="receiver_role" class="form-input" required>
+                        <option value="Student">Student</option>
+                        <option value="Parent">Parent</option>
+                        <option value="Faculty">Faculty</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label">Recipient Name</label>
+                    <input type="text" name="receiver_name" class="form-input" placeholder="e.g. Nithish Nagaraj" required>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 14px;">
+                <label class="form-label">Subject</label>
+                <input type="text" name="subject" class="form-input" placeholder="e.g. Administrative Notice regarding Academic Advising" required>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label class="form-label">Message Content</label>
+                <textarea name="content" class="form-input" rows="4" placeholder="Enter administrative message details..." required></textarea>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" onclick="document.getElementById('compose-msg-modal').style.display='none'" class="btn-secondary">Cancel</button>
+                <button type="submit" class="btn-primary" style="background: linear-gradient(135deg, #6366f1, #4f46e5);">Dispatch Message</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}

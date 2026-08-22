@@ -1,0 +1,97 @@
+{% extends "faculty/base_faculty.html" %}
+
+{% block title %}My Subjects &amp; Course Management{% endblock %}
+
+{% block faculty_content %}
+<section class="content-card" style="background: linear-gradient(135deg, rgba(14, 19, 32, 0.95) 0%, rgba(20, 27, 45, 0.9) 100%); border-color: rgba(16, 185, 129, 0.3);">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+        <div>
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                <span class="badge badge-green">CURRICULUM PORTFOLIO</span>
+                <span class="badge badge-indigo">{{ subjects_data|length }} Assigned Subjects</span>
+            </div>
+            <h1 style="font-size: 1.5rem; font-weight: 800; color: #fff; margin: 0 0 4px;">
+                Assigned Subjects &amp; Course Instruction
+            </h1>
+            <p style="color: var(--text-secondary); font-size: 0.88rem; margin: 0;">
+                Comprehensive course monitoring: attendance compliance, syllabus coverage, assignments, and study materials.
+            </p>
+        </div>
+
+        <div style="display: flex; gap: 10px;">
+            <a href="{{ url_for('faculty_materials') }}" class="btn-primary" style="background: linear-gradient(135deg, #10b981, #059669);">
+                <span>📖</span> Upload Material
+            </a>
+            <a href="{{ url_for('faculty_assignments') }}" class="btn-secondary">
+                <span>📋</span> New Assignment
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- Subject Cards Grid -->
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 24px;">
+    {% for item in subjects_data %}
+    {% set course = item.course %}
+    <div class="content-card" style="margin-bottom: 0; display: flex; flex-direction: column; justify-content: space-between;">
+        
+        <div>
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+                <div>
+                    <span class="badge badge-indigo" style="font-family: monospace; font-size: 0.85rem;">{{ course.course_code }}</span>
+                    <span class="badge {% if 'Lab' in course.course_type %}badge-amber{% else %}badge-green{% endif %}" style="margin-left: 6px;">{{ course.course_type }}</span>
+                </div>
+                <span style="font-size: 0.85rem; font-weight: 700; color: #38bdf8;">{{ course.credits }} Credits</span>
+            </div>
+
+            <h3 style="font-size: 1.2rem; font-weight: 800; color: #fff; margin: 0 0 6px;">
+                {{ course.course_name }}
+            </h3>
+
+            <p style="font-size: 0.82rem; color: var(--text-secondary); margin: 0 0 16px;">
+                {{ course.department }} • Semester {{ course.semester }} • Room: <strong>{{ course.room_number }}</strong>
+            </p>
+
+            <!-- Course Stats Grid -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px;">
+                <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 10px; padding: 10px 14px;">
+                    <div style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase;">Enrolled Students</div>
+                    <div style="font-size: 1.2rem; font-weight: 800; color: #fff; margin-top: 2px;">{{ item.student_count }}</div>
+                </div>
+
+                <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 10px; padding: 10px 14px;">
+                    <div style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase;">Avg Attendance</div>
+                    <div style="font-size: 1.2rem; font-weight: 800; color: {% if item.avg_attendance >= 85 %}#34d399{% elif item.avg_attendance >= 75 %}#fbbf24{% else %}#f43f5e{% endif %}; margin-top: 2px;">
+                        {{ item.avg_attendance }}%
+                    </div>
+                </div>
+
+                <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 10px; padding: 10px 14px;">
+                    <div style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase;">Study Materials</div>
+                    <div style="font-size: 1.2rem; font-weight: 800; color: #a855f7; margin-top: 2px;">{{ item.materials_count }}</div>
+                </div>
+
+                <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 10px; padding: 10px 14px;">
+                    <div style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase;">Assignments</div>
+                    <div style="font-size: 1.2rem; font-weight: 800; color: #38bdf8; margin-top: 2px;">{{ item.assignments_count }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div style="display: flex; gap: 8px; flex-wrap: wrap; border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 14px;">
+            <a href="{{ url_for('faculty_attendance', course=course.course_code) }}" class="btn-primary" style="flex: 1; text-align: center; padding: 8px; font-size: 0.82rem; background: linear-gradient(135deg, #10b981, #059669);">
+                <span>📊</span> Attendance
+            </a>
+            <a href="{{ url_for('faculty_marks') }}" class="btn-secondary" style="flex: 1; text-align: center; padding: 8px; font-size: 0.82rem;">
+                <span>📝</span> Marks
+            </a>
+            <a href="{{ url_for('faculty_materials') }}" class="btn-secondary" style="padding: 8px 12px; font-size: 0.82rem;" title="View Study Materials">
+                <span>📖</span>
+            </a>
+        </div>
+
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

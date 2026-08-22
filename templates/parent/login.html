@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="CampusGuard AI - Parent Portal Login. Real-time ward monitoring, academics, attendance, and campus safety.">
+    <meta name="theme-color" content="#06080e">
+    
+    <title>Parent Portal Login | CampusGuard AI</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/parent.css') }}">
+    
+    <style>
+        .login-page-container {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            padding: 24px 16px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .login-header-nav {
+            width: 100%;
+            max-width: 1100px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+        }
+
+        .brand-logo-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.88rem;
+            font-weight: 600;
+            padding: 8px 16px;
+            border-radius: var(--btn-radius);
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--glass-border);
+            transition: all var(--transition-fast);
+        }
+        .back-link:hover {
+            color: var(--text-primary);
+            border-color: var(--parent-border);
+            background: rgba(147, 51, 234, 0.1);
+        }
+
+        .login-box {
+            width: 100%;
+            max-width: 450px;
+            background: rgba(14, 19, 32, 0.88);
+            border: 1px solid var(--parent-border);
+            border-radius: 24px;
+            padding: 36px 32px;
+            backdrop-filter: var(--glass-blur);
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5), 0 0 35px var(--parent-glow);
+            margin: auto 0;
+        }
+
+        .login-heading-group {
+            text-align: center;
+            margin-bottom: 26px;
+        }
+
+        .login-icon-box {
+            width: 56px;
+            height: 56px;
+            margin: 0 auto 14px;
+            border-radius: 16px;
+            background: rgba(147, 51, 234, 0.15);
+            border: 1px solid var(--parent-border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            box-shadow: 0 0 20px var(--parent-glow);
+        }
+
+        .login-heading-group h1 {
+            font-size: 1.55rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin-bottom: 6px;
+            letter-spacing: -0.02em;
+        }
+
+        .login-heading-group p {
+            color: var(--text-secondary);
+            font-size: 0.88rem;
+            line-height: 1.4;
+        }
+
+        .demo-credentials-box {
+            background: rgba(147, 51, 234, 0.08);
+            border: 1px dashed rgba(192, 132, 252, 0.35);
+            border-radius: 12px;
+            padding: 12px 14px;
+            margin-bottom: 22px;
+            font-size: 0.82rem;
+        }
+
+        .demo-cred-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 4px;
+        }
+
+        .input-group-relative {
+            position: relative;
+        }
+
+        .pw-toggle-btn {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 1.1rem;
+            padding: 4px;
+        }
+        .pw-toggle-btn:hover {
+            color: var(--text-primary);
+        }
+
+        .form-options-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.82rem;
+            margin-bottom: 20px;
+        }
+
+        .remember-checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-secondary);
+            cursor: pointer;
+        }
+
+        .forgot-pw-link {
+            color: var(--parent-primary);
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .forgot-pw-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Ambient Glowing Background -->
+    <div class="ambient-background" aria-hidden="true">
+        <div class="glow-orb orb-primary"></div>
+        <div class="glow-orb orb-secondary"></div>
+    </div>
+
+    <div class="login-page-container">
+        
+        <!-- Header Nav -->
+        <header class="login-header-nav">
+            <a href="{{ url_for('home') }}" class="brand-logo-link">
+                <div class="brand-icon">
+                    <svg width="22" height="22" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M16 2L4 7V14C4 22 9.5 28.5 16 30C22.5 28.5 28 22 28 14V7L16 2Z" fill="#c084fc" fill-opacity="0.2" stroke="#c084fc" stroke-width="2"/>
+                        <circle cx="16" cy="15" r="4" fill="#c084fc"/>
+                    </svg>
+                </div>
+                <div>
+                    <span class="brand-name">CampusGuard <span class="brand-badge">PARENT</span></span>
+                </div>
+            </a>
+
+            <a href="{{ url_for('home') }}" class="back-link">
+                <span>←</span> Back to Main Portal
+            </a>
+        </header>
+
+        <!-- Login Card -->
+        <div class="login-box">
+            
+            <div class="login-heading-group">
+                <div class="login-icon-box">👨‍👩‍👧</div>
+                <span class="badge badge-purple" style="margin-bottom: 8px;">PARENT &amp; GUARDIAN ACCESS</span>
+                <h1>Parent Portal Sign In</h1>
+                <p>Monitor your child's academic progress, attendance, and campus safety in real-time.</p>
+            </div>
+
+            <!-- Demo Credentials Helper Card -->
+            <div class="demo-credentials-box">
+                <div style="font-weight: 700; color: var(--parent-primary); margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+                    <span>💡</span> Demo Parent Credentials:
+                </div>
+                <div class="demo-cred-row">
+                    <span style="color: var(--text-muted);">Email / ID:</span>
+                    <span style="color: #fff; font-family: var(--font-mono); font-weight: 600;">parent@example.com (or PAR001)</span>
+                </div>
+                <div class="demo-cred-row">
+                    <span style="color: var(--text-muted);">Password:</span>
+                    <span style="color: #34d399; font-family: var(--font-mono); font-weight: 600;">Parent@123</span>
+                </div>
+            </div>
+
+            <!-- Flash & Error Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert-box alert-{{ category if category in ['error', 'success', 'info'] else 'info' }}" role="alert">
+                            <span>{% if category == 'error' %}⚠️{% elif category == 'success' %}✓{% else %}ℹ️{% endif %}</span>
+                            <div>{{ message }}</div>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            {% if error %}
+                <div class="alert-box alert-error" role="alert">
+                    <span>⚠️</span>
+                    <div>{{ error }}</div>
+                </div>
+            {% endif %}
+
+            <!-- Login Form -->
+            <form method="POST" action="{{ url_for('parent_login') }}" id="parent-login-form">
+                
+                <!-- Identifier (Parent ID or Email) -->
+                <div class="form-group">
+                    <label for="identifier" class="form-label">Parent ID or Registered Email</label>
+                    <input 
+                        type="text" 
+                        id="identifier" 
+                        name="identifier" 
+                        class="form-input" 
+                        placeholder="e.g. parent@example.com or PAR001" 
+                        value="{{ identifier|default('') }}" 
+                        required 
+                        autocomplete="username"
+                    >
+                </div>
+
+                <!-- Password -->
+                <div class="form-group">
+                    <label for="password" class="form-label">Password</label>
+                    <div class="input-group-relative">
+                        <input 
+                            type="password" 
+                            id="password" 
+                            name="password" 
+                            class="form-input" 
+                            placeholder="Enter your password" 
+                            required 
+                            autocomplete="current-password"
+                        >
+                        <button type="button" class="pw-toggle-btn toggle-password-btn" data-target="password" title="Toggle password visibility">
+                            👁️
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Options: Remember Me & Forgot Password -->
+                <div class="form-options-row">
+                    <label class="remember-checkbox-label">
+                        <input type="checkbox" name="remember" value="1" checked style="accent-color: var(--parent-primary-dark);">
+                        <span>Remember me for 7 days</span>
+                    </label>
+                    <a href="javascript:void(0)" class="forgot-pw-link" onclick="openModal('forgot-pw-modal')">Forgot password?</a>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" class="btn-primary" style="width: 100%; padding: 14px;" id="login-submit-btn">
+                    <span>🔐</span> Sign In to Parent Portal
+                </button>
+
+            </form>
+
+            <div style="text-align: center; margin-top: 20px; font-size: 0.82rem; color: var(--text-muted);">
+                Looking for student access? <a href="{{ url_for('student_login') }}" style="color: #38bdf8; text-decoration: none; font-weight: 600;">Student Login →</a>
+            </div>
+
+        </div>
+
+        <!-- Footer Note -->
+        <footer style="color: var(--text-muted); font-size: 0.78rem; text-align: center; margin-top: 20px;">
+            CampusGuard AI Parent Security Gateway • 256-bit Encrypted Session
+        </footer>
+
+    </div>
+
+    <!-- Forgot Password Modal -->
+    <div class="modal-overlay" id="forgot-pw-modal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 class="modal-title">🔐 Parent Password Assistance</h3>
+                <button type="button" class="modal-close" onclick="closeModal('forgot-pw-modal')">✕</button>
+            </div>
+            <div style="color: var(--text-secondary); font-size: 0.9rem; line-height: 1.6; margin-bottom: 20px;">
+                Parent accounts are securely provisioned and verified against the student registrar database. If you have forgotten your password or need to reset your login:
+            </div>
+            <div style="background: rgba(14, 19, 32, 0.8); border: 1px solid var(--glass-border); border-radius: 12px; padding: 16px; font-size: 0.85rem; margin-bottom: 20px;">
+                <div style="color: #fff; font-weight: 700; margin-bottom: 6px;">📞 Institutional Registrar Helpdesk:</div>
+                <div style="color: var(--text-secondary);">Phone: +91 91234 56784 (Office Hours: 9 AM - 5 PM)</div>
+                <div style="color: var(--text-secondary);">Email: parent-support@campusguard.edu</div>
+                <div style="color: #c084fc; margin-top: 8px; font-size: 0.8rem;">Note: For immediate testing, use the default demo password <strong>Parent@123</strong>.</div>
+            </div>
+            <button type="button" class="btn-secondary" style="width: 100%;" onclick="closeModal('forgot-pw-modal')">
+                Close
+            </button>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="{{ url_for('static', filename='js/parent.js') }}"></script>
+    <script>
+        // Loading state on form submission
+        const loginForm = document.getElementById('parent-login-form');
+        const loginBtn = document.getElementById('login-submit-btn');
+        if (loginForm && loginBtn) {
+            loginForm.addEventListener('submit', () => {
+                loginBtn.innerHTML = '<span>⏳</span> Authenticating...';
+                loginBtn.style.opacity = '0.8';
+                loginBtn.style.pointerEvents = 'none';
+            });
+        }
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,181 @@
+{% extends "faculty/base_faculty.html" %}
+
+{% block title %}Mentoring &amp; Student Risk Alerts{% endblock %}
+
+{% block faculty_content %}
+<div class="page-header-block">
+    <div class="page-title-group">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+            <span class="badge badge-green">CLASS ADVISOR &amp; MENTORSHIP</span>
+            <span class="badge badge-indigo">Year 3 B.Tech CSE (Sec A)</span>
+        </div>
+        <h1><span>🛡️</span> Mentoring, Advisee Guidance &amp; Risk Alerts</h1>
+        <p>Proactive AI student risk monitoring: attendance shortages, academic drops, pending hostel leaves, and direct parent outreach.</p>
+    </div>
+    
+    <div>
+        <a href="{{ url_for('faculty_messages') }}" class="btn-primary" style="background: linear-gradient(135deg, #10b981, #059669);">
+            <span>💬</span> Message Advisees / Parents
+        </a>
+    </div>
+</div>
+
+<!-- Mentee KPI Metric Cards -->
+<div class="kpi-grid">
+    <div class="kpi-card">
+        <div class="kpi-icon-wrap" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">
+            🧑‍🎓
+        </div>
+        <div class="kpi-data">
+            <div class="kpi-label">Total Assigned Mentees</div>
+            <div class="kpi-value" style="color: #34d399;">{{ total_mentees }}</div>
+            <div class="kpi-subtext">Official Faculty Advisees</div>
+        </div>
+    </div>
+
+    <div class="kpi-card">
+        <div class="kpi-icon-wrap" style="background: rgba(244, 63, 94, 0.15); color: #f43f5e;">
+            ⚠️
+        </div>
+        <div class="kpi-data">
+            <div class="kpi-label">Low Attendance Alert</div>
+            <div class="kpi-value" style="color: #f43f5e;">{{ low_att_cnt }}</div>
+            <div class="kpi-subtext">&lt; {{ threshold }}% Threshold</div>
+        </div>
+    </div>
+
+    <div class="kpi-card">
+        <div class="kpi-icon-wrap" style="background: rgba(251, 191, 36, 0.15); color: #fbbf24;">
+            🎯
+        </div>
+        <div class="kpi-data">
+            <div class="kpi-label">Academic Risk Watchlist</div>
+            <div class="kpi-value" style="color: #fbbf24;">{{ acad_risk_cnt }}</div>
+            <div class="kpi-subtext">CGPA &lt; 7.0 or Arrear Flag</div>
+        </div>
+    </div>
+
+    <div class="kpi-card">
+        <div class="kpi-icon-wrap" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8;">
+            🏢
+        </div>
+        <div class="kpi-data">
+            <div class="kpi-label">Pending Outpass Requests</div>
+            <div class="kpi-value" style="color: #38bdf8;">{{ pending_leaves_cnt }}</div>
+            <div class="kpi-subtext">Awaiting Approval</div>
+        </div>
+    </div>
+</div>
+
+<!-- Real-Time AI Student Risk Alerts -->
+<section class="content-card" style="border-left: 4px solid #f43f5e;">
+    <div class="card-header-row">
+        <h2 class="card-heading"><span>🚨</span> Real-Time Student Risk Intelligence Alerts</h2>
+        <span class="badge badge-red">{{ risk_alerts|length }} Active Alerts</span>
+    </div>
+
+    {% if risk_alerts %}
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+        {% for alert in risk_alerts %}
+        <div style="background: rgba(244, 63, 94, 0.08); border: 1px solid rgba(244, 63, 94, 0.25); border-radius: 12px; padding: 14px 18px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+            <div style="display: flex; align-items: center; gap: 14px;">
+                <div style="font-size: 1.5rem;">⚠️</div>
+                <div>
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 2px;">
+                        <strong style="color: #fff; font-size: 1rem;">{{ alert.student_name }}</strong>
+                        <span class="badge badge-indigo" style="font-family: monospace; font-size: 0.75rem;">{{ alert.reg_no }}</span>
+                        <span class="badge {% if alert.severity == 'Critical' %}badge-red{% else %}badge-yellow{% endif %}">{{ alert.type }}</span>
+                    </div>
+                    <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 0;">
+                        {{ alert.description }}
+                    </p>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 8px;">
+                <a href="{{ url_for('faculty_student_view', student_id=alert.student_id) }}" class="btn-primary" style="padding: 6px 14px; font-size: 0.8rem; background: linear-gradient(135deg, #10b981, #059669);">
+                    🔍 View 360° Profile
+                </a>
+                <a href="{{ url_for('faculty_messages') }}" class="btn-secondary" style="padding: 6px 12px; font-size: 0.8rem;">
+                    💬 Direct Message
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div style="text-align: center; padding: 24px; color: #34d399;">
+        ✓ All assigned mentees are in good standing with optimal attendance and zero academic risk flags!
+    </div>
+    {% endif %}
+</section>
+
+<!-- Mentee Student Cards Grid -->
+<section class="content-card">
+    <div class="card-header-row">
+        <h2 class="card-heading"><span>🎓</span> Assigned Advisees Directory</h2>
+        <span class="badge badge-green">{{ mentee_cards|length }} Students</span>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 20px;">
+        {% for card in mentee_cards %}
+        {% set s = card.student %}
+        <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 14px; padding: 18px; display: flex; flex-direction: column; justify-content: space-between;">
+            <div>
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="width: 44px; height: 44px; border-radius: 12px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); display: flex; align-items: center; justify-content: center; font-weight: 800; color: #fff; font-size: 1.1rem;">
+                            {{ s.name[:1] }}
+                        </div>
+                        <div>
+                            <h4 style="font-size: 1.05rem; font-weight: 800; color: #fff; margin: 0 0 2px;">{{ s.name }}</h4>
+                            <span class="badge badge-indigo" style="font-family: monospace; font-size: 0.75rem;">{{ s.register_number }}</span>
+                        </div>
+                    </div>
+
+                    {% if card.risks %}
+                    <span class="badge badge-red">⚠️ Risk Alert</span>
+                    {% else %}
+                    <span class="badge badge-green">✓ Good</span>
+                    {% endif %}
+                </div>
+
+                <div style="font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 12px;">
+                    {{ s.department }} • Year {{ s.year }} (Sem {{ s.semester }})
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;">
+                    <div style="background: rgba(255, 255, 255, 0.03); border-radius: 8px; padding: 8px 10px;">
+                        <div style="font-size: 0.7rem; color: var(--text-muted);">Attendance</div>
+                        <div style="font-size: 1.1rem; font-weight: 800; color: {% if card.avg_attendance >= 90 %}#38bdf8{% elif card.avg_attendance >= threshold %}#34d399{% else %}#f43f5e{% endif %};">
+                            {{ card.avg_attendance }}%
+                        </div>
+                    </div>
+                    <div style="background: rgba(255, 255, 255, 0.03); border-radius: 8px; padding: 8px 10px;">
+                        <div style="font-size: 0.7rem; color: var(--text-muted);">CGPA</div>
+                        <div style="font-size: 1.1rem; font-weight: 800; color: #38bdf8;">
+                            {{ s.cgpa|default(8.75) }}
+                        </div>
+                    </div>
+                </div>
+
+                {% if card.parent %}
+                <div style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 12px;">
+                    👨‍👧 Guardian: <strong style="color: #cbd5e1;">{{ card.parent.name }}</strong> ({{ card.parent.phone }})
+                </div>
+                {% endif %}
+            </div>
+
+            <div style="display: flex; gap: 8px; border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 12px;">
+                <a href="{{ url_for('faculty_student_view', student_id=s.id) }}" class="btn-primary" style="flex: 1; text-align: center; font-size: 0.8rem; padding: 6px; background: linear-gradient(135deg, #10b981, #059669);">
+                    <span>🔍</span> 360° Profile
+                </a>
+                <a href="{{ url_for('faculty_messages') }}" class="btn-secondary" style="font-size: 0.8rem; padding: 6px 12px;">
+                    <span>💬</span>
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

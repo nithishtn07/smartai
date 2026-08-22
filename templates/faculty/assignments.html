@@ -1,0 +1,125 @@
+{% extends "faculty/base_faculty.html" %}
+
+{% block title %}Course Assignments &amp; Tasks{% endblock %}
+
+{% block faculty_content %}
+<div class="page-header-block">
+    <div class="page-title-group">
+        <h1><span>📚</span> Course Assignments &amp; Projects</h1>
+        <p>Publish practical assignments, lab problems, set submission deadlines, and review student evaluations.</p>
+    </div>
+    
+    <div>
+        <button type="button" class="btn-primary" onclick="openModal('create-assignment-modal')" style="background: linear-gradient(135deg, #10b981, #059669);">
+            <span>➕</span> Post New Assignment
+        </button>
+    </div>
+</div>
+
+<!-- Assignments List Table -->
+<section class="content-card">
+    <div class="card-header-row">
+        <h2 class="card-heading"><span>📜</span> Active Course Assignments &amp; Status</h2>
+        <span class="badge badge-green">{{ assignments|length }} Total Assignments</span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="portal-table">
+            <thead>
+                <tr>
+                    <th>Course Code</th>
+                    <th>Assignment Title</th>
+                    <th>Description</th>
+                    <th>Due Date</th>
+                    <th>Max Marks</th>
+                    <th>Student Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in assignments %}
+                <tr>
+                    <td><strong style="color: #34d399; font-family: var(--font-mono);">{{ a.course_code }}</strong></td>
+                    <td><strong style="color: var(--text-primary);">{{ a.title }}</strong></td>
+                    <td style="font-size: 0.85rem; color: var(--text-secondary); max-width: 300px;">{{ a.description }}</td>
+                    <td style="font-family: var(--font-mono); font-weight: 700; color: #fbbf24;">{{ a.due_date }}</td>
+                    <td>{{ a.max_marks }}</td>
+                    <td>
+                        {% if a.status == 'Evaluated' %}
+                            <span class="badge badge-green">✓ Evaluated ({{ a.obtained_marks }}/{{ a.max_marks }})</span>
+                        {% elif a.status == 'Submitted' %}
+                            <span class="badge badge-cyan">Submitted</span>
+                        {% else %}
+                            <span class="badge badge-yellow">Pending Submission</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<!-- Post Assignment Modal -->
+<div class="modal-overlay" id="create-assignment-modal">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h3 class="modal-title">📚 Create New Assignment</h3>
+            <button type="button" class="modal-close" onclick="closeModal('create-assignment-modal')">✕</button>
+        </div>
+
+        <form method="POST" action="{{ url_for('faculty_assignments') }}">
+            <div class="form-group">
+                <label for="course_code" class="form-label">Course Section</label>
+                <select id="course_code" name="course_code" class="form-select" required>
+                    {% for c in courses %}
+                        <option value="{{ c.course_code }}">{{ c.course_code }} - {{ c.course_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="title" class="form-label">Assignment Title</label>
+                <input 
+                    type="text" 
+                    id="title" 
+                    name="title" 
+                    class="form-input" 
+                    placeholder="e.g. Assignment 3: Distributed Transactions & Two-Phase Commit" 
+                    required
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="description" class="form-label">Task Description &amp; Instructions</label>
+                <textarea 
+                    id="description" 
+                    name="description" 
+                    class="form-textarea" 
+                    placeholder="Provide assignment specifications, rubric and submission requirements..."
+                    required
+                ></textarea>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div class="form-group">
+                    <label for="due_date" class="form-label">Submission Due Date</label>
+                    <input type="date" id="due_date" name="due_date" class="form-input" required>
+                </div>
+                <div class="form-group">
+                    <label for="max_marks" class="form-label">Max Score</label>
+                    <input type="number" id="max_marks" name="max_marks" class="form-input" value="50" required>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 12px; margin-top: 20px;">
+                <button type="submit" class="btn-primary" style="flex: 1; background: linear-gradient(135deg, #10b981, #059669);">
+                    Publish &amp; Notify Students
+                </button>
+                <button type="button" class="btn-secondary" onclick="closeModal('create-assignment-modal')">
+                    Cancel
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

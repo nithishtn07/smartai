@@ -14,7 +14,7 @@ class TestCampusGuardAuth(unittest.TestCase):
         init_db()
         conn = sqlite3.connect(DATABASE_FILE)
         conn.execute("DELETE FROM login_attempts")
-        conn.execute("UPDATE students SET name = 'Nithish Kumar', email = 'student@example.com' WHERE register_number = 'STU001'")
+        conn.execute("UPDATE students SET name = 'Nithish Nagaraj', email = 'student@example.com' WHERE register_number = 'STU001'")
         conn.commit()
         conn.close()
 
@@ -35,7 +35,7 @@ class TestCampusGuardAuth(unittest.TestCase):
         
         self.assertEqual(response.status_code, 200)
         # Verify student details are displayed in HTML
-        self.assertIn(b'Nithish Kumar', response.data)
+        self.assertIn(b'Nithish Nagaraj', response.data)
         self.assertIn(b'STU001', response.data)
         self.assertIn(b'Computer Science', response.data)
         self.assertIn(b'student@example.com', response.data)
@@ -50,7 +50,7 @@ class TestCampusGuardAuth(unittest.TestCase):
         
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'Invalid register number or password', response.data)
-        self.assertNotIn(b'Welcome, Nithish Kumar', response.data)
+        self.assertNotIn(b'Welcome, Nithish Nagaraj', response.data)
         print("[PASS] Test 4: Invalid password displays correct error message without revealing specifics.")
 
     def test_5_empty_fields(self):

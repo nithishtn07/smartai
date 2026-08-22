@@ -1,0 +1,249 @@
+{% extends "parent/base_parent.html" %}
+
+{% block title %}Academic Performance & Marks{% endblock %}
+
+{% block parent_content %}
+<div class="page-header-block">
+    <div class="page-title-group">
+        <h1><span>📚</span> Academic Performance &amp; Grade Transcript</h1>
+        <p>Comprehensive subject assessment scores, internal CAT evaluations, FAT results, and cumulative grade points.</p>
+    </div>
+    
+    <div>
+        <span class="badge badge-purple" style="font-size: 0.88rem; padding: 8px 16px;">
+            Semester {{ student.semester|default(5) }} • Cumulative GPA: <strong>{{ student.cgpa|default('8.75') }}</strong>
+        </span>
+    </div>
+</div>
+
+<!-- Academic Summary KPI Banner -->
+<section class="content-card" style="background: linear-gradient(135deg, rgba(14, 19, 32, 0.95) 0%, rgba(20, 27, 45, 0.9) 100%); border-color: var(--parent-border);">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px;">
+        <div style="padding: 12px; border-right: 1px solid var(--glass-border);">
+            <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">Current CGPA</div>
+            <div style="font-size: 1.8rem; font-weight: 800; color: #c084fc; font-family: var(--font-mono); margin-top: 4px;">
+                {{ student.cgpa|default('8.75') }}
+            </div>
+            <div style="font-size: 0.76rem; color: var(--text-secondary);">Scale of 10.0</div>
+        </div>
+
+        <div style="padding: 12px; border-right: 1px solid var(--glass-border);">
+            <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">Semester 5 SGPA</div>
+            <div style="font-size: 1.8rem; font-weight: 800; color: #34d399; font-family: var(--font-mono); margin-top: 4px;">
+                {{ student.sgpa|default('8.90') }}
+            </div>
+            <div style="font-size: 0.76rem; color: #34d399;">First Class with Distinction</div>
+        </div>
+
+        <div style="padding: 12px; border-right: 1px solid var(--glass-border);">
+            <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">Earned Credits</div>
+            <div style="font-size: 1.8rem; font-weight: 800; color: #38bdf8; font-family: var(--font-mono); margin-top: 4px;">
+                {{ student.earned_credits|default(112) }} <span style="font-size: 0.9rem; color: var(--text-muted);">/ {{ student.total_credits|default(160) }}</span>
+            </div>
+            <div style="font-size: 0.76rem; color: var(--text-secondary);">70% Degree Completed</div>
+        </div>
+
+        <div style="padding: 12px;">
+            <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">Outstanding Grades</div>
+            <div style="font-size: 1.8rem; font-weight: 800; color: #fbbf24; font-family: var(--font-mono); margin-top: 4px;">
+                {{ s_grades }} 'S' <span style="font-size: 0.9rem; color: var(--text-muted);">+ {{ a_plus_grades }} 'A+/A'</span>
+            </div>
+            <div style="font-size: 0.76rem; color: var(--text-secondary);">Zero active arrears</div>
+        </div>
+    </div>
+</section>
+
+<!-- Subject Performance Chart & Grade Distribution -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 20px;">
+    
+    <div class="content-card">
+        <div class="card-header-row">
+            <h2 class="card-heading"><span>📊</span> Comprehensive Subject Performance Comparison</h2>
+            <span class="badge badge-purple">Real Assessment Marks</span>
+        </div>
+        <div style="height: 260px; position: relative;">
+            <canvas id="detailedAcademicsChart"></canvas>
+        </div>
+    </div>
+
+    <div class="content-card">
+        <div class="card-header-row">
+            <h2 class="card-heading"><span>🎯</span> Grade Point Distribution</h2>
+            <span class="badge badge-indigo">Credit Weightage</span>
+        </div>
+        <div style="height: 260px; position: relative;">
+            <canvas id="gradeDistributionChart"></canvas>
+        </div>
+    </div>
+
+</div>
+
+<!-- Marks & Subject Assessment Transcript Table -->
+<section class="content-card">
+    <div class="card-header-row">
+        <h2 class="card-heading"><span>📑</span> Semester 5 Marks &amp; Assessment Transcript</h2>
+        <button type="button" class="btn-secondary" style="font-size: 0.8rem; padding: 6px 14px;" onclick="window.print()">
+            🖨️ Print Academic Report
+        </button>
+    </div>
+
+    <div class="table-responsive">
+        <table class="portal-table">
+            <thead>
+                <tr>
+                    <th>Course Code &amp; Title</th>
+                    <th>CAT 1 (50)</th>
+                    <th>CAT 2 (50)</th>
+                    <th>Quiz (10)</th>
+                    <th>Assign (10)</th>
+                    <th>Project (20)</th>
+                    <th>FAT (100)</th>
+                    <th>Grade</th>
+                    <th>Grade Point</th>
+                    <th>Result</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in marks %}
+                <tr>
+                    <td>
+                        <div style="font-weight: 700; color: var(--text-primary);">{{ item.course_name }}</div>
+                        <div style="font-size: 0.78rem; color: var(--text-muted); font-family: var(--font-mono);">{{ item.course_code }}</div>
+                    </td>
+                    <td style="font-family: var(--font-mono);">{{ item.cat1 }}</td>
+                    <td style="font-family: var(--font-mono);">{{ item.cat2 }}</td>
+                    <td style="font-family: var(--font-mono);">{{ item.quiz }}</td>
+                    <td style="font-family: var(--font-mono);">{{ item.assignment }}</td>
+                    <td style="font-family: var(--font-mono);">{{ item.project }}</td>
+                    <td style="font-family: var(--font-mono); font-weight: 700; color: #c084fc;">{{ item.fat }}</td>
+                    <td>
+                        <span class="badge {% if item.grade == 'S' %}badge-green{% elif item.grade in ['A+', 'A'] %}badge-purple{% else %}badge-yellow{% endif %}">
+                            {{ item.grade }}
+                        </span>
+                    </td>
+                    <td style="font-family: var(--font-mono); font-weight: 700;">{{ item.grade_points }}</td>
+                    <td>
+                        <span class="badge badge-green">{{ item.status }}</span>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="10" style="text-align: center; color: var(--text-muted); padding: 24px;">No academic marks available yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<!-- Registered Courses & Faculty Catalog -->
+<section class="content-card">
+    <div class="card-header-row">
+        <h2 class="card-heading"><span>👨‍🏫</span> Registered Semester Courses &amp; Instructors</h2>
+        <span class="badge badge-cyan">{{ courses|length }} Enrolled Courses</span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="portal-table">
+            <thead>
+                <tr>
+                    <th>Code</th>
+                    <th>Course Name</th>
+                    <th>Course Type</th>
+                    <th>Credits</th>
+                    <th>Faculty Instructor</th>
+                    <th>Classroom</th>
+                    <th>Schedule Timing</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in courses %}
+                <tr>
+                    <td style="font-family: var(--font-mono); font-weight: 700; color: var(--parent-primary);">{{ c.course_code }}</td>
+                    <td style="font-weight: 600; color: var(--text-primary);">{{ c.course_name }}</td>
+                    <td><span class="badge badge-indigo">{{ c.course_type }}</span></td>
+                    <td style="font-family: var(--font-mono); font-weight: 700;">{{ c.credits }}</td>
+                    <td style="color: #38bdf8;">{{ c.faculty_name }}</td>
+                    <td>{{ c.room_number }}</td>
+                    <td style="font-size: 0.82rem; color: var(--text-muted);">{{ c.timing }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Detailed Marks Chart
+    const detailedCtx = document.getElementById('detailedAcademicsChart').getContext('2d');
+    const courseCodes = [{% for m in marks %}'{{ m.course_code }}'{% if not loop.last %}, {% endif %}{% endfor %}];
+    const cat1Data = [{% for m in marks %}{{ m.cat1 }}{% if not loop.last %}, {% endif %}{% endfor %}];
+    const cat2Data = [{% for m in marks %}{{ m.cat2 }}{% if not loop.last %}, {% endif %}{% endfor %}];
+    const fatData = [{% for m in marks %}{{ m.fat }}{% if not loop.last %}, {% endif %}{% endfor %}];
+
+    new Chart(detailedCtx, {
+        type: 'bar',
+        data: {
+            labels: courseCodes.length ? courseCodes : ['CS301', 'CS302', 'CS303', 'CS304', 'CS305'],
+            datasets: [
+                {
+                    label: 'CAT 1 (50)',
+                    data: cat1Data.length ? cat1Data : [46.5, 42, 38, 48, 45],
+                    backgroundColor: 'rgba(192, 132, 252, 0.65)',
+                    borderRadius: 4
+                },
+                {
+                    label: 'CAT 2 (50)',
+                    data: cat2Data.length ? cat2Data : [48, 44.5, 39.5, 49, 46.5],
+                    backgroundColor: 'rgba(129, 140, 248, 0.65)',
+                    borderRadius: 4
+                },
+                {
+                    label: 'FAT Exam (100)',
+                    data: fatData.length ? fatData : [92, 86, 78, 95, 89],
+                    backgroundColor: 'rgba(52, 211, 153, 0.65)',
+                    borderRadius: 4
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { labels: { color: '#94a3b8', font: { family: "'Plus Jakarta Sans', sans-serif" } } }
+            },
+            scales: {
+                x: { grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#94a3b8' } },
+                y: { grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#94a3b8' }, beginAtZero: true }
+            }
+        }
+    });
+
+    // Grade Distribution Doughnut Chart
+    const gradeCtx = document.getElementById('gradeDistributionChart').getContext('2d');
+    new Chart(gradeCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ["'S' Grade (90-100%)", "'A+' Grade (85-89%)", "'A' Grade (75-84%)"],
+            datasets: [{
+                data: [{{ s_grades|default(2) }}, {{ a_plus_grades|default(3) }}, 0],
+                backgroundColor: ['#34d399', '#c084fc', '#818cf8'],
+                borderColor: '#0b0f19',
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: { color: '#94a3b8', font: { family: "'Plus Jakarta Sans', sans-serif", size: 11 } }
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

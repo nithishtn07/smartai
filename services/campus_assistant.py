@@ -221,3 +221,128 @@ def answer_campus_query(student_id: int, query: str, conn) -> str:
         "• _'What are the peak risk hours?'_\n"
         "• _'What should I do during an emergency?'_"
     )
+
+
+def answer_admin_query(query: str, conn) -> str:
+    """
+    Answers executive, academic, financial, safety, and administrative inquiries
+    using real SQLite database aggregation and intelligence modules.
+    """
+    q = sanitize_input(query).lower()
+
+    # 1. Attendance analytics
+    if 'lowest attendance' in q or ('department' in q and 'attendance' in q):
+        rows = conn.execute("""
+            SELECT s.department, AVG(a.attendance_pct) as avg_att, COUNT(DISTINCT s.id) as stu_count
+            FROM students s
+            JOIN attendance a ON s.id = a.student_id
+            GROUP BY s.department
+            ORDER BY avg_att ASC
+        """).fetchall()
+        if rows:
+            lines = ["📊 **Department Attendance Analytics:**\n"]
+            for r in rows:
+                lines.append(f"• **{r['department']}**: **{r['avg_att']:.1f}%** average ({r['stu_count']} students)")
+            lowest = rows[0]
+            lines.append(f"\n⚠️ **Lowest Attendance:** **{lowest['department']}** ({lowest['avg_att']:.1f}%).")
+            return "\n".join(lines)
+        return "No department attendance records available in the central database."
+
+    # 2. Students below 75% attendance / watchlist
+    if 'below' in q or 'low attendance' in q or 'attendance threshold' in q or '75' in q:
+        rows = conn.execute("""
+            SELECT s.name, s.register_number, s.department, a.subject_name, a.attendance_pct
+            FROM attendance a
+            JOIN students s ON a.student_id = s.id
+            WHERE a.attendance_pct < 75.0
+            ORDER BY a.attendance_pct ASC
+        """).fetchall()
+        if rows:
+            lines = [f"⚠️ **Students Below Institutional 75% Threshold ({len(rows)} instances):**\n"]
+            for r in rows[:8]:
+                lines.append(f"• **{r['name']}** ({r['register_number']}, {r['department']}) — {r['subject_name']}: **{r['attendance_pct']:.1f}%**")
+            if len(rows) > 8:
+                lines.append(f"• ... and {len(rows)-8} more instances.")
+            lines.append("\n💡 *Action:* Use Attendance Monitor to dispatch automated SMS/Portal notices to parents.")
+            return "\n".join(lines)
+        return "✓ Excellent news! All students currently maintain attendance at or above the 75.0% compliance threshold."
+
+    # 3. Fees & Financial collection
+    if any(k in q for k in ['fee', 'fees', 'pending fees', 'due', 'financial', 'collection', 'revenue']):
+        total_b = conn.execute("SELECT SUM(amount) as s FROM fees").fetchone()['s'] or 0
+        total_c = conn.execute("SELECT SUM(paid_amount) as s FROM fees").fetchone()['s'] or 0
+        total_p = max(0, total_b - total_c)
+        pending_records = conn.execute("SELECT COUNT(*) as cnt FROM fees WHERE status != 'Paid'").fetchone()['cnt']
+        return (
+            f"💰 **Institutional Financial Summary:**\n\n"
+            f"• **Total Invoiced:** ₹{total_b:,.2f}\n"
+            f"• **Total Collected:** ₹{total_c:,.2f} ({(total_c/total_b*100 if total_b>0 else 0):.1f}% collection rate)\n"
+            f"• **Outstanding Pending Balance:** **₹{total_p:,.2f}**\n"
+            f"• **Pending Invoice Records:** **{pending_records}**\n"
+        )
+
+    # 4. Academic Risk / Low CGPA / Backlogs
+    if any(k in q for k in ['academic risk', 'academically at risk', 'failing', 'grade', 'low marks', 'cgpa']):
+        risk_students = conn.execute("""
+            SELECT name, register_number, department, cgpa FROM students
+            WHERE cgpa < 7.0 OR id IN (SELECT student_id FROM marks WHERE status = 'FAIL' OR fat < 40)
+            ORDER BY cgpa ASC
+        """).fetchall()
+        if risk_students:
+            lines = ["🎯 **Academically At-Risk Students:**\n"]
+            for s in risk_students:
+                lines.append(f"• **{s['name']}** ({s['register_number']}, {s['department']}) — CGPA: **{s['cgpa']}**")
+            lines.append("\n💡 *Directive:* Academic remedial tutorials and faculty mentor counselling recommended.")
+            return "\n".join(lines)
+        return "✓ No students currently flagged as critically at-risk. Overall institutional academic performance is in good standing."
+
+    # 5. SOS Incidents & Emergency frequency
+    if any(k in q for k in ['sos', 'emergency', 'incidents', 'safety incident', 'how many sos']):
+        total_inc = conn.execute("SELECT COUNT(*) as cnt FROM incidents").fetchone()['cnt']
+        active_inc = conn.execute("SELECT COUNT(*) as cnt FROM incidents WHERE status IN ('ACTIVE', 'RESPONDING')").fetchone()['cnt']
+        types = conn.execute("SELECT incident_type, COUNT(*) as cnt FROM incidents GROUP BY incident_type ORDER BY cnt DESC").fetchall()
+        
+        lines = [
+            f"🚨 **Campus Safety Incident Intelligence:**\n",
+            f"• **Total Historical Incidents:** **{total_inc}**",
+            f"• **Currently Active Distresses:** **{active_inc}**\n",
+            "**Breakdown by Emergency Category:**"
+        ]
+        for t in types:
+            lines.append(f"• {t['incident_type']}: **{t['cnt']}**")
+        return "\n".join(lines)
+
+    # 6. Safety by department / zone
+    if 'highest' in q and ('safety' in q or 'incident' in q or 'risk' in q):
+        incidents = conn.execute("SELECT * FROM incidents").fetchall()
+        complaints = conn.execute("SELECT * FROM complaints").fetchall()
+        zone_scores = calculate_location_risk_scores(incidents, complaints)
+        sorted_zones = sorted(zone_scores.values(), key=lambda z: z['risk_score'], reverse=True)[:3]
+        lines = ["🛡️ **Highest Safety Risk Campus Sectors:**\n"]
+        for z in sorted_zones:
+            lines.append(f"• **{z['short_name']}**: Score **{z['risk_score']}/100** ({z['risk_level']}) — {z['incident_count']} incidents ({z['peak_time']})")
+        return "\n".join(lines)
+
+    # 7. Leave requests
+    if 'leave' in q or 'outpass' in q:
+        pending_leaves = conn.execute("SELECT COUNT(*) as cnt FROM hostel_leaves WHERE status = 'Pending'").fetchone()['cnt']
+        approved_leaves = conn.execute("SELECT COUNT(*) as cnt FROM hostel_leaves WHERE status = 'Approved'").fetchone()['cnt']
+        return (
+            f"🚪 **Hostel Outpass & Leave Overview:**\n\n"
+            f"• **Pending Approvals:** **{pending_leaves}** requests requiring warden/admin sign-off\n"
+            f"• **Active/Approved Outpasses:** **{approved_leaves}**\n"
+            f"Review full submissions in the **Hostel Leaves** console."
+        )
+
+    # Default executive response
+    return (
+        "🏛️ **CampusGuard AI Executive Assistant Active**\n\n"
+        "Ask me anything about the institutional database, including:\n"
+        "• _'Which department has the lowest attendance?'_\n"
+        "• _'Show students below 75% attendance.'_\n"
+        "• _'What is the total pending fee collection?'_\n"
+        "• _'Which students are academically at risk?'_\n"
+        "• _'How many SOS incidents occurred this month?'_\n"
+        "• _'Show summary of pending leave requests.'_"
+    )
+

@@ -1,0 +1,353 @@
+{% extends "emergency/base_emergency.html" %}
+
+{% block title %}Emergency Dossier — {{ emergency.emergency_id }}{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="/static/css/emergency.css">
+
+<!-- Header Breadcrumb & Controls -->
+<div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px; margin-bottom: 24px;">
+    <div>
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 4px;">
+            <a href="javascript:history.back()" style="color: var(--text-secondary); text-decoration: none; font-size: 0.85rem;">&larr; Back</a>
+            <span style="color: var(--text-muted);">/</span>
+            <span style="font-family: var(--font-mono); color: #818cf8; font-weight: 700; font-size: 0.9rem;">{{ emergency.emergency_id }}</span>
+        </div>
+        <h1 style="font-size: 1.6rem; font-weight: 800; color: #fff; margin: 0;">
+            🚨 Incident Dossier: {{ emergency.emergency_id }}
+        </h1>
+    </div>
+
+    <div style="display: flex; gap: 10px; align-items: center;">
+        {% if emergency.severity == 'CRITICAL' %}
+            <span class="severity-badge-critical">CRITICAL EMERGENCY</span>
+        {% elif emergency.severity == 'HIGH' %}
+            <span class="severity-badge-high">HIGH SEVERITY</span>
+        {% elif emergency.severity == 'MEDIUM' %}
+            <span class="severity-badge-medium">MEDIUM SEVERITY</span>
+        {% else %}
+            <span class="severity-badge-low">LOW SEVERITY</span>
+        {% endif %}
+
+        {% if emergency.status == 'TRIGGERED' %}
+            <span class="badge" style="background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.5);">TRIGGERED</span>
+        {% elif emergency.status == 'ACKNOWLEDGED' %}
+            <span class="badge" style="background: rgba(245, 158, 11, 0.2); color: #fcd34d; border: 1px solid rgba(245, 158, 11, 0.5);">ACKNOWLEDGED</span>
+        {% elif emergency.status in ['RESPONDER_ASSIGNED', 'EN_ROUTE'] %}
+            <span class="badge" style="background: rgba(56, 189, 248, 0.2); color: #7dd3fc; border: 1px solid rgba(56, 189, 248, 0.5);">DISPATCHED (EN ROUTE)</span>
+        {% elif emergency.status == 'ON_SCENE' %}
+            <span class="badge" style="background: rgba(192, 132, 252, 0.2); color: #e9d5ff; border: 1px solid rgba(192, 132, 252, 0.5);">ON SCENE</span>
+        {% elif emergency.status in ['RESOLVED', 'CLOSED'] %}
+            <span class="badge" style="background: rgba(16, 185, 129, 0.2); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.5);">SAFE RESOLVED</span>
+        {% else %}
+            <span class="badge" style="background: rgba(148, 163, 184, 0.2); color: #cbd5e1;">{{ emergency.status }}</span>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Grid Layout: Primary Incident Dossier & Right Sidebar -->
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px;">
+    
+    <!-- Left Column: Dossier Details -->
+    <div>
+        <!-- Core Telemetry Card -->
+        <div class="content-card" style="margin-bottom: 20px; border-left: 4px solid #ef4444;">
+            <div class="card-header-row">
+                <h3 class="card-heading"><span>📍</span> Incident Spatial &amp; Caller Telemetry</h3>
+                <span style="font-size: 0.8rem; color: var(--text-muted); font-family: var(--font-mono);">Logged: {{ emergency.created_at }}</span>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; font-size: 0.88rem; margin-bottom: 16px;">
+                <div>
+                    <span style="color: var(--text-muted); display: block; font-size: 0.76rem; text-transform: uppercase;">Reporter Identity</span>
+                    <strong style="color: white;">{{ emergency.reporter_name }}</strong>
+                    <span style="font-size: 0.78rem; color: #818cf8; display: block;">{{ emergency.user_role|upper }} (ID: {{ emergency.user_id }})</span>
+                </div>
+                <div>
+                    <span style="color: var(--text-muted); display: block; font-size: 0.76rem; text-transform: uppercase;">Contact Number</span>
+                    <strong style="color: white; font-family: var(--font-mono);">{{ emergency.reporter_phone|default('+91 98765 43210') }}</strong>
+                </div>
+                <div>
+                    <span style="color: var(--text-muted); display: block; font-size: 0.76rem; text-transform: uppercase;">Category &amp; Type</span>
+                    <strong style="color: #fbbf24;">{{ emergency.category }}</strong>
+                    <span style="font-size: 0.78rem; color: var(--text-secondary); display: block;">{{ emergency.emergency_type }}</span>
+                </div>
+                <div>
+                    <span style="color: var(--text-muted); display: block; font-size: 0.76rem; text-transform: uppercase;">Campus Location</span>
+                    <strong style="color: white;">{{ emergency.campus_zone|default('Campus Safe Corridor') }}</strong>
+                    <span style="font-size: 0.78rem; color: var(--text-secondary); display: block;">{{ emergency.building }} {{ emergency.floor }} {{ emergency.room }}</span>
+                </div>
+                {% if emergency.latitude and emergency.longitude %}
+                <div>
+                    <span style="color: var(--text-muted); display: block; font-size: 0.76rem; text-transform: uppercase;">GPS Telemetry</span>
+                    <strong style="color: #34d399; font-family: var(--font-mono);">{{ emergency.latitude|round(5) }}, {{ emergency.longitude|round(5) }}</strong>
+                    <span style="font-size: 0.75rem; color: #38bdf8; display: block;">Accuracy: ±{{ emergency.location_accuracy|default(5.0)|round(1) }}m</span>
+                </div>
+                {% endif %}
+                <div>
+                    <span style="color: var(--text-muted); display: block; font-size: 0.76rem; text-transform: uppercase;">Assigned Responder</span>
+                    <strong style="color: #38bdf8;">{{ emergency.assigned_responder|default('Pending Assignment') }}</strong>
+                </div>
+            </div>
+
+            {% if emergency.description %}
+            <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.06); margin-top: 10px;">
+                <span style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; display: block; margin-bottom: 4px;">Incident Description / Distress Note:</span>
+                <p style="color: var(--text-primary); font-size: 0.9rem; line-height: 1.4; margin: 0;">{{ emergency.description }}</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- 6-Stage Timeline Card -->
+        <div class="content-card" style="margin-bottom: 20px;">
+            <div class="card-header-row">
+                <h3 class="card-heading"><span>⏱️</span> Official Emergency Response Timeline</h3>
+                <span class="badge badge-purple">Standard Operating Procedure</span>
+            </div>
+
+            <div class="emergency-timeline-grid">
+                <div class="timeline-step-card completed">
+                    <div class="step-icon">✓</div>
+                    <span class="step-label">1. Triggered</span>
+                    <div class="step-time">{{ emergency.created_at[11:19] if emergency.created_at else '--' }}</div>
+                </div>
+                <div class="timeline-step-card {% if emergency.acknowledged_at %}completed{% elif emergency.status == 'TRIGGERED' %}active{% else %}pending{% endif %}">
+                    <div class="step-icon">{% if emergency.acknowledged_at %}✓{% elif emergency.status == 'TRIGGERED' %}⏳{% else %}○{% endif %}</div>
+                    <span class="step-label">2. Acknowledged</span>
+                    <div class="step-time">{{ emergency.acknowledged_at[11:19] if emergency.acknowledged_at else 'Pending' }}</div>
+                </div>
+                <div class="timeline-step-card {% if emergency.assigned_at %}completed{% elif emergency.status == 'ACKNOWLEDGED' %}active{% else %}pending{% endif %}">
+                    <div class="step-icon">{% if emergency.assigned_at %}✓{% elif emergency.status == 'ACKNOWLEDGED' %}⚡{% else %}○{% endif %}</div>
+                    <span class="step-label">3. Assigned</span>
+                    <div class="step-time">{{ emergency.assigned_at[11:19] if emergency.assigned_at else 'Pending' }}</div>
+                </div>
+                <div class="timeline-step-card {% if emergency.response_started_at %}completed{% elif emergency.status == 'RESPONDER_ASSIGNED' %}active{% else %}pending{% endif %}">
+                    <div class="step-icon">{% if emergency.response_started_at %}✓{% elif emergency.status == 'RESPONDER_ASSIGNED' %}🚗{% else %}○{% endif %}</div>
+                    <span class="step-label">4. En Route</span>
+                    <div class="step-time">{{ emergency.response_started_at[11:19] if emergency.response_started_at else 'Pending' }}</div>
+                </div>
+                <div class="timeline-step-card {% if emergency.arrived_at %}completed{% elif emergency.status == 'EN_ROUTE' %}active{% else %}pending{% endif %}">
+                    <div class="step-icon">{% if emergency.arrived_at %}✓{% elif emergency.status == 'EN_ROUTE' %}📍{% else %}○{% endif %}</div>
+                    <span class="step-label">5. On Scene</span>
+                    <div class="step-time">{{ emergency.arrived_at[11:19] if emergency.arrived_at else 'Pending' }}</div>
+                </div>
+                <div class="timeline-step-card {% if emergency.resolved_at %}completed{% elif emergency.status == 'ON_SCENE' %}active{% else %}pending{% endif %}">
+                    <div class="step-icon">{% if emergency.resolved_at %}✓{% elif emergency.status == 'ON_SCENE' %}🛡️{% else %}○{% endif %}</div>
+                    <span class="step-label">6. Resolved</span>
+                    <div class="step-time">{{ emergency.resolved_at[11:19] if emergency.resolved_at else 'Pending' }}</div>
+                </div>
+            </div>
+
+            <!-- Response Metrics Ribbon -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-top: 16px;">
+                <div class="metric-tile">
+                    <div class="metric-tile-val">{{ metrics.time_to_acknowledge }}</div>
+                    <div class="metric-tile-lbl">Time to Ack</div>
+                </div>
+                <div class="metric-tile">
+                    <div class="metric-tile-val">{{ metrics.time_to_assign }}</div>
+                    <div class="metric-tile-lbl">Time to Assign</div>
+                </div>
+                <div class="metric-tile">
+                    <div class="metric-tile-val">{{ metrics.time_to_arrive }}</div>
+                    <div class="metric-tile-lbl">Time to Arrive</div>
+                </div>
+                <div class="metric-tile">
+                    <div class="metric-tile-val" style="color: #34d399;">{{ metrics.total_resolution_time }}</div>
+                    <div class="metric-tile-lbl">Total Resolution</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Collaborative Incident Log & Notes -->
+        <div class="content-card">
+            <div class="card-header-row">
+                <h3 class="card-heading"><span>💬</span> Collaborative Incident Notes &amp; Dispatch Log</h3>
+                <span class="badge badge-purple">{{ notes|length }} Notes Logged</span>
+            </div>
+
+            <!-- Notes List -->
+            <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; max-height: 320px; overflow-y: auto; padding-right: 4px;">
+                {% for n in notes %}
+                <div style="background: rgba(6, 8, 14, 0.4); border: 1px solid var(--glass-border); border-radius: 10px; padding: 12px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                        <div>
+                            <strong style="color: #38bdf8; font-size: 0.85rem;">{{ n.author_name }}</strong>
+                            <span class="badge" style="background: rgba(255,255,255,0.06); font-size: 0.7rem; padding: 2px 6px; margin-left: 6px;">{{ n.author_role }}</span>
+                        </div>
+                        <span style="font-size: 0.75rem; color: var(--text-muted); font-family: var(--font-mono);">{{ n.created_at }}</span>
+                    </div>
+                    <p style="color: var(--text-primary); font-size: 0.88rem; margin: 0; line-height: 1.4;">{{ n.note_text }}</p>
+                </div>
+                {% else %}
+                <div style="text-align: center; padding: 20px; color: var(--text-muted); font-size: 0.85rem;">No incident notes added yet.</div>
+                {% endfor %}
+            </div>
+
+            <!-- Add Note Form -->
+            <form method="POST" action="/api/emergency/{{ emergency.emergency_id }}/notes" onsubmit="return submitIncidentNote('{{ emergency.emergency_id }}', this)">
+                <div style="display: flex; gap: 10px;">
+                    <textarea name="note_text" class="form-textarea" placeholder="Add official field update or responder note..." style="min-height: 60px; font-size: 0.88rem;" required></textarea>
+                    <button type="submit" class="btn-primary" style="align-self: flex-end; padding: 12px 20px;">
+                        Post Note
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Right Column: Command Controls & AI Debriefing -->
+    <div>
+        <!-- Command Action Controls (Admin / Security / Authorized Faculty) -->
+        {% if actor.role in ['admin', 'security', 'faculty'] %}
+        <div class="content-card" style="margin-bottom: 20px; border-top: 3px solid #38bdf8;">
+            <div class="card-header-row">
+                <h3 class="card-heading" style="font-size: 1.05rem;"><span>⚡</span> Command &amp; Dispatch Actions</h3>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                {% if emergency.status == 'TRIGGERED' %}
+                <button type="button" class="btn-primary" style="background: #f59e0b; justify-content: center; width: 100%;" onclick="acknowledgeEmergency('{{ emergency.emergency_id }}')">
+                    <span>✓</span> Acknowledge Alert (T_ack)
+                </button>
+                {% endif %}
+
+                {% if emergency.status in ['TRIGGERED', 'ACKNOWLEDGED'] %}
+                <button type="button" class="btn-primary" style="background: #38bdf8; justify-content: center; width: 100%;" onclick="openModal('assign-responder-modal')">
+                    <span>👮</span> Assign Response Team
+                </button>
+                {% endif %}
+
+                {% if emergency.status in ['RESPONDER_ASSIGNED', 'ACKNOWLEDGED'] %}
+                <form method="POST" action="/api/emergency/{{ emergency.emergency_id }}/en-route">
+                    <button type="submit" class="btn-primary" style="background: #0284c7; justify-content: center; width: 100%;">
+                        <span>🚗</span> Dispatch En Route
+                    </button>
+                </form>
+                {% endif %}
+
+                {% if emergency.status in ['EN_ROUTE', 'RESPONDER_ASSIGNED'] %}
+                <form method="POST" action="/api/emergency/{{ emergency.emergency_id }}/arrived">
+                    <button type="submit" class="btn-primary" style="background: #8b5cf6; justify-content: center; width: 100%;">
+                        <span>📍</span> Mark Arrived On Scene
+                    </button>
+                </form>
+                {% endif %}
+
+                {% if emergency.status not in ['RESOLVED', 'CLOSED', 'CANCELLED'] %}
+                <button type="button" class="btn-primary" style="background: #10b981; justify-content: center; width: 100%;" onclick="openModal('resolve-incident-modal')">
+                    <span>🛡️</span> Mark Incident Resolved
+                </button>
+                {% endif %}
+
+                {% if emergency.status == 'RESOLVED' and actor.role == 'admin' %}
+                <form method="POST" action="/api/emergency/{{ emergency.emergency_id }}/close">
+                    <button type="submit" class="btn-secondary" style="justify-content: center; width: 100%;">
+                        <span>🔒</span> Archive &amp; Close Incident
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- AI Incident Debriefing Report -->
+        <div class="content-card" style="margin-bottom: 20px;">
+            <div class="card-header-row">
+                <h3 class="card-heading" style="font-size: 1.05rem;"><span>🤖</span> AI Executive Debriefing</h3>
+                <span class="badge badge-purple">Fact-Grounded</span>
+            </div>
+
+            <div style="background: rgba(6, 8, 14, 0.4); border: 1px solid var(--glass-border); border-radius: 10px; padding: 14px; font-size: 0.85rem; line-height: 1.5; color: var(--text-secondary);">
+                {% if emergency.resolution_summary %}
+                    <p style="color: #e2e8f0; margin: 0;">{{ emergency.resolution_summary }}</p>
+                {% else %}
+                    <p style="color: var(--text-muted); margin: 0; font-style: italic;">
+                        Live incident in progress. Summary will synthesize upon resolution from timestamped log milestones.
+                    </p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Audit Log Highlights -->
+        <div class="content-card">
+            <div class="card-header-row">
+                <h3 class="card-heading" style="font-size: 1.05rem;"><span>📜</span> Immutable Audit Trail</h3>
+                <span style="font-size: 0.75rem; color: var(--text-muted);">{{ audit_logs|length }} Events</span>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 8px; max-height: 240px; overflow-y: auto;">
+                {% for a in audit_logs %}
+                <div style="font-size: 0.78rem; padding: 8px; background: rgba(0,0,0,0.25); border-radius: 6px; border-left: 2px solid #818cf8;">
+                    <div style="display: flex; justify-content: space-between; color: #cbd5e1; font-weight: 600;">
+                        <span>{{ a.action }}</span>
+                        <span style="font-family: var(--font-mono); color: var(--text-muted); font-size: 0.72rem;">{{ a.timestamp[11:19] }}</span>
+                    </div>
+                    <div style="color: var(--text-muted); margin-top: 2px;">Actor: {{ a.user_name }} ({{ a.user_role }})</div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Assign Responder Modal -->
+<div class="portal-modal-backdrop" id="assign-responder-modal">
+    <div class="portal-modal-content" style="max-width: 500px;">
+        <div class="card-header-row">
+            <h3 class="card-heading"><span>👮</span> Assign Emergency Response Unit</h3>
+            <button type="button" style="background: none; border: none; color: white; font-size: 1.2rem; cursor: pointer;" onclick="closeModal('assign-responder-modal')">✕</button>
+        </div>
+
+        <form method="POST" action="/api/emergency/{{ emergency.emergency_id }}/assign" class="portal-form">
+            <div class="form-group">
+                <label class="form-label">Response Unit / Officer Name</label>
+                <input type="text" name="responder_name" class="form-input" value="Officer Ravi (QRT Unit 1)" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Responder Role / Type</label>
+                <select name="responder_role" class="form-select">
+                    <option value="Quick Response Team (QRT)">Campus Quick Response Team (QRT)</option>
+                    <option value="Medical Responder">Duty Doctor &amp; Campus Nurse</option>
+                    <option value="Security Patrol Officer">Security Mobile Patrol</option>
+                    <option value="Facilities Engineer">Estate &amp; Maintenance Engineer</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Direct Contact Phone</label>
+                <input type="text" name="phone" class="form-input" value="+91 98765 00001" required>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 14px;">
+                <button type="button" class="btn-secondary" onclick="closeModal('assign-responder-modal')">Cancel</button>
+                <button type="submit" class="btn-primary">Dispatch Unit</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Resolve Incident Modal -->
+<div class="portal-modal-backdrop" id="resolve-incident-modal">
+    <div class="portal-modal-content" style="max-width: 520px;">
+        <div class="card-header-row">
+            <h3 class="card-heading"><span>🛡️</span> Mark Emergency Incident Resolved</h3>
+            <button type="button" style="background: none; border: none; color: white; font-size: 1.2rem; cursor: pointer;" onclick="closeModal('resolve-incident-modal')">✕</button>
+        </div>
+
+        <form method="POST" action="/api/emergency/{{ emergency.emergency_id }}/resolve" class="portal-form">
+            <div class="form-group">
+                <label class="form-label">Resolution Actions &amp; Debriefing Notes</label>
+                <textarea name="notes" class="form-textarea" placeholder="Detail the medical/security actions performed, victim welfare state, and stand-down order..." style="min-height: 90px;" required>Medical/Security unit intervened. Student examined and stabilized; situation returned to normal campus safety status.</textarea>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 14px;">
+                <button type="button" class="btn-secondary" onclick="closeModal('resolve-incident-modal')">Cancel</button>
+                <button type="submit" class="btn-primary" style="background: #10b981;">Confirm Resolution</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="/static/js/emergency.js"></script>
+{% endblock %}

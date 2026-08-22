@@ -1,0 +1,156 @@
+{% extends "parent/base_parent.html" %}
+
+{% block title %}Hostel Leave & Outpass Management{% endblock %}
+
+{% block parent_content %}
+<div class="page-header-block">
+    <div class="page-title-group">
+        <h1><span>🏢</span> Hostel Leave &amp; Digital Outpasses</h1>
+        <p>Monitor residential hostel stay, track outpass applications, and provide parental consent / authorization.</p>
+    </div>
+    
+    <div>
+        <span class="badge badge-purple" style="font-size: 0.88rem; padding: 8px 16px;">
+            Residential Tracking • {{ hostel.block_name|default('Hostel Block B') }}
+        </span>
+    </div>
+</div>
+
+<!-- Residential Details Summary Banner -->
+<section class="content-card" style="background: linear-gradient(135deg, rgba(14, 19, 32, 0.95) 0%, rgba(20, 27, 45, 0.9) 100%); border-color: var(--parent-border);">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+        <div style="padding: 10px; border-right: 1px solid var(--glass-border);">
+            <div style="font-size: 0.78rem; color: var(--text-muted); text-transform: uppercase;">Hostel Block</div>
+            <div style="font-size: 1.25rem; font-weight: 800; color: #fff; margin-top: 4px;">
+                {{ hostel.block_name|default('Block B (Oak Wing)') }}
+            </div>
+            <div style="font-size: 0.76rem; color: var(--text-secondary);">Room {{ hostel.room_no|default('304') }} • Bed {{ hostel.bed_no|default('Bed A') }}</div>
+        </div>
+
+        <div style="padding: 10px; border-right: 1px solid var(--glass-border);">
+            <div style="font-size: 0.78rem; color: var(--text-muted); text-transform: uppercase;">Chief Warden</div>
+            <div style="font-size: 1.25rem; font-weight: 800; color: #c084fc; margin-top: 4px;">
+                {{ hostel.warden_name|default('Mr. R. Prabhakar') }}
+            </div>
+            <div style="font-size: 0.76rem; color: var(--text-secondary);">Phone: {{ hostel.warden_phone|default('+91 91234 56784') }}</div>
+        </div>
+
+        <div style="padding: 10px;">
+            <div style="font-size: 0.78rem; color: var(--text-muted); text-transform: uppercase;">Total Leaves Logged</div>
+            <div style="font-size: 1.25rem; font-weight: 800; color: #34d399; font-family: var(--font-mono); margin-top: 4px;">
+                {{ leaves|length }} Requests
+            </div>
+            <div style="font-size: 0.76rem; color: var(--text-secondary);">Residential gate passes synced</div>
+        </div>
+    </div>
+</section>
+
+<!-- Leave & Outpass Requests History Table -->
+<section class="content-card">
+    <div class="card-header-row">
+        <h2 class="card-heading"><span>📜</span> Leave &amp; Outpass Applications History</h2>
+        <span class="badge badge-purple">Official Warden Registry</span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="portal-table">
+            <thead>
+                <tr>
+                    <th>Request ID</th>
+                    <th>Leave Type</th>
+                    <th>Departure (From)</th>
+                    <th>Return (To)</th>
+                    <th>Reason / Destination</th>
+                    <th>Status</th>
+                    <th>Parent Authorization</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for leave in leaves %}
+                <tr>
+                    <td style="font-family: var(--font-mono); font-weight: 700; color: var(--parent-primary);">#OUT-0{{ leave.id }}</td>
+                    <td><span class="badge badge-indigo">{{ leave.leave_type }}</span></td>
+                    <td style="font-family: var(--font-mono); font-size: 0.84rem; color: #fff;">{{ leave.from_date }}</td>
+                    <td style="font-family: var(--font-mono); font-size: 0.84rem; color: #fff;">{{ leave.to_date }}</td>
+                    <td style="font-size: 0.86rem; color: var(--text-secondary); max-width: 250px;">{{ leave.reason }}</td>
+                    <td>
+                        {% if leave.status == 'Approved' %}
+                            <span class="badge badge-green">✓ Approved</span>
+                        {% elif leave.status == 'Pending' %}
+                            <span class="badge badge-yellow">⏳ Pending</span>
+                        {% else %}
+                            <span class="badge badge-red">✕ Rejected</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <button type="button" class="btn-secondary" style="font-size: 0.78rem; padding: 4px 10px;" onclick="openConsentModal('{{ leave.id }}', '{{ leave.leave_type }}', '{{ leave.from_date }} to {{ leave.to_date }}')">
+                            Parent Note / Consent
+                        </button>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 32px;">No leave requests filed yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<!-- Parent Consent Modal -->
+<div class="modal-overlay" id="consent-modal">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h3 class="modal-title">✍️ Parent Consent &amp; Remarks</h3>
+            <button type="button" class="modal-close" onclick="closeModal('consent-modal')">✕</button>
+        </div>
+
+        <form method="POST" id="consent-form" action="">
+            <div style="background: rgba(10, 14, 26, 0.8); border: 1px solid var(--glass-border); border-radius: 12px; padding: 14px; margin-bottom: 16px; font-size: 0.86rem;">
+                <div style="margin-bottom: 4px;"><strong style="color: #fff;">Outpass Category:</strong> <span id="modal-leave-type" style="color: #c084fc;">Home Visit</span></div>
+                <div><strong style="color: #fff;">Travel Window:</strong> <span id="modal-leave-dates" style="color: var(--text-secondary);">2026-08-28 to 2026-08-30</span></div>
+            </div>
+
+            <div class="form-group">
+                <label for="remarks" class="form-label">Parent Consent Remarks / Note to Warden</label>
+                <textarea 
+                    id="remarks" 
+                    name="remarks" 
+                    class="form-textarea" 
+                    placeholder="e.g. Verified by father (R. S. Kumar). Student is traveling home for the weekend."
+                    required
+                ></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="action" class="form-label">Authorization Action</label>
+                <select id="action" name="action" class="form-select">
+                    <option value="Acknowledge">Acknowledge &amp; Log Parent Note</option>
+                    <option value="Approve">Approve Outpass Authorization</option>
+                </select>
+            </div>
+
+            <div style="display: flex; gap: 12px; margin-top: 20px;">
+                <button type="submit" class="btn-primary" style="flex: 1;">
+                    Submit Authorization
+                </button>
+                <button type="button" class="btn-secondary" onclick="closeModal('consent-modal')">
+                    Cancel
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    function openConsentModal(leaveId, leaveType, dates) {
+        document.getElementById('modal-leave-type').textContent = leaveType;
+        document.getElementById('modal-leave-dates').textContent = dates;
+        document.getElementById('consent-form').action = '/parent/leave/action/' + leaveId;
+        openModal('consent-modal');
+    }
+</script>
+{% endblock %}

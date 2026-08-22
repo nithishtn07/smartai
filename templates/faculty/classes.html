@@ -1,0 +1,86 @@
+{% extends "faculty/base_faculty.html" %}
+
+{% block title %}My Classes &amp; Cohorts{% endblock %}
+
+{% block faculty_content %}
+<section class="content-card" style="background: linear-gradient(135deg, rgba(14, 19, 32, 0.95) 0%, rgba(20, 27, 45, 0.9) 100%); border-color: rgba(16, 185, 129, 0.3);">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+        <div>
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                <span class="badge badge-green">CLASS MANAGEMENT</span>
+                <span class="badge badge-indigo">{{ classes|length }} Assigned Class Cohorts</span>
+            </div>
+            <h1 style="font-size: 1.5rem; font-weight: 800; color: #fff; margin: 0 0 4px;">
+                Assigned Classes &amp; Student Batches
+            </h1>
+            <p style="color: var(--text-secondary); font-size: 0.88rem; margin: 0;">
+                Review class strength, student representatives, cohort CGPA averages, and attendance compliance.
+            </p>
+        </div>
+
+        <div style="display: flex; gap: 10px;">
+            <a href="{{ url_for('faculty_students') }}" class="btn-primary" style="background: linear-gradient(135deg, #10b981, #059669);">
+                <span>🎓</span> View All Students
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- Class Cohort Cards Grid -->
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap: 24px;">
+    {% for cls in classes %}
+    <div class="content-card" style="margin-bottom: 0;">
+        <div class="card-header-row" style="margin-bottom: 14px;">
+            <div>
+                <span class="badge badge-indigo" style="font-family: monospace; font-size: 0.85rem;">{{ cls.class_id }}</span>
+                <h3 style="font-size: 1.2rem; font-weight: 800; color: #fff; margin: 4px 0 0;">
+                    {{ cls.course }}
+                </h3>
+            </div>
+            <span class="badge badge-green">{{ cls.section }}</span>
+        </div>
+
+        <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 16px;">
+            Year {{ cls.year }} • Semester {{ cls.semester }} • Lecture Hall: <strong style="color: #38bdf8;">{{ cls.room }}</strong>
+        </div>
+
+        <!-- Metric Grid -->
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px;">
+            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 10px; padding: 10px; text-align: center;">
+                <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Class Strength</div>
+                <div style="font-size: 1.2rem; font-weight: 800; color: #fff; margin-top: 2px;">{{ cls.student_count }}</div>
+            </div>
+
+            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 10px; padding: 10px; text-align: center;">
+                <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Class Avg Attendance</div>
+                <div style="font-size: 1.2rem; font-weight: 800; color: #34d399; margin-top: 2px;">{{ cls.avg_attendance }}%</div>
+            </div>
+
+            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 10px; padding: 10px; text-align: center;">
+                <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Average CGPA</div>
+                <div style="font-size: 1.2rem; font-weight: 800; color: #38bdf8; margin-top: 2px;">{{ cls.avg_cgpa }}</div>
+            </div>
+        </div>
+
+        <!-- Student Representative & Subjects -->
+        <div style="background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 10px; padding: 12px; margin-bottom: 16px;">
+            <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 4px;">
+                🧑‍🎓 Class Representative: <strong style="color: #fff;">{{ cls.rep_name }}</strong> ({{ cls.rep_reg }})
+            </div>
+            <div style="font-size: 0.8rem; color: var(--text-muted);">
+                📚 Taught Subjects: <strong style="color: #cbd5e1;">{{ cls.subjects|join(', ') }}</strong>
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 8px;">
+            <a href="{{ url_for('faculty_students') }}" class="btn-primary" style="flex: 1; text-align: center; font-size: 0.82rem; padding: 8px; background: linear-gradient(135deg, #10b981, #059669);">
+                <span>👥</span> View Class Roster
+            </a>
+            <a href="{{ url_for('faculty_attendance') }}" class="btn-secondary" style="flex: 1; text-align: center; font-size: 0.82rem; padding: 8px;">
+                <span>📊</span> Class Attendance
+            </a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

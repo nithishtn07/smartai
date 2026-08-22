@@ -1,0 +1,60 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}Master Marks & Gradebook{% endblock %}
+
+{% block content %}
+
+<!-- Header -->
+<div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 24px;">
+    <div>
+        <h1 style="font-size: 1.6rem; font-weight: 800; color: #fff; margin-bottom: 4px;">Master Marks &amp; Assessment Ledger</h1>
+        <p style="color: var(--text-secondary); font-size: 0.88rem;">Synchronized continuous assessment (CAT1, CAT2) and Final Assessment Test (FAT) evaluations.</p>
+    </div>
+
+    <div>
+        <span class="badge badge-indigo" style="font-size: 0.85rem; padding: 6px 14px;">Institutional Average CGPA: 8.92</span>
+    </div>
+</div>
+
+<!-- Marks Table -->
+<div style="background: rgba(14, 19, 32, 0.85); border: 1px solid var(--glass-border); border-radius: 18px; padding: 24px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
+        <h3 style="font-size: 1.1rem; font-weight: 700; color: #fff;">Student Course Grades ({{ all_marks|length }})</h3>
+        <span class="badge badge-emerald">Real-time Faculty Input</span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="data-table" style="width: 100%; border-collapse: collapse; font-size: 0.88rem;">
+            <thead>
+                <tr style="border-bottom: 1px solid var(--glass-border); text-align: left; color: var(--text-muted);">
+                    <th style="padding: 12px 10px;">Student Name</th>
+                    <th style="padding: 12px 10px;">Reg No</th>
+                    <th style="padding: 12px 10px;">Course Name</th>
+                    <th style="padding: 12px 10px;">CAT 1 (50)</th>
+                    <th style="padding: 12px 10px;">CAT 2 (50)</th>
+                    <th style="padding: 12px 10px;">FAT (100)</th>
+                    <th style="padding: 12px 10px; text-align: right;">Letter Grade</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for m in all_marks %}
+                <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.04);">
+                    <td style="padding: 14px 10px; font-weight: 700; color: #fff;">{{ m.student_name }}</td>
+                    <td style="padding: 14px 10px; font-family: var(--font-mono); color: #818cf8;">{{ m.register_number }}</td>
+                    <td style="padding: 14px 10px; color: var(--text-primary);">{{ m.course_name }} ({{ m.course_code }})</td>
+                    <td style="padding: 14px 10px; color: var(--text-secondary);">{{ m.cat1_marks }} / 50</td>
+                    <td style="padding: 14px 10px; color: var(--text-secondary);">{{ m.cat2_marks }} / 50</td>
+                    <td style="padding: 14px 10px; color: var(--text-secondary);">{{ m.fat_marks }} / 100</td>
+                    <td style="padding: 14px 10px; text-align: right;">
+                        <span class="badge {% if m.grade in ['S', 'A'] %}badge-emerald{% elif m.grade in ['B', 'C'] %}badge-indigo{% else %}badge-amber{% endif %}">
+                            {{ m.grade }}
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}

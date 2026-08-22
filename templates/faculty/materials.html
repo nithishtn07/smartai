@@ -1,0 +1,155 @@
+{% extends "faculty/base_faculty.html" %}
+
+{% block title %}Course Learning Materials &amp; Resources{% endblock %}
+
+{% block faculty_content %}
+<div class="page-header-block">
+    <div class="page-title-group">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+            <span class="badge badge-green">ACADEMIC REPOSITORY</span>
+            <span class="badge badge-indigo">Subject &gt; Unit &gt; Topic Hierarchy</span>
+        </div>
+        <h1><span>📖</span> Course Learning Materials &amp; Resources</h1>
+        <p>Publish syllabus documents, lecture slide decks, reference PDFs, and lab workbooks for your enrolled students.</p>
+    </div>
+    
+    <div>
+        <button type="button" class="btn-primary" onclick="openModal('upload-material-modal')" style="background: linear-gradient(135deg, #10b981, #059669);">
+            <span>➕</span> Upload New Resource
+        </button>
+    </div>
+</div>
+
+<!-- Published Learning Materials Catalog -->
+<section class="content-card">
+    <div class="card-header-row">
+        <h2 class="card-heading"><span>📚</span> Published Course Materials &amp; Archives</h2>
+        <span class="badge badge-indigo">{{ materials|length }} Resources</span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="portal-table">
+            <thead>
+                <tr>
+                    <th>Course Code</th>
+                    <th>Unit &amp; Topic</th>
+                    <th>Document Title</th>
+                    <th>Material Type</th>
+                    <th>Upload Date</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for m in materials %}
+                <tr>
+                    <td>
+                        <span class="badge badge-indigo" style="font-family: monospace;">{{ m.course_code }}</span>
+                    </td>
+                    <td>
+                        <div style="font-weight: 700; color: #38bdf8;">{{ m.unit|default('Unit 1') }}</div>
+                        <div style="font-size: 0.76rem; color: var(--text-muted);">{{ m.topic|default('General Topic') }}</div>
+                    </td>
+                    <td>
+                        <strong style="color: #fff;">{{ m.title }}</strong>
+                    </td>
+                    <td>
+                        <span class="badge {% if 'Slides' in m.material_type or 'PPT' in m.material_type %}badge-amber{% elif 'Lab' in m.material_type %}badge-cyan{% else %}badge-green{% endif %}">
+                            {{ m.material_type }}
+                        </span>
+                    </td>
+                    <td style="color: var(--text-secondary); font-size: 0.85rem;">{{ m.uploaded_date }}</td>
+                    <td>
+                        <div style="display: flex; gap: 6px;">
+                            <button type="button" class="btn-secondary" style="padding: 4px 10px; font-size: 0.78rem;" onclick="alert('Accessing document {{ m.title }}')">
+                                ⬇️ Access
+                            </button>
+                            <form method="POST" action="{{ url_for('faculty_materials_delete', material_id=m.id) }}" style="display: inline;" onsubmit="return confirm('Are you sure you want to remove this learning material?');">
+                                <button type="submit" class="btn-secondary" style="padding: 4px 8px; font-size: 0.78rem; border-color: #f43f5e; color: #f43f5e;" title="Delete Resource">
+                                    ✕
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<!-- Share Material Modal -->
+<div class="modal-overlay" id="upload-material-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); align-items: center; justify-content: center; z-index: 1000;">
+    <div class="modal-card" style="background: #0f172a; border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 16px; padding: 24px; max-width: 520px; width: 90%;">
+        <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h3 class="modal-title" style="color: #fff; margin: 0; font-size: 1.15rem;">📖 Upload &amp; Categorize Learning Material</h3>
+            <button type="button" class="modal-close" onclick="closeModal('upload-material-modal')" style="background: none; border: none; color: #fff; font-size: 1.2rem; cursor: pointer;">✕</button>
+        </div>
+
+        <form method="POST" action="{{ url_for('faculty_materials_upload') }}">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                <div class="form-group">
+                    <label for="mat_course" class="form-label" style="display: block; color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 4px;">Course Section</label>
+                    <select id="mat_course" name="course_code" class="form-select" required style="width: 100%; padding: 8px 12px; border-radius: 8px; background: #1e293b; border: 1px solid rgba(255,255,255,0.1); color: #fff;">
+                        {% for c in courses %}
+                            <option value="{{ c.course_code }}">{{ c.course_code }} - {{ c.course_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="mat_unit" class="form-label" style="display: block; color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 4px;">Unit / Module</label>
+                    <select id="mat_unit" name="unit" class="form-select" required style="width: 100%; padding: 8px 12px; border-radius: 8px; background: #1e293b; border: 1px solid rgba(255,255,255,0.1); color: #fff;">
+                        <option value="Unit 1: Fundamentals">Unit 1: Fundamentals</option>
+                        <option value="Unit 2: Architecture & Algorithms">Unit 2: Architecture &amp; Algorithms</option>
+                        <option value="Unit 3: Implementation & Design">Unit 3: Implementation &amp; Design</option>
+                        <option value="Unit 4: Advanced Systems">Unit 4: Advanced Systems</option>
+                        <option value="Unit 5: Applications & Case Studies">Unit 5: Applications &amp; Case Studies</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 12px;">
+                <label for="mat_topic" class="form-label" style="display: block; color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 4px;">Topic / Chapter Name</label>
+                <input type="text" id="mat_topic" name="topic" class="form-input" placeholder="e.g. Distributed Concurrency & Two-Phase Locking" required style="width: 100%; padding: 8px 12px; border-radius: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff;">
+            </div>
+
+            <div class="form-group" style="margin-bottom: 12px;">
+                <label for="mat_title" class="form-label" style="display: block; color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 4px;">Document Title / File Name</label>
+                <input type="text" id="mat_title" name="title" class="form-input" placeholder="e.g. Complete Lecture Slide Deck (PPTX)" required style="width: 100%; padding: 8px 12px; border-radius: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff;">
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+                <div class="form-group">
+                    <label for="mat_type" class="form-label" style="display: block; color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 4px;">Material Type</label>
+                    <select id="mat_type" name="material_type" class="form-select" required style="width: 100%; padding: 8px 12px; border-radius: 8px; background: #1e293b; border: 1px solid rgba(255,255,255,0.1); color: #fff;">
+                        <option value="Lecture Notes PDF">Lecture Notes PDF</option>
+                        <option value="Slide Deck PPT">Slide Deck PPT</option>
+                        <option value="Lab Manual Workbook">Lab Manual Workbook</option>
+                        <option value="Exam Question Paper">Exam Question Paper</option>
+                        <option value="Video Lecture Link">Video Lecture Link</option>
+                        <option value="Reference Textbook PDF">Reference Textbook PDF</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="mat_link" class="form-label" style="display: block; color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 4px;">Resource / Video URL (Optional)</label>
+                    <input type="url" id="mat_link" name="link_url" class="form-input" placeholder="https://..." style="width: 100%; padding: 8px 12px; border-radius: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff;">
+                </div>
+            </div>
+
+            <button type="submit" class="btn-primary" style="width: 100%; justify-content: center; background: linear-gradient(135deg, #10b981, #059669); padding: 10px; font-size: 0.95rem;">
+                <span>🚀</span> Upload &amp; Broadcast to Students
+            </button>
+        </form>
+    </div>
+</div>
+
+<script>
+function openModal(id) {
+    document.getElementById(id).style.display = 'flex';
+}
+function closeModal(id) {
+    document.getElementById(id).style.display = 'none';
+}
+</script>
+{% endblock %}
