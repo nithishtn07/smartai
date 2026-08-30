@@ -5,124 +5,127 @@
 {% block student_content %}
 <div class="page-header-block">
     <div class="page-title-group">
-        <h1><span>🚌</span> Campus Transport &amp; Live Bus Tracking</h1>
-        <p>Institutional bus fleet, boarding routes, driver contacts, and simulated real-time GPS telemetry.</p>
+        <h1><span>🚌</span> Campus Transport &amp; Bus Allocation</h1>
+        <p>Institutional bus fleet, boarding routes, driver contacts, and campus transport directory.</p>
     </div>
 </div>
 
+{% if allocation %}
 <!-- Transport Summary Banner -->
 <section class="attendance-summary-banner" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
     <div class="stat-box">
         <div class="stat-box-label">Assigned Route</div>
-        <div class="stat-box-num" style="color: #38bdf8;">Route 14 (Metro Line)</div>
+        <div class="stat-box-num" style="color: #38bdf8;">{{ allocation.route_number }} - {{ allocation.route_name }}</div>
     </div>
     <div class="stat-box">
         <div class="stat-box-label">Bus Vehicle No</div>
-        <div class="stat-box-num" style="color: #34d399;">KA-05-CG-4820</div>
+        <div class="stat-box-num" style="color: #34d399;">{{ allocation.bus_number }}</div>
     </div>
     <div class="stat-box">
         <div class="stat-box-label">Primary Driver</div>
-        <div class="stat-box-num" style="font-size: 1.1rem; color: white;">Mr. Sundaram</div>
-        <a href="tel:+919876543299" style="color: #38bdf8; font-size: 0.8rem; text-decoration: none;">📞 +91 98765 43299</a>
+        <div class="stat-box-num" style="font-size: 1.1rem; color: white;">{{ allocation.driver_name }}</div>
+        <a href="tel:{{ allocation.driver_phone }}" style="color: #38bdf8; font-size: 0.8rem; text-decoration: none;">📞 {{ allocation.driver_phone }}</a>
     </div>
     <div class="stat-box">
         <div class="stat-box-label">Morning Pickup</div>
-        <div class="stat-box-num" style="color: #fbbf24;">07:45 AM</div>
-        <span style="font-size: 0.72rem; color: #94a3b8;">Main Metro Station Gate 2</span>
+        <div class="stat-box-num" style="color: #fbbf24;">{{ allocation.pickup_time }}</div>
+        <span style="font-size: 0.72rem; color: #94a3b8;">{{ allocation.boarding_stop or allocation.pickup_location }}</span>
     </div>
 </section>
 
-<!-- Simulated Live Bus GPS Telemetry Screen -->
+<!-- Route Details & GPS Telemetry Card -->
 <section class="content-card">
     <div class="card-header-row">
         <h2 class="card-heading"><span>📡</span> Live Bus GPS Telemetry &amp; Location Map</h2>
-        <div style="display: flex; align-items: center; gap: 8px;">
-            <span class="status-pulse" style="background: #34d399; box-shadow: 0 0 10px #34d399;"></span>
-            <span style="font-size: 0.8rem; color: #34d399; font-weight: 700;">LIVE TELEMETRY: 35 KM/H</span>
+        <span class="badge badge-green">Registered &amp; Active</span>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-top: 12px; margin-bottom: 20px;">
+        <div style="padding: 14px; background: rgba(15, 23, 42, 0.6); border-radius: 12px; border-left: 3px solid #38bdf8;">
+            <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Boarding Location</div>
+            <div style="font-size: 1.05rem; font-weight: 700; color: #fff; margin-top: 4px;">{{ allocation.boarding_stop or allocation.pickup_location }}</div>
+        </div>
+        <div style="padding: 14px; background: rgba(15, 23, 42, 0.6); border-radius: 12px; border-left: 3px solid #34d399;">
+            <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Scheduled Pickup</div>
+            <div style="font-size: 1.05rem; font-weight: 700; color: #34d399; margin-top: 4px;">{{ allocation.pickup_time }}</div>
+        </div>
+        <div style="padding: 14px; background: rgba(15, 23, 42, 0.6); border-radius: 12px; border-left: 3px solid #fbbf24;">
+            <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Campus ETA</div>
+            <div style="font-size: 1.05rem; font-weight: 700; color: #fbbf24; margin-top: 4px;">{{ allocation.eta_campus }}</div>
+        </div>
+        <div style="padding: 14px; background: rgba(15, 23, 42, 0.6); border-radius: 12px; border-left: 3px solid #a855f7;">
+            <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Allocation Status</div>
+            <div style="font-size: 1.05rem; font-weight: 700; color: #c084fc; margin-top: 4px;">{{ allocation.status }}</div>
         </div>
     </div>
 
-    <!-- Map Canvas -->
-    <div class="map-canvas-container" style="height: 340px;">
-        <svg class="map-svg-canvas" viewBox="0 0 800 340" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <!-- Road Route -->
-            <path d="M 50 170 Q 200 80 400 170 T 750 170" stroke="#38bdf8" stroke-width="6" stroke-dasharray="8 8" opacity="0.6"/>
-            
-            <!-- Stops -->
-            <circle cx="50" cy="170" r="10" fill="#38bdf8"/>
-            <text x="50" y="210" fill="#94a3b8" font-size="12" text-anchor="middle" font-family="Plus Jakarta Sans">Central Station</text>
-
-            <circle cx="220" cy="120" r="10" fill="#38bdf8"/>
-            <text x="220" y="95" fill="#94a3b8" font-size="12" text-anchor="middle" font-family="Plus Jakarta Sans">Tech Park Gate</text>
-
-            <circle cx="400" cy="170" r="10" fill="#38bdf8"/>
-            <text x="400" y="210" fill="#94a3b8" font-size="12" text-anchor="middle" font-family="Plus Jakarta Sans">Your Stop: Metro Gate 2</text>
-
-            <!-- Bus Marker Active -->
-            <circle cx="340" cy="150" r="14" fill="#ef4444" stroke="white" stroke-width="3">
-                <animate attributeName="r" values="14;18;14" dur="2s" repeatCount="indefinite"/>
-            </circle>
-            <text x="340" y="130" fill="#fca5a5" font-size="13" font-weight="bold" text-anchor="middle" font-family="Plus Jakarta Sans">🚌 Bus #14 (ETA 6 Mins)</text>
-
-            <circle cx="750" cy="170" r="12" fill="#34d399"/>
-            <text x="750" y="210" fill="#34d399" font-size="12" font-weight="bold" text-anchor="middle" font-family="Plus Jakarta Sans">🏫 University Campus</text>
+    <!-- Live Telemetry Canvas -->
+    <div class="map-canvas-container" style="height: 240px; background: #070d19; border-radius: 12px; border: 1px solid rgba(56,189,248,0.2); position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center;">
+        <svg viewBox="0 0 700 200" fill="none" style="width: 100%; height: 100%;">
+            <path d="M 50 100 Q 200 40 350 100 T 650 100" stroke="#38bdf8" stroke-width="5" stroke-dasharray="8 8" opacity="0.6"/>
+            <circle cx="50" cy="100" r="8" fill="#38bdf8"/>
+            <text x="50" y="130" fill="#94a3b8" font-size="11" text-anchor="middle" font-family="Plus Jakarta Sans">Origin Hub</text>
+            <circle cx="350" cy="100" r="8" fill="#fbbf24"/>
+            <text x="350" y="130" fill="#fbbf24" font-size="11" text-anchor="middle" font-family="Plus Jakarta Sans">Your Stop: {{ allocation.boarding_stop or allocation.pickup_location }}</text>
+            <circle cx="650" cy="100" r="10" fill="#34d399"/>
+            <text x="650" y="130" fill="#34d399" font-size="11" font-weight="bold" text-anchor="middle" font-family="Plus Jakarta Sans">University Campus</text>
         </svg>
-    </div>
-
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px; font-size: 0.84rem; color: var(--text-secondary);">
-        <span>Current Stop: <strong>Approaching Tech Park Junction</strong></span>
-        <span>Estimated Arrival at Campus: <strong>08:25 AM</strong></span>
     </div>
 </section>
 
-<!-- Route Stops & Timing Schedule -->
+{% else %}
+<!-- Clean Empty State when Student is not registered for transport -->
+<section class="content-card" style="text-align: center; padding: 48px 24px;">
+    <div style="font-size: 3rem; margin-bottom: 12px;">🚌</div>
+    <h2 style="font-size: 1.25rem; font-weight: 800; color: #fff; margin-bottom: 8px;">No Campus Transport Allocation</h2>
+    <p style="color: var(--text-secondary); max-width: 540px; margin: 0 auto 20px; font-size: 0.9rem; line-height: 1.6;">
+        You are currently not enrolled in the university bus transit service. If you require daily transport across university transit routes, submit an allocation request to the Campus Transport Helpdesk.
+    </p>
+    <a href="{{ url_for('student_requests') }}" class="btn-primary" style="display: inline-flex; align-items: center; gap: 8px; text-decoration: none; padding: 10px 20px;">
+        <span>📝</span> Request Transport Allocation
+    </a>
+</section>
+{% endif %}
+
+<!-- Campus Active Transport Routes Directory -->
 <section class="content-card" style="margin-top: 20px;">
     <div class="card-header-row">
-        <h2 class="card-heading"><span>📍</span> Route 14 Stops &amp; Timings</h2>
-        <span class="badge badge-cyan">Morning Inbound</span>
+        <h2 class="card-heading"><span>📋</span> Available Institutional Bus Routes Directory</h2>
+        <span class="badge badge-purple">{{ routes|length }} Routes Configured</span>
     </div>
 
     <div class="table-responsive">
         <table class="portal-table">
             <thead>
                 <tr>
-                    <th>Stop Sequence</th>
-                    <th>Pickup Landmark</th>
-                    <th>Scheduled Time</th>
-                    <th>Status</th>
+                    <th>Route #</th>
+                    <th>Route Name</th>
+                    <th>Bus Number</th>
+                    <th>Pickup Point</th>
+                    <th>Pickup Time</th>
+                    <th>Campus ETA</th>
+                    <th>Driver Contact</th>
                 </tr>
             </thead>
             <tbody>
+                {% for r in routes %}
                 <tr>
-                    <td>1</td>
-                    <td>Central Railway Station Hub</td>
-                    <td style="font-family: var(--font-mono);">07:15 AM</td>
-                    <td><span class="badge badge-green">Departed</span></td>
+                    <td><span class="badge badge-indigo" style="font-weight: 800;">{{ r.route_number }}</span></td>
+                    <td><strong style="color: #fff;">{{ r.route_name }}</strong></td>
+                    <td style="color: #38bdf8; font-family: var(--font-mono);">{{ r.bus_number }}</td>
+                    <td>{{ r.pickup_location }}</td>
+                    <td style="color: #34d399; font-weight: 700;">{{ r.pickup_time }}</td>
+                    <td style="color: #fbbf24; font-weight: 700;">{{ r.eta_campus }}</td>
+                    <td>
+                        <div>{{ r.driver_name }}</div>
+                        <a href="tel:{{ r.driver_phone }}" style="color: #38bdf8; font-size: 0.78rem; text-decoration: none;">📞 {{ r.driver_phone }}</a>
+                    </td>
                 </tr>
+                {% else %}
                 <tr>
-                    <td>2</td>
-                    <td>Electronic City Flyover Stop</td>
-                    <td style="font-family: var(--font-mono);">07:30 AM</td>
-                    <td><span class="badge badge-green">Departed</span></td>
+                    <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 32px;">No active bus routes currently scheduled in system catalog.</td>
                 </tr>
-                <tr style="background: rgba(56,189,248,0.06);">
-                    <td><strong>3 (Your Stop)</strong></td>
-                    <td><strong>Main Metro Station Gate 2</strong></td>
-                    <td style="font-family: var(--font-mono); color: #38bdf8;"><strong>07:45 AM</strong></td>
-                    <td><span class="badge badge-yellow">Next Stop (6 Mins)</span></td>
-                </tr>
-                <tr>
-                    <td>4</td>
-                    <td>Outer Ring Road Tech Gate</td>
-                    <td style="font-family: var(--font-mono);">08:05 AM</td>
-                    <td><span class="badge badge-cyan">Upcoming</span></td>
-                </tr>
-                <tr>
-                    <td>5</td>
-                    <td>University Main Gate Terminal</td>
-                    <td style="font-family: var(--font-mono);">08:25 AM</td>
-                    <td><span class="badge badge-cyan">Destination</span></td>
-                </tr>
+                {% endfor %}
             </tbody>
         </table>
     </div>

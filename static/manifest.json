@@ -1,0 +1,42 @@
+{
+  "name": "CampusGuard AI — Smart Campus ERP & Safety",
+  "short_name": "CampusGuard",
+  "description": "Unified AI-Powered Smart Campus ERP and Real-Time Safety Emergency Platform",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0f1d",
+  "theme_color": "#4f46e5",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/static/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["education", "productivity", "utilities"],
+  "shortcuts": [
+    {
+      "name": "Emergency SOS",
+      "url": "/student/emergency",
+      "description": "Instant Campus Emergency SOS Beacon"
+    },
+    {
+      "name": "My Timetable",
+      "url": "/student/timetable",
+      "description": "View Today's Class Schedule"
+    },
+    {
+      "name": "Attendance Status",
+      "url": "/student/attendance",
+      "description": "Check Safe Missed Classes Margin"
+    }
+  ]
+}

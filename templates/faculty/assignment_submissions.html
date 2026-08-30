@@ -64,21 +64,29 @@
                     </td>
                     <td>{{ s.department }} (Year {{ s.year }})</td>
                     <td>
-                        <span class="badge {% if assignment.status == 'Evaluated' %}badge-green{% elif assignment.status == 'Submitted' %}badge-cyan{% else %}badge-yellow{% endif %}">
-                            {{ assignment.status|default('Submitted') }}
+                        <span class="badge {% if s.submission_status == 'Graded' or s.submission_status == 'Evaluated' %}badge-green{% elif s.submission_status == 'Submitted' %}badge-cyan{% else %}badge-yellow{% endif %}">
+                            {{ s.submission_status|default('Pending') }}
                         </span>
                     </td>
                     <td style="font-weight: 800; color: #34d399; font-size: 1.05rem;">
-                        {{ assignment.marks_obtained|default(45.0) }}/{{ assignment.max_marks }}
+                        {% if s.marks_obtained is not none %}
+                            {{ s.marks_obtained }}/{{ assignment.max_marks }}
+                        {% else %}
+                            <span style="color: var(--text-muted); font-size: 0.9rem;">— / {{ assignment.max_marks }}</span>
+                        {% endif %}
                     </td>
                     <td style="font-size: 0.84rem; color: var(--text-secondary); max-width: 250px;">
-                        {{ assignment.feedback|default('Comprehensive solution provided.') }}
+                        {{ s.feedback if s.feedback else 'Awaiting evaluation.' }}
                     </td>
                     <td>
-                        <button type="button" class="btn-primary" onclick="openGradingModal({{ s.id }}, '{{ s.name }}')" style="padding: 4px 12px; font-size: 0.78rem; background: linear-gradient(135deg, #10b981, #059669);">
+                        <button type="button" class="btn-primary" onclick="openGradingModal({{ s.student_id|default(s.id) }}, '{{ s.student_name|default(s.name)|escape }}')" style="padding: 4px 12px; font-size: 0.78rem; background: linear-gradient(135deg, #10b981, #059669);">
                             📝 Evaluate
                         </button>
                     </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 32px;">No enrolled students found for this course.</td>
                 </tr>
                 {% endfor %}
             </tbody>

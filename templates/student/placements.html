@@ -51,7 +51,7 @@
 <section class="content-card">
     <div class="card-header-row">
         <h2 class="card-heading"><span>🏢</span> Active Campus Recruitment Opportunities</h2>
-        <span class="badge badge-purple">Your CGPA: {{ student.cgpa|default('8.75') }}</span>
+        <span class="badge badge-purple">Your CGPA: {{ student.cgpa if student.cgpa is not none else 'N/A' }}</span>
     </div>
 
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 18px;">
@@ -69,7 +69,7 @@
                 <div style="padding: 10px; background: rgba(255, 255, 255, 0.03); border-radius: 8px; font-size: 0.82rem; margin-bottom: 14px;">
                     <div>Min CGPA Required: <strong>{{ job.min_cgpa }}</strong></div>
                     <div style="margin-top: 4px;">
-                        {% if student.cgpa|default(8.75) >= job.min_cgpa %}
+                        {% if student.cgpa and student.cgpa >= job.min_cgpa %}
                             <span style="color: #34d399; font-weight: 700;">✓ You are academically eligible!</span>
                         {% else %}
                             <span style="color: #f87171; font-weight: 700;">✕ CGPA requirement not met</span>
@@ -80,7 +80,7 @@
 
             <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 12px; border-top: 1px solid rgba(255, 255, 255, 0.06);">
                 <span style="font-size: 0.78rem; color: var(--text-muted);">Deadline: {{ job.deadline }}</span>
-                {% if student.cgpa|default(8.75) >= job.min_cgpa %}
+                {% if student.cgpa and student.cgpa >= job.min_cgpa %}
                     <form method="POST" action="{{ url_for('student_placements_apply', placement_id=job.id) }}">
                         <button type="submit" class="btn-primary" style="font-size: 0.8rem; padding: 6px 14px;">
                             🚀 Apply Now
@@ -92,6 +92,10 @@
                     </button>
                 {% endif %}
             </div>
+        </div>
+        {% else %}
+        <div class="content-card" style="text-align: center; color: var(--text-muted); padding: 32px; grid-column: 1 / -1;">
+            No active campus recruitment drives listed currently.
         </div>
         {% endfor %}
     </div>

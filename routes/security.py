@@ -114,9 +114,9 @@ def api_security_zone_intel(zone_id):
         # Fallback default
         return jsonify(list(zone_scores.values())[0] if zone_scores else {
             'zone_id': zone_id,
-            'short_name': 'Parking Area',
-            'risk_score': 75,
-            'cctv_count': 6
+            'short_name': zone_id.replace('_', ' ').title(),
+            'risk_score': 0,
+            'cctv_count': 0
         })
     finally:
         conn.close()

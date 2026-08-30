@@ -52,10 +52,16 @@ class MarksModel:
             conn.close()
 
     @staticmethod
-    def upsert_marks(student_id, course_code, course_name, cat1=0, cat2=0, quiz=0, assignment=0, project=0, fat=0, grade="A", grade_points=8.0, status="PASS"):
+    def upsert_marks(student_id, course_code, course_name, cat1=0, cat2=0, quiz=0, assignment=0, project=0, fat=0, grade="A", grade_points=None, status=None):
+        from services.academic_service import calculate_grade_point, sync_student_cgpa
         conn = get_db_connection()
         try:
             cursor = conn.cursor()
+            if grade_points is None:
+                grade_points = calculate_grade_point(grade)
+            if status is None:
+                status = 'FAIL' if str(grade).upper() in ['F', 'FAIL'] else 'PASS'
+
             existing = cursor.execute("SELECT id FROM marks WHERE student_id = ? AND course_code = ?", (student_id, course_code)).fetchone()
             if existing:
                 cursor.execute("""
@@ -67,6 +73,8 @@ class MarksModel:
                     INSERT INTO marks (student_id, course_code, course_name, cat1, cat2, quiz, assignment, project, fat, grade, grade_points, status)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, (student_id, course_code, course_name, cat1, cat2, quiz, assignment, project, fat, grade, grade_points, status))
+            
+            sync_student_cgpa(conn, student_id)
             conn.commit()
             return True
         finally:

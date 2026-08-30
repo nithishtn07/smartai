@@ -268,7 +268,7 @@ class TestEmergencyResponseSystem(unittest.TestCase):
     # Scenario 8: Multi-Portal Scoped Notifications
     # -----------------------------------------------------------------------
     def test_08_multi_portal_scoped_notifications(self):
-        # Create emergency as student 1 (Nithish Nagaraj, whose parent is Nagaraj Kumar)
+        # Create emergency as student 1 (Nithish Nagaraj, whose parent is Nagaraj)
         res = create_emergency(
             reporter_id=1,
             reporter_name='Nithish Nagaraj',
@@ -284,7 +284,7 @@ class TestEmergencyResponseSystem(unittest.TestCase):
         # Verify parent notification
         parent_notif = conn.execute("SELECT * FROM emergency_notifications WHERE emergency_id = ? AND recipient_role = 'parent'", (emg_id,)).fetchone()
         self.assertIsNotNone(parent_notif)
-        self.assertEqual(parent_notif['recipient_name'], 'R. S. Kumar')
+        self.assertEqual(parent_notif['recipient_name'], 'Nagaraj')
         self.assertIn('Nithish Nagaraj', parent_notif['title'])
 
         # Verify admin notification in notifications table
@@ -328,7 +328,7 @@ class TestEmergencyResponseSystem(unittest.TestCase):
         with self.client.session_transaction() as sess:
             sess['user_role'] = 'parent'
             sess['parent_id'] = 1
-            sess['user_name'] = 'Nagaraj Kumar'
+            sess['user_name'] = 'Nagaraj'
 
         resp_p1 = self.client.get(f'/api/emergency/{emg_id}')
         self.assertEqual(resp_p1.status_code, 200)

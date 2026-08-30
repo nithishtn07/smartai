@@ -8,12 +8,25 @@
 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 24px;">
     <div>
         <h1 style="font-size: 1.6rem; font-weight: 800; color: #fff; margin-bottom: 4px;">Parent Management Directory</h1>
-        <p style="color: var(--text-secondary); font-size: 0.88rem;">Manage parent accounts, guardian-ward bindings, and communication links.</p>
+        <p style="color: var(--text-secondary); font-size: 0.88rem;">Manage guardian accounts, multi-child ward bindings, and contact records.</p>
     </div>
 
-    <button type="button" class="btn-primary" onclick="document.getElementById('add-parent-modal').style.display='flex'" style="background: linear-gradient(135deg, #6366f1, #4f46e5); padding: 10px 18px; font-size: 0.88rem;">
-        <span>+</span> Add New Parent
+    <button type="button" class="btn-primary" onclick="document.getElementById('add-parent-modal').style.display='flex'" style="background: linear-gradient(135deg, #6366f1, #4f46e5); padding: 10px 18px; font-size: 0.88rem; display: inline-flex; align-items: center; gap: 6px;">
+        <span>➕</span> Add New Parent
     </button>
+</div>
+
+<!-- Search & Filters -->
+<div style="background: rgba(14, 19, 32, 0.8); border: 1px solid var(--glass-border); border-radius: 16px; padding: 18px 20px; margin-bottom: 24px;">
+    <form method="GET" action="{{ url_for('admin_parents') }}" style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
+        <div style="flex: 1; min-width: 250px;">
+            <input type="text" name="q" value="{{ query|default('') }}" placeholder="Search by guardian name, email, phone, parent ID, or student..." class="form-input" style="padding: 10px 14px;">
+        </div>
+        <button type="submit" class="btn-primary" style="padding: 10px 18px;">🔍 Search</button>
+        {% if query %}
+            <a href="{{ url_for('admin_parents') }}" class="btn-secondary" style="padding: 10px 14px; text-decoration: none;">✕ Clear</a>
+        {% endif %}
+    </form>
 </div>
 
 <!-- Parents Data Table -->
@@ -28,41 +41,81 @@
             <thead>
                 <tr style="border-bottom: 1px solid var(--glass-border); text-align: left; color: var(--text-muted);">
                     <th style="padding: 12px 10px;">Parent ID</th>
-                    <th style="padding: 12px 10px;">Guardian Name</th>
+                    <th style="padding: 12px 10px;">Guardian Details</th>
                     <th style="padding: 12px 10px;">Relationship</th>
-                    <th style="padding: 12px 10px;">Linked Student (Ward)</th>
-                    <th style="padding: 12px 10px;">Contact Details</th>
+                    <th style="padding: 12px 10px;">Linked Student(s) (Ward)</th>
+                    <th style="padding: 12px 10px;">Contact Information</th>
                     <th style="padding: 12px 10px; text-align: right;">Actions</th>
                 </tr>
             </thead>
             <tbody>
                 {% for par in parents %}
                 <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.04);">
-                    <td style="padding: 14px 10px; font-family: var(--font-mono); font-weight: 700; color: #c084fc;">{{ par.parent_id }}</td>
+                    <td style="padding: 14px 10px; font-family: var(--font-mono); font-weight: 700; color: #c084fc;">
+                        {{ par.parent_id }}
+                    </td>
                     <td style="padding: 14px 10px;">
                         <div style="font-weight: 700; color: #fff;">{{ par.name }}</div>
-                        <div style="font-size: 0.75rem; color: var(--text-muted);">{{ par.occupation|default('Guardian') }}</div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">{{ par.occupation|default('Parent/Guardian') }}</div>
                     </td>
-                    <td style="padding: 14px 10px; color: var(--text-secondary);">{{ par.relationship }}</td>
+                    <td style="padding: 14px 10px; color: var(--text-secondary);">
+                        {{ par.relationship }}
+                    </td>
                     <td style="padding: 14px 10px;">
-                        <strong style="color: #38bdf8;">{{ par.student_name|default('Nithish Nagaraj') }}</strong>
-                        <div style="font-size: 0.75rem; color: var(--text-muted);">{{ par.student_reg|default('STU001') }}</div>
+                        {% if par.children and par.children|length > 0 %}
+                            <div style="display: flex; flex-direction: column; gap: 4px;">
+                                {% for ch in par.children %}
+                                    <div style="display: inline-flex; align-items: center; gap: 6px;">
+                                        <strong style="color: #38bdf8; font-size: 0.84rem;">{{ ch.name }}</strong>
+                                        <span class="badge badge-indigo" style="font-family: var(--font-mono); font-size: 0.72rem;">{{ ch.register_number }}</span>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% elif par.student_name %}
+                            <strong style="color: #38bdf8;">{{ par.student_name }}</strong>
+                            <div style="font-size: 0.75rem; color: var(--text-muted);">{{ par.student_reg|default('-') }}</div>
+                        {% else %}
+                            <span class="badge" style="background: rgba(239, 68, 68, 0.15); color: #fca5a5;">Unlinked</span>
+                        {% endif %}
                     </td>
                     <td style="padding: 14px 10px;">
                         <div style="color: #fff;">{{ par.email }}</div>
-                        <div style="font-size: 0.75rem; color: #34d399;">{{ par.phone }}</div>
+                        <div style="font-size: 0.75rem; color: #34d399;">📞 {{ par.phone }}</div>
+                        {% if par.address %}
+                            <div style="font-size: 0.72rem; color: var(--text-muted); max-width: 180px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">📍 {{ par.address }}</div>
+                        {% endif %}
                     </td>
                     <td style="padding: 14px 10px; text-align: right;">
-                        <form method="POST" action="{{ url_for('admin_parent_reset_password', id=par.id) }}" style="display: inline;">
-                            <button type="submit" class="btn-secondary" style="padding: 6px 10px; font-size: 0.78rem;" title="Reset password to Parent@123">
-                                🔑 Reset Pass
+                        <div style="display: inline-flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end;">
+                            <button type="button" class="btn-secondary" onclick="viewParentDetails({{ par.id }})" style="padding: 6px 9px; font-size: 0.78rem;" title="View Complete Profile">
+                                👁️ View
                             </button>
-                        </form>
+                            <button type="button" class="btn-secondary" onclick="openEditParentModal({{ par.id }}, '{{ par.name|escape }}', '{{ par.email|escape }}', '{{ par.phone|escape }}', '{{ par.relationship|escape }}', '{{ par.occupation|default('')|escape }}', '{{ par.address|default('')|escape }}', '{{ par.parent_id|escape }}', {{ par.student_id|default(0) }})" style="padding: 6px 9px; font-size: 0.78rem; color: #818cf8;" title="Edit Parent Record">
+                                ✏️ Edit
+                            </button>
+                            <form method="POST" action="{{ url_for('admin_parent_reset_password', id=par.id) }}" style="display: inline;">
+                                <button type="submit" class="btn-secondary" style="padding: 6px 9px; font-size: 0.78rem; color: #34d399;" title="Reset password to Parent@123">
+                                    🔑 Pass
+                                </button>
+                            </form>
+                            <button type="button" class="btn-secondary" onclick="confirmDeleteParent({{ par.id }}, '{{ par.name|escape }}', '{{ par.parent_id|escape }}')" style="padding: 6px 9px; font-size: 0.78rem; color: #f87171; border-color: rgba(239, 68, 68, 0.3);" title="Delete Parent Account">
+                                🗑️ Delete
+                            </button>
+                        </div>
                     </td>
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="6" style="text-align: center; padding: 30px; color: var(--text-muted);">No parent records found.</td>
+                    <td colspan="6" style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
+                        <div style="font-size: 2.2rem; margin-bottom: 10px;">👨‍👩‍👧</div>
+                        <div style="font-weight: 700; color: #fff; font-size: 1.05rem; margin-bottom: 6px;">No parent records found</div>
+                        <p style="font-size: 0.85rem; color: var(--text-secondary); max-width: 400px; margin: 0 auto 16px auto;">
+                            No parent accounts match your query. You can add a new parent manually or when registering a student.
+                        </p>
+                        <button type="button" class="btn-primary" onclick="document.getElementById('add-parent-modal').style.display='flex'" style="padding: 10px 20px; font-size: 0.88rem;">
+                            ➕ Add New Parent
+                        </button>
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -71,57 +124,71 @@
 </div>
 
 <!-- Add Parent Modal -->
-<div id="add-parent-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center; padding: 20px;">
-    <div style="background: #0e1320; border: 1px solid var(--parent-border); border-radius: 20px; max-width: 540px; width: 100%; padding: 28px; box-shadow: 0 25px 60px rgba(0,0,0,0.6);">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <h3 style="font-size: 1.25rem; font-weight: 800; color: #fff;">👨‍👩‍👧 Add New Parent</h3>
+<div id="add-parent-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1000; align-items: center; justify-content: center; padding: 20px; overflow-y: auto;">
+    <div style="background: #0e1320; border: 1px solid var(--parent-border); border-radius: 20px; max-width: 560px; width: 100%; padding: 28px; box-shadow: 0 25px 60px rgba(0,0,0,0.6); max-height: 90vh; overflow-y: auto;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 14px;">
+            <div>
+                <h3 style="font-size: 1.25rem; font-weight: 800; color: #fff;">👨‍👩‍👧 Add New Parent</h3>
+                <p style="color: var(--text-muted); font-size: 0.8rem; margin-top: 2px;">Create parent credentials and bind to student ward.</p>
+            </div>
             <button type="button" onclick="document.getElementById('add-parent-modal').style.display='none'" style="background: none; border: none; color: var(--text-muted); font-size: 1.3rem; cursor: pointer;">✕</button>
         </div>
 
         <form method="POST" action="{{ url_for('admin_parent_create') }}">
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
                 <div>
-                    <label class="form-label">Parent ID</label>
-                    <input type="text" name="parent_id" class="form-input" placeholder="e.g. PAR002" required>
+                    <label class="form-label">Parent ID *</label>
+                    <input type="text" name="parent_id" class="form-input" placeholder="e.g. PAR002" required autocomplete="off">
                 </div>
                 <div>
-                    <label class="form-label">Full Name</label>
-                    <input type="text" name="name" class="form-input" placeholder="Guardian Name" required>
+                    <label class="form-label">Guardian Full Name *</label>
+                    <input type="text" name="name" class="form-input" placeholder="e.g. Meera Sharma" required autocomplete="off">
                 </div>
             </div>
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
                 <div>
-                    <label class="form-label">Email Address</label>
-                    <input type="email" name="email" class="form-input" placeholder="parent@example.com" required>
+                    <label class="form-label">Email Address (Login ID) *</label>
+                    <input type="email" name="email" class="form-input" placeholder="parent@example.com" required autocomplete="off">
                 </div>
                 <div>
-                    <label class="form-label">Phone Number</label>
-                    <input type="text" name="phone" class="form-input" placeholder="+91 98765 43210" required>
+                    <label class="form-label">Phone Number *</label>
+                    <input type="text" name="phone" class="form-input" placeholder="+91 98765 43210" required autocomplete="off">
                 </div>
             </div>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
                 <div>
-                    <label class="form-label">Relationship</label>
+                    <label class="form-label">Relationship *</label>
                     <select name="relationship" class="form-input" required>
                         <option value="Father">Father</option>
                         <option value="Mother">Mother</option>
-                        <option value="Legal Guardian">Legal Guardian</option>
+                        <option value="Guardian">Guardian</option>
                     </select>
                 </div>
                 <div>
-                    <label class="form-label">Link to Student</label>
-                    <select name="student_id" class="form-input" required>
-                        {% for stu in all_students %}
-                            <option value="{{ stu.id }}">{{ stu.name }} ({{ stu.register_number }})</option>
-                        {% endfor %}
-                    </select>
+                    <label class="form-label">Occupation</label>
+                    <input type="text" name="occupation" class="form-input" placeholder="e.g. Software Architect">
                 </div>
             </div>
 
+            <div style="margin-bottom: 14px;">
+                <label class="form-label">Link to Student (Ward)</label>
+                <select name="student_id" class="form-input">
+                    <option value="0">-- Select Student to Link --</option>
+                    {% for stu in all_students %}
+                        <option value="{{ stu.id }}">{{ stu.name }} ({{ stu.register_number }}) - {{ stu.department }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label class="form-label">Residential Address</label>
+                <input type="text" name="address" class="form-input" placeholder="City, State, Postal Address">
+            </div>
+
             <div style="background: rgba(99, 102, 241, 0.08); border: 1px dashed rgba(99, 102, 241, 0.3); border-radius: 10px; padding: 12px; margin-bottom: 20px; font-size: 0.8rem; color: var(--text-secondary);">
-                Default temporary login password will be set to: <strong style="color: #34d399;">Parent@123</strong>
+                Default temporary login password: <strong style="color: #34d399;">Parent@123</strong>
             </div>
 
             <div style="display: flex; justify-content: flex-end; gap: 10px;">
@@ -131,5 +198,220 @@
         </form>
     </div>
 </div>
+
+<!-- Edit Parent Modal -->
+<div id="edit-parent-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1000; align-items: center; justify-content: center; padding: 20px; overflow-y: auto;">
+    <div style="background: #0e1320; border: 1px solid var(--parent-border); border-radius: 20px; max-width: 560px; width: 100%; padding: 28px; box-shadow: 0 25px 60px rgba(0,0,0,0.6); max-height: 90vh; overflow-y: auto;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 14px;">
+            <div>
+                <h3 style="font-size: 1.25rem; font-weight: 800; color: #fff;">✏️ Edit Parent Information</h3>
+                <p style="color: var(--text-muted); font-size: 0.8rem; margin-top: 2px;">Update guardian details and linked student relationships.</p>
+            </div>
+            <button type="button" onclick="document.getElementById('edit-parent-modal').style.display='none'" style="background: none; border: none; color: var(--text-muted); font-size: 1.3rem; cursor: pointer;">✕</button>
+        </div>
+
+        <form id="edit-parent-form" method="POST" action="">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+                <div>
+                    <label class="form-label">Parent ID *</label>
+                    <input type="text" id="edit-parent-id-field" name="parent_id" class="form-input" required>
+                </div>
+                <div>
+                    <label class="form-label">Guardian Full Name *</label>
+                    <input type="text" id="edit-parent-fullname" name="name" class="form-input" required>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+                <div>
+                    <label class="form-label">Email Address *</label>
+                    <input type="email" id="edit-parent-email" name="email" class="form-input" required>
+                </div>
+                <div>
+                    <label class="form-label">Phone Number *</label>
+                    <input type="text" id="edit-parent-phone-field" name="phone" class="form-input" required>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+                <div>
+                    <label class="form-label">Relationship</label>
+                    <select id="edit-parent-rel-field" name="relationship" class="form-input">
+                        <option value="Father">Father</option>
+                        <option value="Mother">Mother</option>
+                        <option value="Guardian">Guardian</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label">Occupation</label>
+                    <input type="text" id="edit-parent-occupation" name="occupation" class="form-input">
+                </div>
+            </div>
+
+            <div style="margin-bottom: 14px;">
+                <label class="form-label">Link/Assign Student (Ward)</label>
+                <select id="edit-parent-student-id" name="student_id" class="form-input">
+                    <option value="0">-- No Student Selected --</option>
+                    {% for stu in all_students %}
+                        <option value="{{ stu.id }}">{{ stu.name }} ({{ stu.register_number }}) - {{ stu.department }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label class="form-label">Residential Address</label>
+                <input type="text" id="edit-parent-address" name="address" class="form-input">
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" onclick="document.getElementById('edit-parent-modal').style.display='none'" class="btn-secondary">Cancel</button>
+                <button type="submit" class="btn-primary" style="background: linear-gradient(135deg, #6366f1, #4f46e5);">💾 Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- View Parent Profile Modal -->
+<div id="view-parent-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1000; align-items: center; justify-content: center; padding: 20px; overflow-y: auto;">
+    <div style="background: #0e1320; border: 1px solid var(--parent-border); border-radius: 20px; max-width: 580px; width: 100%; padding: 28px; box-shadow: 0 25px 60px rgba(0,0,0,0.6); max-height: 90vh; overflow-y: auto;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 14px;">
+            <div>
+                <h3 style="font-size: 1.25rem; font-weight: 800; color: #fff;" id="view-par-name">Parent Profile</h3>
+                <p style="color: var(--text-muted); font-size: 0.8rem; margin-top: 2px;" id="view-par-id">-</p>
+            </div>
+            <button type="button" onclick="document.getElementById('view-parent-modal').style.display='none'" style="background: none; border: none; color: var(--text-muted); font-size: 1.3rem; cursor: pointer;">✕</button>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 14px; font-size: 0.88rem; margin-bottom: 24px;">
+            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.04); padding-bottom: 8px;">
+                <span style="color: var(--text-muted);">Email:</span>
+                <span style="color: #fff; font-weight: 600;" id="view-par-email">-</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.04); padding-bottom: 8px;">
+                <span style="color: var(--text-muted);">Phone:</span>
+                <span style="color: #34d399; font-weight: 600;" id="view-par-phone">-</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.04); padding-bottom: 8px;">
+                <span style="color: var(--text-muted);">Relationship:</span>
+                <span style="color: #c084fc; font-weight: 600;" id="view-par-rel">-</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.04); padding-bottom: 8px;">
+                <span style="color: var(--text-muted);">Occupation:</span>
+                <span style="color: #fff;" id="view-par-occ">-</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.04); padding-bottom: 8px;">
+                <span style="color: var(--text-muted);">Address:</span>
+                <span style="color: var(--text-secondary);" id="view-par-addr">-</span>
+            </div>
+        </div>
+
+        <h4 style="font-size: 0.95rem; font-weight: 700; color: #38bdf8; margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
+            <span>🎓</span> Linked Children (Wards)
+        </h4>
+        <div id="view-par-children-list" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 24px;">
+            <!-- Rendered dynamically -->
+        </div>
+
+        <div style="display: flex; justify-content: flex-end;">
+            <button type="button" onclick="document.getElementById('view-parent-modal').style.display='none'" class="btn-secondary">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Parent Confirmation Modal -->
+<div id="delete-parent-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1000; align-items: center; justify-content: center; padding: 20px;">
+    <div style="background: #0e1320; border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 20px; max-width: 480px; width: 100%; padding: 28px; box-shadow: 0 25px 60px rgba(0,0,0,0.6); text-align: center;">
+        <div style="width: 56px; height: 56px; border-radius: 50%; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); display: flex; align-items: center; justify-content: center; font-size: 1.8rem; margin: 0 auto 16px auto;">
+            ⚠️
+        </div>
+        
+        <h3 style="font-size: 1.25rem; font-weight: 800; color: #fff; margin-bottom: 8px;">Delete Parent Account</h3>
+        
+        <p style="color: #fca5a5; font-size: 0.92rem; font-weight: 600; margin-bottom: 12px;">
+            "Are you sure you want to delete this account? This action cannot be undone."
+        </p>
+
+        <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--glass-border); border-radius: 12px; padding: 14px; margin-bottom: 24px; text-align: left; font-size: 0.85rem;">
+            <div style="color: var(--text-muted); margin-bottom: 4px;">Target Record:</div>
+            <div style="font-weight: 700; color: #fff; font-size: 0.95rem;" id="del-parent-name">-</div>
+            <div style="color: #c084fc; font-family: var(--font-mono); font-size: 0.82rem;" id="del-parent-code">-</div>
+            <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 8px;">
+                ℹ️ The parent account and guardian-student links will be removed cleanly without deleting the student's academic records.
+            </div>
+        </div>
+
+        <form id="delete-parent-form" method="POST" action="">
+            <div style="display: flex; justify-content: center; gap: 12px;">
+                <button type="button" onclick="document.getElementById('delete-parent-modal').style.display='none'" class="btn-secondary" style="padding: 10px 20px;">Cancel</button>
+                <button type="submit" class="btn-primary" style="background: linear-gradient(135deg, #ef4444, #dc2626); border-color: #ef4444; padding: 10px 20px;">
+                    🗑️ Yes, Delete Account
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openEditParentModal(parentId, name, email, phone, relationship, occupation, address, parentCode, studentId) {
+    document.getElementById('edit-parent-form').action = '/admin/parents/edit/' + parentId;
+    document.getElementById('edit-parent-id-field').value = parentCode || '';
+    document.getElementById('edit-parent-fullname').value = name || '';
+    document.getElementById('edit-parent-email').value = email || '';
+    document.getElementById('edit-parent-phone-field').value = phone || '';
+    document.getElementById('edit-parent-rel-field').value = relationship || 'Guardian';
+    document.getElementById('edit-parent-occupation').value = occupation || '';
+    document.getElementById('edit-parent-address').value = address || '';
+    document.getElementById('edit-parent-student-id').value = studentId || 0;
+    document.getElementById('edit-parent-modal').style.display = 'flex';
+}
+
+function viewParentDetails(parentId) {
+    fetch('/admin/parents/api/' + parentId)
+        .then(res => res.json())
+        .then(data => {
+            if (data.success && data.parent) {
+                const p = data.parent;
+                document.getElementById('view-par-name').textContent = p.name;
+                document.getElementById('view-par-id').textContent = 'Parent ID: ' + p.parent_id;
+                document.getElementById('view-par-email').textContent = p.email || 'N/A';
+                document.getElementById('view-par-phone').textContent = p.phone || 'N/A';
+                document.getElementById('view-par-rel').textContent = p.relationship || 'Guardian';
+                document.getElementById('view-par-occ').textContent = p.occupation || 'Not specified';
+                document.getElementById('view-par-addr').textContent = p.address || 'Not specified';
+
+                const listContainer = document.getElementById('view-par-children-list');
+                listContainer.innerHTML = '';
+                if (p.children && p.children.length > 0) {
+                    p.children.forEach(ch => {
+                        const item = document.createElement('div');
+                        item.style.cssText = 'background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); border-radius: 12px; padding: 12px; display: flex; justify-content: space-between; align-items: center;';
+                        item.innerHTML = `
+                            <div>
+                                <div style="font-weight: 700; color: #fff;">${ch.name}</div>
+                                <div style="font-size: 0.75rem; color: var(--text-muted);">${ch.department} • Year ${ch.year} (Sem ${ch.semester})</div>
+                            </div>
+                            <span class="badge badge-indigo" style="font-family: var(--font-mono);">${ch.register_number}</span>
+                        `;
+                        listContainer.appendChild(item);
+                    });
+                } else {
+                    listContainer.innerHTML = '<div style="color: var(--text-muted); font-size: 0.82rem;">No student records currently mapped to this parent.</div>';
+                }
+
+                document.getElementById('view-parent-modal').style.display = 'flex';
+            }
+        })
+        .catch(err => {
+            console.error(err);
+        });
+}
+
+function confirmDeleteParent(parentId, parentName, parentCode) {
+    document.getElementById('delete-parent-form').action = '/admin/parents/delete/' + parentId;
+    document.getElementById('del-parent-name').textContent = parentName;
+    document.getElementById('del-parent-code').textContent = parentCode;
+    document.getElementById('delete-parent-modal').style.display = 'flex';
+}
+</script>
 
 {% endblock %}

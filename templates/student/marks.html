@@ -10,8 +10,8 @@
     </div>
 
     <div style="display: flex; gap: 10px;">
-        <span class="badge badge-green" style="font-size: 0.88rem; padding: 8px 16px;">Current CGPA: {{ student.cgpa|default('8.75') }}</span>
-        <span class="badge badge-purple" style="font-size: 0.88rem; padding: 8px 16px;">Sem 5 SGPA: {{ student.sgpa|default('8.90') }}</span>
+        <span class="badge badge-green" style="font-size: 0.88rem; padding: 8px 16px;">Current CGPA: {{ student.cgpa if student.cgpa is not none else 'Not available' }}</span>
+        <span class="badge badge-purple" style="font-size: 0.88rem; padding: 8px 16px;">Sem {{ student.semester|default(1) }} SGPA: {{ student.sgpa if student.sgpa is not none else 'Not available' }}</span>
     </div>
 </div>
 
@@ -22,28 +22,41 @@
             <span style="font-size: 1.3rem;">🧠</span>
             <h3 style="font-size: 1.05rem; font-weight: 700; color: #38bdf8;">CampusGuard AI — Performance Trend &amp; Grade Forecast</h3>
         </div>
-        <span class="badge badge-green">High Distinction Trajectory</span>
+        <span class="badge badge-green">Academic Advisory</span>
     </div>
 
     <div class="ai-insights-list">
-        <div class="ai-insight-item">
-            <span style="font-size: 1.2rem;">📈</span>
-            <div>
-                <strong>Strongest Course:</strong> <em>Computer Networks &amp; Security</em> (Score: <strong>94/100</strong>, Projected Grade: <strong>S / Outstanding</strong>).
+        {% if marks %}
+            {% set strongest = marks|sort(attribute='fat', reverse=True)|first %}
+            {% set growth = marks|sort(attribute='fat')|first %}
+            <div class="ai-insight-item">
+                <span style="font-size: 1.2rem;">📈</span>
+                <div>
+                    <strong>Strongest Subject:</strong> <em>{{ strongest.course_name }}</em> (FAT Score: <strong>{{ strongest.fat }}/100</strong>, Current Grade: <strong>{{ strongest.grade }}</strong>).
+                </div>
             </div>
-        </div>
-        <div class="ai-insight-item">
-            <span style="font-size: 1.2rem;">🎯</span>
-            <div>
-                <strong>Growth Area:</strong> <em>Data Science &amp; Machine Learning</em> (Internal: <strong>76/100</strong>). Scoring $\ge 42/50$ in FAT ensures an <strong>A Grade</strong>.
+            {% if growth.course_code != strongest.course_code %}
+            <div class="ai-insight-item">
+                <span style="font-size: 1.2rem;">🎯</span>
+                <div>
+                    <strong>Focus Area:</strong> <em>{{ growth.course_name }}</em> (Score: <strong>{{ growth.fat }}/100</strong>). Recommended extra lab practice and peer study sessions.
+                </div>
             </div>
-        </div>
-        <div class="ai-insight-item">
-            <span style="font-size: 1.2rem;">💡</span>
-            <div>
-                <strong>AI Study Recommendation:</strong> Dedicate 4 hours this weekend to Neural Networks tutorials available in Study Materials.
+            {% endif %}
+            <div class="ai-insight-item">
+                <span style="font-size: 1.2rem;">💡</span>
+                <div>
+                    <strong>Cumulative Evaluation:</strong> Real-time CGPA derived from continuous assessments is <strong>{{ student.cgpa if student.cgpa is not none else 'Not available' }}</strong>.
+                </div>
             </div>
-        </div>
+        {% else %}
+            <div class="ai-insight-item">
+                <span style="font-size: 1.2rem;">ℹ️</span>
+                <div style="color: var(--text-muted);">
+                    Academic records not available yet. Continuous assessment marks and AI grade projections will appear here once published by faculty.
+                </div>
+            </div>
+        {% endif %}
     </div>
 </section>
 
@@ -51,7 +64,7 @@
 <section class="content-card">
     <div class="card-header-row">
         <h2 class="card-heading"><span>📊</span> Course-Wise Assessment Breakdown</h2>
-        <span class="badge badge-cyan">Semester 5</span>
+        <span class="badge badge-cyan">Semester {{ student.semester|default(1) }}</span>
     </div>
 
     <div class="table-responsive">
@@ -59,6 +72,7 @@
             <thead>
                 <tr>
                     <th>Course Code &amp; Title</th>
+                    <th>Credits</th>
                     <th>CAT 1 (50)</th>
                     <th>CAT 2 (50)</th>
                     <th>Quiz (10)</th>
@@ -77,6 +91,7 @@
                         <div style="font-weight: 700; color: var(--text-primary);">{{ m.course_name }}</div>
                         <div style="font-size: 0.78rem; color: var(--student-primary); font-family: var(--font-mono);">{{ m.course_code }}</div>
                     </td>
+                    <td><strong style="color: #a855f7; font-family: var(--font-mono);">{{ m.credits|default(4) }}</strong></td>
                     <td><strong>{{ m.cat1 }}</strong></td>
                     <td><strong>{{ m.cat2 }}</strong></td>
                     <td>{{ m.quiz }}</td>
@@ -90,7 +105,13 @@
                     </td>
                     <td><strong style="font-family: var(--font-mono);">{{ m.grade_points }}</strong></td>
                     <td>
-                        <span class="badge badge-green">PASS</span>
+                        <span class="badge badge-green">{{ m.status|default('PASS') }}</span>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="11" style="text-align: center; color: var(--text-muted); padding: 32px;">
+                        <em>Academic records not available yet.</em>
                     </td>
                 </tr>
                 {% endfor %}
@@ -102,36 +123,27 @@
 <!-- Semester GPA History Card -->
 <section class="content-card" style="margin-top: 20px;">
     <div class="card-header-row">
-        <h2 class="card-heading"><span>📜</span> Semester GPA Progression History</h2>
-        <span class="badge badge-purple">8 Semesters Program</span>
+        <h2 class="card-heading"><span>📜</span> Semester Academic Summary</h2>
+        <span class="badge badge-purple">Official Transcript</span>
     </div>
 
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 14px; text-align: center;">
-        <div class="stat-box">
-            <div class="stat-box-label">Semester 1</div>
-            <div class="stat-box-num" style="color: #38bdf8;">8.50</div>
-            <span style="font-size: 0.72rem; color: #34d399;">22 Credits</span>
-        </div>
-        <div class="stat-box">
-            <div class="stat-box-label">Semester 2</div>
-            <div class="stat-box-num" style="color: #38bdf8;">8.65</div>
-            <span style="font-size: 0.72rem; color: #34d399;">24 Credits</span>
-        </div>
-        <div class="stat-box">
-            <div class="stat-box-label">Semester 3</div>
-            <div class="stat-box-num" style="color: #38bdf8;">8.80</div>
-            <span style="font-size: 0.72rem; color: #34d399;">22 Credits</span>
-        </div>
-        <div class="stat-box">
-            <div class="stat-box-label">Semester 4</div>
-            <div class="stat-box-num" style="color: #38bdf8;">8.90</div>
-            <span style="font-size: 0.72rem; color: #34d399;">24 Credits</span>
-        </div>
+    {% if student.cgpa is not none %}
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px; text-align: center;">
         <div class="stat-box" style="border: 1px solid var(--student-primary); background: rgba(56,189,248,0.1);">
-            <div class="stat-box-label" style="color: #38bdf8;">Semester 5 (Current)</div>
-            <div class="stat-box-num" style="color: #34d399;">8.90</div>
-            <span style="font-size: 0.72rem; color: #38bdf8;">20 Credits</span>
+            <div class="stat-box-label" style="color: #38bdf8;">Semester {{ student.semester|default(1) }} (Active)</div>
+            <div class="stat-box-num" style="color: #34d399;">{{ student.sgpa }}</div>
+            <span style="font-size: 0.72rem; color: #38bdf8;">{{ student.earned_credits|default(0) }} Earned Credits</span>
+        </div>
+        <div class="stat-box">
+            <div class="stat-box-label">Cumulative CGPA</div>
+            <div class="stat-box-num" style="color: #38bdf8;">{{ student.cgpa }}</div>
+            <span style="font-size: 0.72rem; color: #34d399;">Scale: 10.0</span>
         </div>
     </div>
+    {% else %}
+    <div style="text-align: center; color: var(--text-muted); padding: 24px;">
+        <em>Academic records not available yet.</em>
+    </div>
+    {% endif %}
 </section>
 {% endblock %}

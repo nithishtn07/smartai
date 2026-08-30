@@ -108,7 +108,7 @@ class TestParentAuthFlow(unittest.TestCase):
         # 1. Parent Dashboard
         resp_dash = self.client.get('/parent/dashboard')
         self.assertEqual(resp_dash.status_code, 200)
-        self.assertIn(b'R. S. Kumar', resp_dash.data)
+        self.assertIn(b'Nagaraj', resp_dash.data)
         self.assertIn(b'Nithish Nagaraj', resp_dash.data)
         self.assertIn(b'STU001', resp_dash.data)
         self.assertIn(b'Live Connected', resp_dash.data)

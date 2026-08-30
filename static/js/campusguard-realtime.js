@@ -37,8 +37,8 @@
         toast.innerHTML = `
             <div class="toast-icon">${icon}</div>
             <div class="toast-content">
-                <div class="toast-title">${title}</div>
-                <div class="toast-message">${message}</div>
+                <div class="toast-title">${escapeHtml(title)}</div>
+                <div class="toast-message">${escapeHtml(message)}</div>
             </div>
             <button class="toast-close" onclick="this.parentElement.remove()">✕</button>
         `;
@@ -105,8 +105,11 @@
                     else if (n.category === 'Attendance') catIcon = '📊';
                     else if (n.category === 'Academic') catIcon = '📚';
                     else if (n.category === 'Fees') catIcon = '💳';
+                    else if (n.category === 'Timetable') catIcon = '📅';
                     else if (n.category === 'Leave') catIcon = '🏢';
                     else if (n.category === 'Message') catIcon = '💬';
+
+                    let actionLinkHtml = n.action_url ? `<a href="${n.action_url}" style="color: #38bdf8; font-size: 0.76rem; font-weight: 700; margin-left: 8px;">Action →</a>` : '';
 
                     return `
                         <div class="notif-item ${n.is_read ? '' : 'unread'}" onclick="markNotificationRead(${n.id}, this)">
@@ -116,7 +119,7 @@
                                     <span>${escapeHtml(n.title)}</span>
                                 </div>
                                 <div class="notif-item-desc">${escapeHtml(n.message)}</div>
-                                <div class="notif-item-time">${escapeHtml(n.created_at || '')}</div>
+                                <div class="notif-item-time">${escapeHtml(n.created_at || '')} ${actionLinkHtml}</div>
                             </div>
                         </div>
                     `;

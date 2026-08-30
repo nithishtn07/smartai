@@ -36,7 +36,7 @@
             <tbody>
                 {% for r in requests %}
                 <tr>
-                    <td><strong style="font-family: var(--font-mono); color: #38bdf8;">REQ-{{ r.id }}942</strong></td>
+                    <td><strong style="font-family: var(--font-mono); color: #38bdf8;">REQ-00{{ r.id }}</strong></td>
                     <td><strong>{{ r.request_type }}</strong></td>
                     <td style="font-size: 0.85rem; color: var(--text-secondary);">{{ r.details }}</td>
                     <td style="font-size: 0.82rem; color: var(--text-muted); font-family: var(--font-mono);">{{ r.created_at[:16] }}</td>

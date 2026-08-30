@@ -3,6 +3,14 @@ from datetime import timedelta
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
+try:
+    from dotenv import load_dotenv
+    env_file = os.path.join(BASE_DIR, '.env')
+    if os.path.exists(env_file):
+        load_dotenv(env_file)
+except ImportError:
+    pass
+
 class BaseConfig:
     SECRET_KEY = os.environ.get(
         'CAMPUSGUARD_SECRET_KEY', 
@@ -26,7 +34,7 @@ class DevelopmentConfig(BaseConfig):
 class ProductionConfig(BaseConfig):
     DEBUG = False
     # Require strong secret key in production
-    SECRET_KEY = os.environ.get('CAMPUSGUARD_SECRET_KEY', 'prod-fallback-must-be-overridden-in-env')
+    SECRET_KEY = os.environ.get('CAMPUSGUARD_SECRET_KEY')
 
 
 class TestingConfig(BaseConfig):
@@ -44,4 +52,7 @@ config_by_name = {
 
 def get_config():
     env = os.environ.get('FLASK_ENV', 'development').lower()
-    return config_by_name.get(env, DevelopmentConfig)
+    config = config_by_name.get(env, DevelopmentConfig)
+    if env == 'production' and not config.SECRET_KEY:
+        raise RuntimeError("CAMPUSGUARD_SECRET_KEY environment variable is required in production.")
+    return config

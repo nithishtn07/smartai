@@ -15,7 +15,7 @@
     </div>
 
     <div>
-        <span class="badge badge-indigo" style="font-size: 0.85rem; padding: 6px 14px;">CGPA: {{ student.cgpa|default(8.92) }}</span>
+        <span class="badge badge-indigo" style="font-size: 0.85rem; padding: 6px 14px;">CGPA: {{ student.cgpa if student.cgpa is not none else 'N/A' }}</span>
     </div>
 </div>
 

@@ -58,7 +58,7 @@ def test_live_parent_flow():
         ('/parent/notifications', ['Parent Notification Center', 'Emergency &amp; Safety', 'Announcements']),
         ('/parent/safety', ['Campus Safety &amp; Emergency Command', 'Campus Security Command Center', 'Helplines']),
         ('/parent/messages', ['Parent-Faculty Communication Center', 'Dr. Ramesh Rao', 'Compose Message']),
-        ('/parent/profile', ['Parent Profile &amp; Account Settings', 'R. S. Kumar', 'Linked Ward Profile'])
+        ('/parent/profile', ['Parent Profile &amp; Account Settings', 'Nagaraj', 'Linked Ward Profile'])
     ]
 
     for route, expected_snippets in routes_to_test:

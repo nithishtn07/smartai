@@ -11,43 +11,106 @@
         <p style="color: var(--text-secondary); font-size: 0.88rem;">Tuition, hostel, transport dues, payment tracking, and receipt issuance.</p>
     </div>
 
-    <button type="button" class="btn-primary" onclick="document.getElementById('add-fee-modal').style.display='flex'" style="background: linear-gradient(135deg, #6366f1, #4f46e5); padding: 10px 18px; font-size: 0.88rem;">
+    <button type="button" class="btn-primary" onclick="document.getElementById('add-fee-modal').style.display='flex'" style="background: linear-gradient(135deg, #6366f1, #4f46e5); padding: 10px 20px; font-size: 0.88rem; font-weight: 700;">
         <span>+</span> Issue Fee Invoice
     </button>
 </div>
 
 <!-- Financial KPI Summary Cards -->
-<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; margin-bottom: 24px;">
-    <div style="background: rgba(14, 19, 32, 0.8); border: 1px solid var(--glass-border); border-radius: 16px; padding: 20px;">
-        <div style="color: var(--text-muted); font-size: 0.82rem; font-weight: 700;">TOTAL BILLED</div>
-        <div style="font-size: 1.6rem; font-weight: 800; color: #fff; margin-top: 6px;">₹{{ "{:,.0f}".format(total_billed|default(0)) }}</div>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px;">
+    <div style="background: rgba(14, 19, 32, 0.85); border: 1px solid var(--glass-border); border-radius: 16px; padding: 18px;">
+        <div style="color: var(--text-muted); font-size: 0.78rem; font-weight: 700; text-transform: uppercase;">Total Billed</div>
+        <div style="font-size: 1.6rem; font-weight: 800; color: #fff; margin-top: 4px; font-family: var(--font-mono);">
+            ₹{{ "{:,.0f}".format(total_billed|default(0)) }}
+        </div>
+        <div style="font-size: 0.72rem; color: var(--text-secondary); margin-top: 2px;">Campus Invoices</div>
     </div>
-    <div style="background: rgba(14, 19, 32, 0.8); border: 1px solid var(--glass-border); border-radius: 16px; padding: 20px;">
-        <div style="color: var(--text-muted); font-size: 0.82rem; font-weight: 700;">TOTAL COLLECTED</div>
-        <div style="font-size: 1.6rem; font-weight: 800; color: #34d399; margin-top: 6px;">₹{{ "{:,.0f}".format(total_collected|default(0)) }}</div>
+
+    <div style="background: rgba(14, 19, 32, 0.85); border: 1px solid var(--glass-border); border-radius: 16px; padding: 18px;">
+        <div style="color: var(--text-muted); font-size: 0.78rem; font-weight: 700; text-transform: uppercase;">Total Collected</div>
+        <div style="font-size: 1.6rem; font-weight: 800; color: #34d399; margin-top: 4px; font-family: var(--font-mono);">
+            ₹{{ "{:,.0f}".format(total_collected|default(0)) }}
+        </div>
+        <div style="font-size: 0.72rem; color: #34d399; margin-top: 2px;">✓ Verified Cleared</div>
     </div>
-    <div style="background: rgba(14, 19, 32, 0.8); border: 1px solid var(--glass-border); border-radius: 16px; padding: 20px;">
-        <div style="color: var(--text-muted); font-size: 0.82rem; font-weight: 700;">PENDING RECEIVABLES</div>
-        <div style="font-size: 1.6rem; font-weight: 800; color: #fbbf24; margin-top: 6px;">₹{{ "{:,.0f}".format(total_pending|default(0)) }}</div>
+
+    <div style="background: rgba(14, 19, 32, 0.85); border: 1px solid var(--glass-border); border-radius: 16px; padding: 18px;">
+        <div style="color: var(--text-muted); font-size: 0.78rem; font-weight: 700; text-transform: uppercase;">Pending Balance</div>
+        <div style="font-size: 1.6rem; font-weight: 800; color: #fbbf24; margin-top: 4px; font-family: var(--font-mono);">
+            ₹{{ "{:,.0f}".format(total_pending|default(0)) }}
+        </div>
+        <div style="font-size: 0.72rem; color: var(--text-secondary); margin-top: 2px;">Outstanding</div>
+    </div>
+
+    <div style="background: rgba(14, 19, 32, 0.85); border: 1px solid var(--glass-border); border-radius: 16px; padding: 18px;">
+        <div style="color: var(--text-muted); font-size: 0.78rem; font-weight: 700; text-transform: uppercase;">Overdue Amount</div>
+        <div style="font-size: 1.6rem; font-weight: 800; color: #f87171; margin-top: 4px; font-family: var(--font-mono);">
+            ₹{{ "{:,.0f}".format(overdue_amount|default(0)) }}
+        </div>
+        <div style="font-size: 0.72rem; color: #f87171; margin-top: 2px;">🔴 {{ overdue_count|default(0) }} Overdue Invoices</div>
+    </div>
+
+    <div style="background: rgba(14, 19, 32, 0.85); border: 1px solid var(--glass-border); border-radius: 16px; padding: 18px;">
+        <div style="color: var(--text-muted); font-size: 0.78rem; font-weight: 700; text-transform: uppercase;">Today's Collections</div>
+        <div style="font-size: 1.6rem; font-weight: 800; color: #818cf8; margin-top: 4px; font-family: var(--font-mono);">
+            ₹{{ "{:,.0f}".format(today_collected|default(0)) }}
+        </div>
+        <div style="font-size: 0.72rem; color: #818cf8; margin-top: 2px;">{{ payments_today_count|default(0) }} Payments Processed</div>
     </div>
 </div>
 
+<!-- Search and Filter Controls -->
+<div style="background: rgba(14, 19, 32, 0.8); border: 1px solid var(--glass-border); border-radius: 16px; padding: 16px 20px; margin-bottom: 24px;">
+    <form method="GET" action="{{ url_for('admin.admin_fees') }}" style="display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: space-between;">
+        <div style="display: flex; flex-wrap: wrap; gap: 12px; flex: 1; min-width: 300px;">
+            <input type="text" name="search" class="form-input" placeholder="🔍 Search student name, reg no, fee type, receipt..." 
+                   value="{{ search_query }}" style="flex: 1; min-width: 220px; font-size: 0.85rem;">
+
+            <select name="status" class="form-select" onchange="this.form.submit()" style="width: auto; min-width: 140px; font-size: 0.85rem;">
+                <option value="ALL" {% if status_filter == 'ALL' %}selected{% endif %}>Status: All</option>
+                <option value="PENDING" {% if status_filter == 'PENDING' %}selected{% endif %}>Pending</option>
+                <option value="PARTIAL" {% if status_filter == 'PARTIAL' %}selected{% endif %}>Partial</option>
+                <option value="OVERDUE" {% if status_filter == 'OVERDUE' %}selected{% endif %}>Overdue</option>
+                <option value="PAID" {% if status_filter == 'PAID' %}selected{% endif %}>Paid</option>
+            </select>
+
+            <select name="fee_type" class="form-select" onchange="this.form.submit()" style="width: auto; min-width: 160px; font-size: 0.85rem;">
+                <option value="ALL" {% if fee_type_filter == 'ALL' %}selected{% endif %}>Category: All</option>
+                <option value="Tuition" {% if 'Tuition' in fee_type_filter %}selected{% endif %}>Tuition Fee</option>
+                <option value="Hostel" {% if 'Hostel' in fee_type_filter %}selected{% endif %}>Hostel &amp; Mess</option>
+                <option value="Examination" {% if 'Examination' in fee_type_filter %}selected{% endif %}>Examination Fee</option>
+                <option value="Library" {% if 'Library' in fee_type_filter %}selected{% endif %}>Library Fee</option>
+                <option value="Transport" {% if 'Transport' in fee_type_filter %}selected{% endif %}>Transport Fee</option>
+            </select>
+        </div>
+
+        <div style="display: flex; gap: 8px;">
+            <button type="submit" class="btn-primary" style="padding: 8px 16px; font-size: 0.85rem;">Filter</button>
+            <a href="{{ url_for('admin.admin_fees') }}" class="btn-secondary" style="padding: 8px 14px; font-size: 0.85rem; text-decoration: none;">Reset</a>
+        </div>
+    </form>
+</div>
+
 <!-- Fees Table -->
-<div style="background: rgba(14, 19, 32, 0.85); border: 1px solid var(--glass-border); border-radius: 18px; padding: 24px;">
+<div style="background: rgba(14, 19, 32, 0.85); border: 1px solid var(--glass-border); border-radius: 18px; padding: 24px; margin-bottom: 24px;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
-        <h3 style="font-size: 1.1rem; font-weight: 700; color: #fff;">Student Fee Records ({{ fees|length }})</h3>
-        <span class="badge badge-purple">ERP Payment Ledger</span>
+        <div>
+            <h3 style="font-size: 1.15rem; font-weight: 700; color: #fff; margin: 0;">Student Fee Invoices ({{ fees|length }})</h3>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin: 2px 0 0;">Manage itemized fee structures, due dates, and manual payment reconciliations.</p>
+        </div>
+        <span class="badge badge-purple">ERP Financial Ledger</span>
     </div>
 
     <div class="table-responsive">
-        <table class="data-table" style="width: 100%; border-collapse: collapse; font-size: 0.88rem;">
+        <table class="data-table" style="width: 100%; border-collapse: collapse; font-size: 0.88rem; vertical-align: middle;">
             <thead>
                 <tr style="border-bottom: 1px solid var(--glass-border); text-align: left; color: var(--text-muted);">
                     <th style="padding: 12px 10px;">Student Name</th>
                     <th style="padding: 12px 10px;">Reg No</th>
                     <th style="padding: 12px 10px;">Fee Type</th>
                     <th style="padding: 12px 10px;">Amount</th>
-                    <th style="padding: 12px 10px;">Paid Amount</th>
+                    <th style="padding: 12px 10px;">Paid</th>
+                    <th style="padding: 12px 10px;">Pending</th>
                     <th style="padding: 12px 10px;">Due Date</th>
                     <th style="padding: 12px 10px;">Status</th>
                     <th style="padding: 12px 10px; text-align: right;">Action</th>
@@ -55,32 +118,113 @@
             </thead>
             <tbody>
                 {% for f in fees %}
+                {% set pending = f.amount - f.paid_amount %}
                 <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.04);">
                     <td style="padding: 14px 10px; font-weight: 700; color: #fff;">{{ f.student_name }}</td>
                     <td style="padding: 14px 10px; font-family: var(--font-mono); color: #818cf8;">{{ f.register_number }}</td>
-                    <td style="padding: 14px 10px; color: var(--text-primary); font-weight: 600;">{{ f.fee_type }}</td>
-                    <td style="padding: 14px 10px; color: #fff;">₹{{ "{:,.0f}".format(f.amount) }}</td>
-                    <td style="padding: 14px 10px; color: #34d399;">₹{{ "{:,.0f}".format(f.paid_amount) }}</td>
-                    <td style="padding: 14px 10px; color: var(--text-secondary); font-size: 0.82rem;">{{ f.due_date }}</td>
-                    <td style="padding: 14px 10px;">
-                        <span class="badge {% if f.status == 'Paid' %}badge-emerald{% elif f.status == 'Partial' %}badge-amber{% else %}badge-rose{% endif %}">
-                            {{ f.status }}
-                        </span>
+                    <td style="padding: 14px 10px; color: var(--text-primary); font-weight: 600;">
+                        {{ f.fee_type }}
+                        <div style="font-size: 0.72rem; color: var(--text-muted);">Sem {{ f.semester|default(5) }} • {{ f.academic_year|default('2026-2027') }}</div>
                     </td>
-                    <td style="padding: 14px 10px; text-align: right;">
-                        {% if f.status != 'Paid' %}
-                        <form method="POST" action="{{ url_for('admin_fees_mark_paid', fee_id=f.id) }}" style="display: inline;">
-                            <button type="submit" class="btn-primary" style="padding: 6px 12px; font-size: 0.78rem; background: #10b981;">
+                    <td style="padding: 14px 10px; color: #fff; font-family: var(--font-mono); font-weight: 700;">₹{{ "{:,.2f}".format(f.amount) }}</td>
+                    <td style="padding: 14px 10px; color: #34d399; font-family: var(--font-mono);">₹{{ "{:,.2f}".format(f.paid_amount) }}</td>
+                    <td style="padding: 14px 10px; font-family: var(--font-mono); font-weight: 700; color: {% if pending > 0 %}#fbbf24{% else %}#64748b{% endif %};">
+                        ₹{{ "{:,.2f}".format(pending) }}
+                    </td>
+                    <td style="padding: 14px 10px; font-size: 0.82rem; font-family: var(--font-mono); color: {% if f.is_overdue %}#f87171{% else %}var(--text-secondary){% endif %};">
+                        {{ f.due_date }}
+                        {% if f.is_overdue %}
+                            <div style="font-size: 0.7rem; color: #f87171; font-weight: 700;">🔴 Overdue</div>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 14px 10px;">
+                        {% if f.calculated_status == 'PAID' or f.status in ['Paid', 'PAID'] %}
+                            <span class="badge badge-emerald">✓ PAID</span>
+                        {% elif f.calculated_status == 'OVERDUE' %}
+                            <span class="badge badge-rose">OVERDUE</span>
+                        {% elif f.calculated_status == 'PARTIAL' or f.status in ['Partial', 'PARTIAL'] %}
+                            <span class="badge badge-amber">PARTIAL</span>
+                        {% else %}
+                            <span class="badge badge-indigo">PENDING</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 14px 10px; text-align: right; white-space: nowrap;">
+                        {% if pending > 0 %}
+                        <form method="POST" action="{{ url_for('admin.admin_fees_mark_paid', fee_id=f.id) }}" style="display: inline;" onsubmit="return confirm('Record complete cash/cheque payment for this fee?');">
+                            <button type="submit" class="btn-primary" style="padding: 4px 8px; font-size: 0.75rem; background: #10b981;">
                                 ✓ Mark Paid
                             </button>
                         </form>
-                        {% else %}
-                        <span style="color: #34d399; font-size: 0.78rem;">Receipt Issued</span>
+                        {% endif %}
+
+                        <button type="button" class="btn-secondary" style="padding: 4px 8px; font-size: 0.75rem;" 
+                                onclick="openEditFeeModal('{{ f.id }}', '{{ f.fee_type|escape }}', '{{ f.amount }}', '{{ f.due_date }}', '{{ f.academic_year }}', '{{ f.semester }}')">
+                            ✏️ Edit
+                        </button>
+
+                        {% if f.paid_amount == 0 %}
+                        <form method="POST" action="{{ url_for('admin.admin_fees_cancel', fee_id=f.id) }}" style="display: inline;" onsubmit="return confirm('Cancel and remove this unpaid invoice?');">
+                            <button type="submit" class="btn-secondary" style="padding: 4px 8px; font-size: 0.75rem; color: #f87171; border-color: rgba(248,113,113,0.3);">
+                                ✕
+                            </button>
+                        </form>
                         {% endif %}
                     </td>
                 </tr>
                 {% else %}
-                <tr><td colspan="8" style="text-align: center; padding: 30px; color: var(--text-muted);">No fee records found.</td></tr>
+                <tr><td colspan="9" style="text-align: center; padding: 30px; color: var(--text-muted);">No fee records found.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Verified Payment Transactions Table -->
+<div style="background: rgba(14, 19, 32, 0.85); border: 1px solid var(--glass-border); border-radius: 18px; padding: 24px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
+        <div>
+            <h3 style="font-size: 1.15rem; font-weight: 700; color: #fff; margin: 0;">Verified Payment Transactions ({{ transactions|length }})</h3>
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin: 2px 0 0;">Permanent audit transactions and official payment receipts.</p>
+        </div>
+        <span class="badge badge-emerald">Secured Gateway Receipts</span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="data-table" style="width: 100%; border-collapse: collapse; font-size: 0.88rem; vertical-align: middle;">
+            <thead>
+                <tr style="border-bottom: 1px solid var(--glass-border); text-align: left; color: var(--text-muted);">
+                    <th style="padding: 12px 10px;">Transaction ID</th>
+                    <th style="padding: 12px 10px;">Student Name</th>
+                    <th style="padding: 12px 10px;">Reg No</th>
+                    <th style="padding: 12px 10px;">Fee Type</th>
+                    <th style="padding: 12px 10px;">Amount</th>
+                    <th style="padding: 12px 10px;">Payment Method</th>
+                    <th style="padding: 12px 10px;">Receipt No</th>
+                    <th style="padding: 12px 10px;">Payment Date</th>
+                    <th style="padding: 12px 10px;">Status</th>
+                    <th style="padding: 12px 10px; text-align: right;">Receipt</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for tx in transactions %}
+                <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.04);">
+                    <td style="padding: 14px 10px; font-family: var(--font-mono); font-weight: 700; color: #818cf8;">{{ tx.transaction_id }}</td>
+                    <td style="padding: 14px 10px; font-weight: 700; color: #fff;">{{ tx.student_name }}</td>
+                    <td style="padding: 14px 10px; font-family: var(--font-mono); color: var(--text-secondary);">{{ tx.register_number }}</td>
+                    <td style="padding: 14px 10px; color: var(--text-primary);">{{ tx.fee_type }}</td>
+                    <td style="padding: 14px 10px; color: #34d399; font-weight: 700; font-family: var(--font-mono);">₹{{ "{:,.2f}".format(tx.amount) }}</td>
+                    <td style="padding: 14px 10px;"><span class="badge badge-indigo">{{ tx.payment_method }}</span></td>
+                    <td style="padding: 14px 10px; font-family: var(--font-mono); color: #c084fc; font-weight: 700;">#{{ tx.receipt_no }}</td>
+                    <td style="padding: 14px 10px; color: var(--text-secondary); font-size: 0.82rem; font-family: var(--font-mono);">{{ tx.paid_at }}</td>
+                    <td style="padding: 14px 10px;"><span class="badge badge-emerald">✓ SUCCESS</span></td>
+                    <td style="padding: 14px 10px; text-align: right;">
+                        <a href="{{ url_for('admin.admin_fees_receipt', receipt_no=tx.receipt_no) }}" class="btn-secondary" style="padding: 4px 10px; font-size: 0.78rem; text-decoration: none;">
+                            📄 View
+                        </a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="10" style="text-align: center; padding: 30px; color: var(--text-muted);">No payment transactions available.</td></tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -88,50 +232,130 @@
 </div>
 
 <!-- Add Fee Invoice Modal -->
-<div id="add-fee-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center; padding: 20px;">
-    <div style="background: #0e1320; border: 1px solid var(--parent-border); border-radius: 20px; max-width: 500px; width: 100%; padding: 28px; box-shadow: 0 25px 60px rgba(0,0,0,0.6);">
+<div id="add-fee-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(4px);">
+    <div style="background: #0e1320; border: 1px solid var(--glass-border); border-radius: 20px; max-width: 520px; width: 100%; padding: 28px; box-shadow: 0 25px 60px rgba(0,0,0,0.6);">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <h3 style="font-size: 1.25rem; font-weight: 800; color: #fff;">💰 Issue New Fee Invoice</h3>
+            <h3 style="font-size: 1.25rem; font-weight: 800; color: #fff; margin: 0;">💰 Issue Fee Invoice</h3>
             <button type="button" onclick="document.getElementById('add-fee-modal').style.display='none'" style="background: none; border: none; color: var(--text-muted); font-size: 1.3rem; cursor: pointer;">✕</button>
         </div>
 
-        <form method="POST" action="{{ url_for('admin_fees_create') }}">
+        <form method="POST" action="{{ url_for('admin.admin_fees_create') }}">
             <div style="margin-bottom: 14px;">
-                <label class="form-label">Student</label>
-                <select name="student_id" class="form-input" required>
-                    {% for stu in all_students %}
-                        <option value="{{ stu.id }}">{{ stu.name }} ({{ stu.register_number }})</option>
-                    {% endfor %}
+                <label class="form-label" style="font-size: 0.82rem;">Select Target Student / Group</label>
+                <select name="student_id" class="form-select" required style="font-weight: 600;">
+                    <optgroup label="Batch Issuance">
+                        <option value="ALL">🌍 ALL Active Students (Campus-wide)</option>
+                        {% for d in departments %}
+                        <option value="DEPT_{{ d.department }}">🏛️ All {{ d.department }} Students</option>
+                        {% endfor %}
+                    </optgroup>
+                    <optgroup label="Individual Students">
+                        {% for s in students %}
+                        <option value="{{ s.id }}">{{ s.name }} ({{ s.register_number }}) - {{ s.department }}</option>
+                        {% endfor %}
+                    </optgroup>
                 </select>
             </div>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
                 <div>
-                    <label class="form-label">Fee Category</label>
-                    <select name="fee_type" class="form-input" required>
-                        <option value="Tuition Fee (Fall 2026)">Tuition Fee</option>
+                    <label class="form-label" style="font-size: 0.82rem;">Fee Category</label>
+                    <select name="fee_type" class="form-select" required>
+                        <option value="Tuition Fee">Tuition Fee</option>
                         <option value="Hostel & Mess Fee">Hostel &amp; Mess Fee</option>
-                        <option value="Laboratory & Research Fee">Lab &amp; Research Fee</option>
                         <option value="Examination Fee">Examination Fee</option>
+                        <option value="Library & Tech Fee">Library &amp; Tech Fee</option>
+                        <option value="Transport Fee">Transport Fee</option>
+                        <option value="Laboratory Fee">Laboratory Fee</option>
+                        <option value="Other Dues">Other Dues</option>
                     </select>
                 </div>
                 <div>
-                    <label class="form-label">Amount (₹)</label>
-                    <input type="number" name="amount" class="form-input" placeholder="e.g. 85000" required>
+                    <label class="form-label" style="font-size: 0.82rem;">Amount (₹)</label>
+                    <input type="number" step="0.01" min="1" name="amount" class="form-input" value="25000" required>
                 </div>
             </div>
 
-            <div style="margin-bottom: 20px;">
-                <label class="form-label">Payment Due Date</label>
-                <input type="date" name="due_date" class="form-input" required>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+                <div>
+                    <label class="form-label" style="font-size: 0.82rem;">Due Date</label>
+                    <input type="date" name="due_date" class="form-input" value="2026-09-30" required>
+                </div>
+                <div>
+                    <label class="form-label" style="font-size: 0.82rem;">Academic Semester</label>
+                    <select name="semester" class="form-select">
+                        <option value="1">Semester 1</option>
+                        <option value="2">Semester 2</option>
+                        <option value="3">Semester 3</option>
+                        <option value="4">Semester 4</option>
+                        <option value="5" selected>Semester 5</option>
+                        <option value="6">Semester 6</option>
+                    </select>
+                </div>
             </div>
 
-            <div style="display: flex; justify-content: flex-end; gap: 10px;">
-                <button type="button" onclick="document.getElementById('add-fee-modal').style.display='none'" class="btn-secondary">Cancel</button>
-                <button type="submit" class="btn-primary" style="background: linear-gradient(135deg, #6366f1, #4f46e5);">Issue Fee Invoice</button>
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+                <button type="button" class="btn-secondary" onclick="document.getElementById('add-fee-modal').style.display='none'">Cancel</button>
+                <button type="submit" class="btn-primary" style="background: linear-gradient(135deg, #6366f1, #4f46e5); font-weight: 700;">Issue Invoice</button>
             </div>
         </form>
     </div>
 </div>
+
+<!-- Edit Fee Modal -->
+<div id="edit-fee-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(4px);">
+    <div style="background: #0e1320; border: 1px solid var(--glass-border); border-radius: 20px; max-width: 480px; width: 100%; padding: 28px; box-shadow: 0 25px 60px rgba(0,0,0,0.6);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
+            <h3 style="font-size: 1.2rem; font-weight: 800; color: #fff; margin: 0;">✏️ Edit Fee Invoice</h3>
+            <button type="button" onclick="document.getElementById('edit-fee-modal').style.display='none'" style="background: none; border: none; color: var(--text-muted); font-size: 1.3rem; cursor: pointer;">✕</button>
+        </div>
+
+        <form id="edit-fee-form" method="POST" action="">
+            <div style="margin-bottom: 14px;">
+                <label class="form-label" style="font-size: 0.82rem;">Fee Category</label>
+                <input type="text" id="edit_fee_type" name="fee_type" class="form-input" required>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px;">
+                <div>
+                    <label class="form-label" style="font-size: 0.82rem;">Amount (₹)</label>
+                    <input type="number" step="0.01" min="1" id="edit_fee_amount" name="amount" class="form-input" required>
+                </div>
+                <div>
+                    <label class="form-label" style="font-size: 0.82rem;">Due Date</label>
+                    <input type="date" id="edit_fee_due_date" name="due_date" class="form-input" required>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 18px;">
+                <div>
+                    <label class="form-label" style="font-size: 0.82rem;">Academic Year</label>
+                    <input type="text" id="edit_fee_academic_year" name="academic_year" class="form-input" value="2026-2027">
+                </div>
+                <div>
+                    <label class="form-label" style="font-size: 0.82rem;">Semester</label>
+                    <input type="number" id="edit_fee_semester" name="semester" class="form-input" value="5">
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" class="btn-secondary" onclick="document.getElementById('edit-fee-modal').style.display='none'">Cancel</button>
+                <button type="submit" class="btn-primary" style="background: linear-gradient(135deg, #10b981, #059669); font-weight: 700;">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openEditFeeModal(id, feeType, amount, dueDate, academicYear, semester) {
+    document.getElementById('edit-fee-form').action = '/admin/fees/edit/' + id;
+    document.getElementById('edit_fee_type').value = feeType;
+    document.getElementById('edit_fee_amount').value = parseFloat(amount || 0).toFixed(2);
+    document.getElementById('edit_fee_due_date').value = dueDate || '';
+    document.getElementById('edit_fee_academic_year').value = academicYear || '2026-2027';
+    document.getElementById('edit_fee_semester').value = semester || 5;
+    document.getElementById('edit-fee-modal').style.display = 'flex';
+}
+</script>
 
 {% endblock %}

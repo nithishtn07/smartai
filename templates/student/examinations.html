@@ -58,6 +58,10 @@
                     </td>
                     <td><span class="badge badge-green">Eligible</span></td>
                 </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 32px;">No upcoming examinations scheduled.</td>
+                </tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -70,7 +74,7 @@
         <div class="hall-ticket-card">
             <div class="hall-ticket-header">
                 <div style="font-size: 0.8rem; font-weight: 800; color: #38bdf8; letter-spacing: 0.1em;">CAMPUSGUARD UNIVERSITY CONTROLLER OF EXAMINATIONS</div>
-                <h2 style="font-size: 1.3rem; font-weight: 800; color: white; margin: 4px 0;">SEMESTER 5 EXAMINATION HALL TICKET</h2>
+                <h2 style="font-size: 1.3rem; font-weight: 800; color: white; margin: 4px 0;">SEMESTER {{ student.semester|default(1) }} EXAMINATION HALL TICKET</h2>
                 <div style="font-size: 0.75rem; color: #94a3b8;">ACADEMIC YEAR 2026 • ADMIT CARD</div>
             </div>
 
@@ -98,6 +102,10 @@
                             <td>{{ exam.course_code }}</td>
                             <td style="font-family: var(--font-mono); color: #34d399;">{{ exam.seat_number }}</td>
                             <td style="color: #64748b;">[Verified]</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="4" style="text-align: center; color: var(--text-muted); padding: 20px;">No examination papers registered.</td>
                         </tr>
                         {% endfor %}
                     </tbody>

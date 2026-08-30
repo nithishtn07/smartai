@@ -131,6 +131,10 @@
                             </span>
                         </td>
                     </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 24px;">No subject attendance statistics available.</td>
+                    </tr>
                     {% endfor %}
                 </tbody>
             </table>
@@ -223,6 +227,10 @@
                         </a>
                         {% endif %}
                     </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 32px;">No student attendance compliance records match the filter.</td>
                 </tr>
                 {% endfor %}
             </tbody>

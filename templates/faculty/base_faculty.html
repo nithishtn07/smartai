@@ -22,6 +22,7 @@
     <!-- Universal Real-time & Toast Styles -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/campusguard-toast.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/parent.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/faculty-dashboard.css') }}">
     
     <style>
         :root {
@@ -145,7 +146,10 @@
                     <span>📊</span> <span class="nav-text">Reports &amp; Exports</span>
                 </a>
                 <a href="{{ url_for('faculty_feedback') }}" class="nav-link {% if active_page == 'feedback' %}active{% endif %}" id="nav-feedback">
-                    <span>🎫</span> <span class="nav-text">Feedback / Requests</span>
+                    <span>🎫</span> <span class="nav-text">Helpdesk &amp; Requests</span>
+                </a>
+                <a href="{{ url_for('faculty_safety') }}" class="nav-link {% if active_page == 'safety' %}active{% endif %}" id="nav-safety">
+                    <span>🛡️</span> <span class="nav-text">Campus Safety &amp; SOS</span>
                 </a>
 
                 <!-- 5. ACCOUNT -->
@@ -178,16 +182,21 @@
                     <!-- Connection Status Indicator -->
                     <div class="conn-status-pill">
                         <span class="conn-dot"></span>
-                        <span>Live Connected</span>
+                        <span>Live ERP Sync</span>
                     </div>
 
                     <!-- Department Pill -->
                     <div class="hide-mobile" style="font-size: 0.82rem; color: var(--text-muted); padding-left: 12px; border-left: 1px solid var(--glass-border);">
-                        <span>{{ faculty.department if faculty else 'Dept of Computer Science & Engineering' }}</span>
+                        <span>🏛️ {{ faculty.department if faculty else 'Dept of Computer Science & Engineering' }}</span>
                     </div>
                 </div>
 
                 <div class="topbar-right">
+                    <!-- Quick AI Assistant Trigger in Header -->
+                    <button type="button" class="btn-secondary hide-mobile" onclick="openFacultyAiModal()" style="padding: 6px 12px; font-size: 0.8rem; border-radius: 99px; display: inline-flex; align-items: center; gap: 6px; border-color: rgba(129, 140, 248, 0.4); color: #c7d2fe;">
+                        <span>🤖</span> <span>Ask AI</span>
+                    </button>
+
                     <!-- Notification Bell with Dropdown -->
                     <div class="notif-bell-wrapper">
                         <button type="button" class="notif-bell-btn" id="notif-bell-btn" aria-label="View notifications">
@@ -208,15 +217,17 @@
                     </div>
 
                     <!-- Faculty User Profile Pill -->
-                    <div class="topbar-user-pill">
-                        <div class="user-avatar" style="background: linear-gradient(135deg, #10b981, #059669);">
-                            {{ faculty.name[:1] if faculty else 'F' }}
+                    <a href="{{ url_for('faculty_profile') }}" style="text-decoration: none;">
+                        <div class="topbar-user-pill">
+                            <div class="user-avatar" style="background: linear-gradient(135deg, #10b981, #059669);">
+                                {{ faculty.name[:1] if faculty else 'F' }}
+                            </div>
+                            <div class="user-info hide-mobile">
+                                <span class="user-name">{{ faculty.name if faculty else 'Faculty Advisor' }}</span>
+                                <span class="user-role">ID: {{ faculty.faculty_id if faculty else 'FAC001' }}</span>
+                            </div>
                         </div>
-                        <div class="user-info hide-mobile">
-                            <span class="user-name">{{ faculty.name if faculty else 'Faculty Advisor' }}</span>
-                            <span class="user-role">ID: {{ faculty.faculty_id if faculty else 'FAC001' }}</span>
-                        </div>
-                    </div>
+                    </a>
                 </div>
             </header>
 
@@ -256,13 +267,159 @@
         </div>
     </div>
 
+    <!-- ========================================================================= -->
+    <!-- INTERACTIVE AI FACULTY ASSISTANT MODAL / SLIDING DRAWER -->
+    <!-- ========================================================================= -->
+    <div class="ai-assistant-modal" id="facultyAiModal" aria-hidden="true">
+        <div class="ai-modal-header">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="width: 38px; height: 38px; border-radius: 10px; background: rgba(129, 140, 248, 0.2); border: 1px solid #818cf8; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">
+                    🤖
+                </div>
+                <div>
+                    <div style="font-weight: 800; color: #fff; font-size: 0.95rem;">Ask CampusGuard AI</div>
+                    <div style="font-size: 0.75rem; color: #34d399; display: flex; align-items: center; gap: 5px;">
+                        <span style="width: 6px; height: 6px; border-radius: 50%; background: #34d399; display: inline-block;"></span>
+                        Faculty Academic Assistant
+                    </div>
+                </div>
+            </div>
+            <button type="button" onclick="closeFacultyAiModal()" style="background: none; border: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer; padding: 4px 8px;" aria-label="Close Assistant">
+                ✕
+            </button>
+        </div>
+
+        <div class="ai-modal-chat-body" id="facultyAiChatBody">
+            <div class="chat-bubble ai">
+                👋 Hello <strong>{{ faculty.name if faculty else 'Professor' }}</strong>! I am your AI Faculty Assistant. Ask me anything regarding your assigned classes, attendance thresholds, pending assignments, or student risk analytics.
+            </div>
+
+            <div style="margin-top: 6px;">
+                <div style="font-size: 0.74rem; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700;">Suggested Queries:</div>
+                <div class="ai-chips-wrapper">
+                    <button type="button" class="ai-prompt-chip" onclick="sendFacultyAiPrompt('Which students have attendance below the threshold?')">⚠️ Low Attendance Watchlist</button>
+                    <button type="button" class="ai-prompt-chip" onclick="sendFacultyAiPrompt('Which assignments are pending review?')">📝 Pending Assignments</button>
+                    <button type="button" class="ai-prompt-chip" onclick="sendFacultyAiPrompt('Show my classes today.')">📅 Today\'s Lectures</button>
+                    <button type="button" class="ai-prompt-chip" onclick="sendFacultyAiPrompt('Which students performed poorly in the last exam?')">🎯 Academic Risk Alerts</button>
+                    <button type="button" class="ai-prompt-chip" onclick="sendFacultyAiPrompt('What should I focus on today?')">⚡ Today\'s Agenda & Priorities</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="ai-modal-footer">
+            <form id="facultyAiForm" onsubmit="event.preventDefault(); handleFacultyAiSubmit();" class="ai-input-group">
+                <input type="text" id="facultyAiInput" class="ai-input-field" placeholder="Ask about attendance, courses, grading..." autocomplete="off">
+                <button type="submit" class="btn-primary" style="padding: 10px 16px; border-radius: 10px; background: linear-gradient(135deg, #10b981, #059669); font-weight: 700;">
+                    Send
+                </button>
+            </form>
+        </div>
+    </div>
+
     <!-- Scripts -->
     <script>
         window.CURRENT_USER_ROLE = 'faculty';
         window.CURRENT_USER_ID = {{ faculty.id if faculty else 1 }};
+
+        function openFacultyAiModal(defaultPrompt = '') {
+            const modal = document.getElementById('facultyAiModal');
+            if (modal) {
+                modal.classList.add('open');
+                modal.setAttribute('aria-hidden', 'false');
+                if (defaultPrompt) {
+                    sendFacultyAiPrompt(defaultPrompt);
+                } else {
+                    document.getElementById('facultyAiInput')?.focus();
+                }
+            }
+        }
+
+        function closeFacultyAiModal() {
+            const modal = document.getElementById('facultyAiModal');
+            if (modal) {
+                modal.classList.remove('open');
+                modal.setAttribute('aria-hidden', 'true');
+            }
+        }
+
+        async function handleFacultyAiSubmit() {
+            const input = document.getElementById('facultyAiInput');
+            const text = input ? input.value.trim() : '';
+            if (!text) return;
+            input.value = '';
+            await sendFacultyAiPrompt(text);
+        }
+
+        async function sendFacultyAiPrompt(queryText) {
+            const chatBody = document.getElementById('facultyAiChatBody');
+            if (!chatBody) return;
+
+            // Append user bubble
+            const userBubble = document.createElement('div');
+            userBubble.className = 'chat-bubble user';
+            userBubble.textContent = queryText;
+            chatBody.appendChild(userBubble);
+            chatBody.scrollTop = chatBody.scrollHeight;
+
+            // Append AI thinking bubble
+            const aiBubble = document.createElement('div');
+            aiBubble.className = 'chat-bubble ai';
+            aiBubble.innerHTML = '<em>🤖 Analyzing faculty database records...</em>';
+            chatBody.appendChild(aiBubble);
+            chatBody.scrollTop = chatBody.scrollHeight;
+
+            try {
+                const resp = await fetch('{{ url_for("faculty.faculty_api_ai_insights") }}', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query: queryText })
+                });
+
+                if (resp.ok) {
+                    const data = await resp.json();
+                    let formatted = data.reply || 'No response returned.';
+                    // Simple markdown formatting for bold and bullets
+                    formatted = formatted
+                        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                        .replace(/\n/g, '<br>');
+                    aiBubble.innerHTML = formatted;
+                } else {
+                    aiBubble.innerHTML = '⚠️ Error communicating with AI assistant server. Please try again.';
+                }
+            } catch (err) {
+                aiBubble.innerHTML = '⚠️ Network error communicating with CampusGuard AI.';
+            }
+
+            chatBody.scrollTop = chatBody.scrollHeight;
+        }
+
+        async function markAllNotificationsRead() {
+            try {
+                const resp = await fetch('{{ url_for("faculty.faculty_notifications_read_all") }}', {
+                    method: 'POST',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                const badge = document.getElementById('notif-badge-count');
+                if (badge) {
+                    badge.textContent = '0';
+                    badge.style.display = 'none';
+                }
+                const list = document.getElementById('notif-dropdown-items');
+                if (list) {
+                    list.innerHTML = '<div class="notif-empty-state">All notifications marked as read</div>';
+                }
+                if (window.showCampusToast) {
+                    window.showCampusToast("Notifications Updated", "All faculty notifications marked as read.", "success");
+                }
+            } catch (e) {
+                console.error("Mark read error", e);
+            }
+        }
     </script>
     <script src="{{ url_for('static', filename='js/parent.js') }}"></script>
     <script src="{{ url_for('static', filename='js/campusguard-realtime.js') }}"></script>
     
 </body>
 </html>
+

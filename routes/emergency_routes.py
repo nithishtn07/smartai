@@ -13,7 +13,9 @@ from services.emergency_service import (
     assign_responder,
     add_incident_note,
     calculate_response_times,
-    get_emergency_full_dossier
+    get_emergency_full_dossier,
+    get_student_latest_emergency,
+    get_parent_ward_emergency
 )
 from services.ai_emergency_service import classify_emergency_text
 from services.safety_intelligence import CONFIGURED_ZONES, calculate_location_risk_scores
@@ -132,24 +134,108 @@ def api_emergency_get(emergency_id):
 
 
 # ---------------------------------------------------------------------------
-# 3. API: Get My Active Emergency
+# 3. API: Dedicated Student Emergency Status (Single Authoritative Source)
+# ---------------------------------------------------------------------------
+@emergency_bp.route('/api/student/emergency/status', methods=['GET'])
+def api_student_emergency_status():
+    """
+    Authoritative student emergency status endpoint.
+    Returns the latest active or most recent resolved emergency for the authenticated student.
+    Prevents IDOR and applies anti-cache headers.
+    """
+    user_role = session.get('user_role') or session.get('user_type') or ('student' if session.get('student_id') else None)
+    student_id = session.get('student_id')
+
+    if not student_id:
+        # Allow admin / security / faculty testing if explicitly specified
+        if user_role in ['admin', 'faculty', 'security'] and request.args.get('student_id'):
+            student_id = int(request.args.get('student_id'))
+        else:
+            return jsonify({'success': False, 'has_emergency': False, 'message': 'Authentication required.'}), 401
+
+    conn = get_db_connection()
+    try:
+        data = get_student_latest_emergency(student_id, conn)
+        resp = jsonify(data)
+        resp.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        resp.headers['Pragma'] = 'no-cache'
+        resp.headers['Expires'] = '0'
+        return resp
+    finally:
+        conn.close()
+
+
+# ---------------------------------------------------------------------------
+# 4. API: Dedicated Parent Emergency Status (Linked Ward Source)
+# ---------------------------------------------------------------------------
+@emergency_bp.route('/api/parent/emergency/status', methods=['GET'])
+def api_parent_emergency_status():
+    """
+    Authoritative parent emergency status endpoint for linked ward.
+    Prevents IDOR and applies anti-cache headers.
+    """
+    user_role = session.get('user_role') or session.get('user_type') or ('parent' if session.get('parent_id') else None)
+    parent_id = session.get('parent_id')
+
+    if not parent_id:
+        if user_role in ['admin', 'faculty', 'security'] and request.args.get('parent_id'):
+            parent_id = int(request.args.get('parent_id'))
+        else:
+            return jsonify({'success': False, 'has_emergency': False, 'message': 'Authentication required.'}), 401
+
+    conn = get_db_connection()
+    try:
+        data = get_parent_ward_emergency(parent_id, conn)
+        resp = jsonify(data)
+        resp.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        resp.headers['Pragma'] = 'no-cache'
+        resp.headers['Expires'] = '0'
+        return resp
+    finally:
+        conn.close()
+
+
+# ---------------------------------------------------------------------------
+# 5. API: Get My Active Emergency (Unified Dossier Stream)
 # ---------------------------------------------------------------------------
 @emergency_bp.route('/api/emergency/my-active', methods=['GET'])
 def api_emergency_my_active():
     actor = _get_current_actor()
     conn = get_db_connection()
     try:
-        active = conn.execute("""
-            SELECT * FROM emergencies 
-            WHERE user_id = ? AND user_role = ? AND status != 'RESOLVED' AND status != 'CLOSED' AND status != 'CANCELLED'
-            ORDER BY created_at DESC LIMIT 1
-        """, (actor['id'], actor['role'])).fetchone()
+        if actor['role'] == 'student':
+            res = get_student_latest_emergency(actor['id'], conn)
+            if res['has_emergency']:
+                dossier = get_emergency_full_dossier(res['emergency_id'], conn)
+                status_str = 'active' if res['is_active'] else 'resolved'
+                resp = jsonify({'status': status_str, 'is_active': res['is_active'], 'dossier': dossier, 'emergency': res})
+            else:
+                resp = jsonify({'status': 'none', 'is_active': False, 'active': None})
+        elif actor['role'] == 'parent':
+            res = get_parent_ward_emergency(actor['id'], conn)
+            if res['has_emergency']:
+                dossier = get_emergency_full_dossier(res['emergency_id'], conn)
+                status_str = 'active' if res['is_active'] else 'resolved'
+                resp = jsonify({'status': status_str, 'is_active': res['is_active'], 'dossier': dossier, 'emergency': res})
+            else:
+                resp = jsonify({'status': 'none', 'is_active': False, 'active': None})
+        else:
+            active = conn.execute("""
+                SELECT * FROM emergencies 
+                WHERE user_id = ? AND user_role = ? AND status NOT IN ('RESOLVED', 'CLOSED', 'CANCELLED', 'STAND_DOWN')
+                ORDER BY created_at DESC LIMIT 1
+            """, (actor['id'], actor['role'])).fetchone()
 
-        if not active:
-            return jsonify({'status': 'none', 'active': None})
-        
-        dossier = get_emergency_full_dossier(active['emergency_id'], conn)
-        return jsonify({'status': 'active', 'dossier': dossier})
+            if not active:
+                resp = jsonify({'status': 'none', 'active': None})
+            else:
+                dossier = get_emergency_full_dossier(active['emergency_id'], conn)
+                resp = jsonify({'status': 'active', 'dossier': dossier})
+
+        resp.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        resp.headers['Pragma'] = 'no-cache'
+        resp.headers['Expires'] = '0'
+        return resp
     finally:
         conn.close()
 
@@ -232,6 +318,17 @@ def api_emergency_close(emergency_id):
     return jsonify(res)
 
 
+@emergency_bp.route('/api/emergency/<emergency_id>/stand-down', methods=['POST'])
+@emergency_bp.route('/api/emergency/<emergency_id>/cancel', methods=['POST'])
+def api_emergency_stand_down(emergency_id):
+    actor = _get_current_actor()
+    data = request.get_json() if request.is_json else request.form
+    notes = data.get('notes', f"Emergency stood down as false alarm by {actor['name']} ({actor['role']}). Student marked safe.")
+    res = transition_emergency_status(emergency_id, 'STAND_DOWN', actor['name'], actor['role'], notes)
+    res['is_safe'] = True
+    return jsonify(res)
+
+
 @emergency_bp.route('/api/emergency/<emergency_id>/notes', methods=['POST'])
 def api_emergency_notes(emergency_id):
     actor = _get_current_actor()
@@ -245,18 +342,27 @@ def api_emergency_notes(emergency_id):
 
 
 # ---------------------------------------------------------------------------
-# 5. API: Active Emergencies Stream for Command Center
+# 5. API: Dedicated Admin Active SOS Stream (Single Source of Truth)
 # ---------------------------------------------------------------------------
+@emergency_bp.route('/api/admin/sos/active', methods=['GET'])
 @emergency_bp.route('/api/emergency/active', methods=['GET'])
-def api_emergency_active():
+def api_admin_sos_active():
+    """
+    Returns only currently active SOS emergencies (TRIGGERED, ACKNOWLEDGED, ASSIGNED, EN_ROUTE, ON_SCENE).
+    Includes student profile metadata, location telemetry, and elapsed response times.
+    Applies strict anti-cache headers.
+    """
     conn = get_db_connection()
     try:
         actives = conn.execute("""
-            SELECT e.*, s.register_number 
+            SELECT e.*, e.emergency_id as incident_id, e.reporter_name as student_name,
+                   COALESCE(s.register_number, '') as register_number,
+                   COALESCE(s.phone, e.reporter_phone, '') as student_phone,
+                   e.campus_zone as location
             FROM emergencies e
             LEFT JOIN students s ON (e.user_id = s.id AND e.user_role = 'student')
-            WHERE e.status != 'RESOLVED' AND e.status != 'CLOSED' AND e.status != 'CANCELLED'
-            ORDER BY e.priority_score DESC, e.created_at DESC
+            WHERE e.status IN ('TRIGGERED', 'ACKNOWLEDGED', 'ASSIGNED', 'RESPONDER_ASSIGNED', 'EN_ROUTE', 'ON_SCENE', 'ACTIVE', 'RESPONDING')
+            ORDER BY e.priority_score DESC, e.created_at DESC, e.id DESC
         """).fetchall()
 
         results = []
@@ -265,7 +371,82 @@ def api_emergency_active():
             d['metrics'] = calculate_response_times(d)
             results.append(d)
 
-        return jsonify({'status': 'success', 'count': len(results), 'emergencies': results})
+        resp = jsonify({
+            'status': 'success',
+            'count': len(results),
+            'emergencies': results,
+            'active_sos': results
+        })
+        resp.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        resp.headers['Pragma'] = 'no-cache'
+        resp.headers['Expires'] = '0'
+        return resp
+    finally:
+        conn.close()
+
+
+# ---------------------------------------------------------------------------
+# 5B. API: Dedicated Admin SOS History (Completed / Past Emergencies)
+# ---------------------------------------------------------------------------
+@emergency_bp.route('/api/admin/sos/history', methods=['GET'])
+def api_admin_sos_history():
+    """
+    Returns completed/past SOS emergencies (RESOLVED, CLOSED, STAND_DOWN, CANCELLED).
+    Supports filtering by status, category, severity, and text search across ID, student, and location.
+    Applies strict anti-cache headers.
+    """
+    q_category = request.args.get('category', '').strip()
+    q_severity = request.args.get('severity', '').strip().upper()
+    q_status = request.args.get('status', '').strip().upper()
+    q_search = request.args.get('q', '').strip()
+    limit = min(int(request.args.get('limit', 100)), 200)
+
+    conn = get_db_connection()
+    try:
+        query = """
+            SELECT e.*, e.emergency_id as incident_id, e.reporter_name as student_name,
+                   COALESCE(s.register_number, '') as register_number,
+                   COALESCE(s.phone, e.reporter_phone, '') as student_phone,
+                   e.campus_zone as location
+            FROM emergencies e
+            LEFT JOIN students s ON (e.user_id = s.id AND e.user_role = 'student')
+            WHERE 1=1
+        """
+        params = []
+
+        if q_status:
+            query += " AND e.status = ?"
+            params.append(q_status)
+        else:
+            query += " AND e.status IN ('RESOLVED', 'CLOSED', 'STAND_DOWN', 'CANCELLED')"
+
+        if q_category and q_category.lower() != 'all':
+            query += " AND (e.category LIKE ? OR e.emergency_type LIKE ?)"
+            params.extend([f"%{q_category}%", f"%{q_category}%"])
+
+        if q_severity and q_severity.lower() != 'all':
+            query += " AND e.severity = ?"
+            params.append(q_severity)
+
+        if q_search:
+            query += " AND (e.emergency_id LIKE ? OR e.reporter_name LIKE ? OR s.register_number LIKE ? OR e.campus_zone LIKE ? OR e.description LIKE ?)"
+            params.extend([f"%{q_search}%"] * 5)
+
+        query += " ORDER BY e.created_at DESC, e.id DESC LIMIT ?"
+        params.append(limit)
+
+        rows = conn.execute(query, tuple(params)).fetchall()
+        results = [dict(r) for r in rows]
+
+        resp = jsonify({
+            'status': 'success',
+            'count': len(results),
+            'history': results
+        })
+        resp.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        resp.headers['Pragma'] = 'no-cache'
+        resp.headers['Expires'] = '0'
+        return resp
     finally:
         conn.close()
 

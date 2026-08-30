@@ -25,11 +25,11 @@
         </div>
         <div style="display: flex; align-items: center; gap: 8px; padding: 8px 14px; background: rgba(10, 14, 26, 0.7); border: 1px solid var(--glass-border); border-radius: 10px; font-size: 0.82rem;">
             <span style="color: var(--text-muted);">CGPA:</span>
-            <span style="color: #34d399; font-weight: 800; font-family: var(--font-mono);">{{ student.cgpa|default('8.75') }}</span>
+            <span style="color: #34d399; font-weight: 800; font-family: var(--font-mono);">{{ student.cgpa if student.cgpa is not none else 'N/A' }}</span>
         </div>
         <div style="display: flex; align-items: center; gap: 8px; padding: 8px 14px; background: rgba(10, 14, 26, 0.7); border: 1px solid var(--glass-border); border-radius: 10px; font-size: 0.82rem;">
             <span style="color: var(--text-muted);">SGPA:</span>
-            <span style="color: #c084fc; font-weight: 800; font-family: var(--font-mono);">{{ student.sgpa|default('8.90') }}</span>
+            <span style="color: #c084fc; font-weight: 800; font-family: var(--font-mono);">{{ student.sgpa if student.sgpa is not none else 'N/A' }}</span>
         </div>
     </div>
 </section>
@@ -41,7 +41,12 @@
             <div style="width: 32px; height: 32px; border-radius: 8px; background: linear-gradient(135deg, #0284c7, #38bdf8); display: flex; align-items: center; justify-content: center; font-size: 1.1rem;">🤖</div>
             <h3 style="font-size: 1.05rem; font-weight: 700; color: #38bdf8;">CampusGuard AI — Personalized Campus Briefing</h3>
         </div>
-        <span class="badge badge-purple">Real-Time Synthesis</span>
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <a href="{{ url_for('student_assistant') }}" class="btn-primary" style="padding: 4px 12px; font-size: 0.78rem; text-decoration: none;">
+                💬 Ask Assistant
+            </a>
+            <span class="badge badge-purple">Real-Time Synthesis</span>
+        </div>
     </div>
 
     <div class="ai-insights-list">
@@ -58,30 +63,66 @@
         </div>
         {% endfor %}
     </div>
+
+    {% if briefing.primary_recommendation %}
+    <div style="margin-top: 14px; padding: 12px 16px; background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 10px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+        <div style="display: flex; align-items: center; gap: 10px; font-size: 0.85rem; color: var(--text-primary);">
+            <span style="font-size: 1.1rem;">🎯</span>
+            <span><strong>AI Focus Directive:</strong> {{ briefing.primary_recommendation }}</span>
+        </div>
+        <a href="{{ url_for('student_assistant') }}" style="color: #38bdf8; font-size: 0.82rem; text-decoration: none; font-weight: 700;">
+            Explore Insights →
+        </a>
+    </div>
+    {% endif %}
 </section>
 
 <!-- Emergency SOS Prominent Banner -->
-<section class="content-card" style="border: 1px solid {% if active_sos %}#ef4444{% else %}rgba(239, 68, 68, 0.35){% endif %}; background: linear-gradient(135deg, rgba(239, 68, 68, 0.12) 0%, rgba(153, 27, 27, 0.2) 100%); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 18px;">
+<section id="student-dashboard-sos-banner" class="content-card" style="border: 1px solid {% if active_sos %}#ef4444{% elif latest_sos and not active_sos and latest_sos.status in ['RESOLVED', 'CLOSED'] %}rgba(52, 211, 153, 0.5){% elif latest_sos and not active_sos and latest_sos.status in ['STAND_DOWN', 'CANCELLED'] %}rgba(16, 185, 129, 0.6){% else %}rgba(239, 68, 68, 0.35){% endif %}; background: {% if active_sos %}linear-gradient(135deg, rgba(239, 68, 68, 0.18) 0%, rgba(153, 27, 27, 0.25) 100%){% elif latest_sos and not active_sos and latest_sos.status in ['RESOLVED', 'CLOSED'] %}linear-gradient(135deg, rgba(16, 185, 129, 0.14) 0%, rgba(14, 19, 32, 0.96) 100%){% elif latest_sos and not active_sos and latest_sos.status in ['STAND_DOWN', 'CANCELLED'] %}linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(14, 19, 32, 0.96) 100%){% else %}linear-gradient(135deg, rgba(239, 68, 68, 0.12) 0%, rgba(153, 27, 27, 0.2) 100%){% endif %}; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 18px;">
     <div style="display: flex; align-items: center; gap: 18px;">
-        <div style="font-size: 2rem; width: 54px; height: 54px; background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 14px; display: flex; align-items: center; justify-content: center;">
-            🚨
+        <div style="font-size: 2rem; width: 54px; height: 54px; background: {% if latest_sos and not active_sos and latest_sos.status in ['RESOLVED', 'CLOSED', 'STAND_DOWN', 'CANCELLED'] %}rgba(16, 185, 129, 0.2){% else %}rgba(239, 68, 68, 0.2){% endif %}; border: 1px solid {% if latest_sos and not active_sos and latest_sos.status in ['RESOLVED', 'CLOSED', 'STAND_DOWN', 'CANCELLED'] %}#10b981{% else %}rgba(239, 68, 68, 0.4){% endif %}; border-radius: 14px; display: flex; align-items: center; justify-content: center;">
+            {% if active_sos %}🚨{% elif latest_sos and not active_sos and latest_sos.status in ['STAND_DOWN', 'CANCELLED'] %}🛡️{% elif latest_sos and not active_sos and latest_sos.status in ['RESOLVED', 'CLOSED'] %}✓{% else %}🚨{% endif %}
         </div>
         <div>
-            <h3 style="font-size: 1.15rem; font-weight: 800; color: #fca5a5; margin-bottom: 2px;">
-                {% if active_sos %}EMERGENCY SOS ACTIVE: {{ active_sos.incident_id }}{% else %}Campus Emergency Distress Beacon{% endif %}
+            <h3 style="font-size: 1.15rem; font-weight: 800; color: {% if latest_sos and not active_sos and latest_sos.status in ['RESOLVED', 'CLOSED', 'STAND_DOWN', 'CANCELLED'] %}#6ee7b7{% else %}#fca5a5{% endif %}; margin-bottom: 2px;">
+                {% if active_sos %}
+                    EMERGENCY SOS ACTIVE: {{ active_sos.incident_id }}
+                {% elif latest_sos and not active_sos and latest_sos.status in ['STAND_DOWN', 'CANCELLED'] %}
+                    🟢 Status: Safe (False Alarm Stood Down)
+                {% elif latest_sos and not active_sos and latest_sos.status in ['RESOLVED', 'CLOSED'] %}
+                    ✓ EMERGENCY RESOLVED: {{ latest_sos.incident_id }}
+                {% else %}
+                    Campus Emergency Distress Beacon
+                {% endif %}
             </h3>
             <p style="color: var(--text-secondary); font-size: 0.86rem;">
                 {% if active_sos %}
                     Distress beacon active. Security patrol units are responding to your coordinates.
+                {% elif latest_sos and not active_sos and latest_sos.status in ['STAND_DOWN', 'CANCELLED'] %}
+                    Emergency stood down. You are marked safe. Distress beacon is on standby and ready.
+                {% elif latest_sos and not active_sos and latest_sos.status in ['RESOLVED', 'CLOSED'] %}
+                    Emergency safely resolved. Safety confirmed by Campus Security Command.
                 {% else %}
                     Instant one-touch GPS beacon connected to Campus Quick Response and Medical Units.
                 {% endif %}
             </p>
         </div>
     </div>
-    <a href="{{ url_for('student_emergency') }}" class="btn-danger" style="text-decoration: none;">
-        <span>🚨</span> {% if active_sos %}View Active SOS Timeline{% else %}Emergency SOS{% endif %}
-    </a>
+    <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+        <a href="{{ url_for('student.student_emergency_history') }}" class="btn-secondary" style="font-size: 0.85rem; padding: 10px 16px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+            <span>📋</span> SOS History
+        </a>
+        <a href="{{ url_for('student_emergency') }}" class="{% if active_sos %}btn-danger{% elif latest_sos and not active_sos and latest_sos.status in ['RESOLVED', 'CLOSED'] %}btn-primary{% else %}btn-danger{% endif %}" style="text-decoration: none; {% if latest_sos and not active_sos and latest_sos.status in ['RESOLVED', 'CLOSED'] %}background: linear-gradient(135deg, #10b981 0%, #059669 100%);{% endif %}">
+            <span>{% if active_sos %}🚨{% elif latest_sos and not active_sos and latest_sos.status in ['RESOLVED', 'CLOSED'] %}✓{% else %}🚨{% endif %}</span> 
+            {% if active_sos %}
+                View Active SOS Timeline
+            {% elif latest_sos and not active_sos and latest_sos.status in ['RESOLVED', 'CLOSED'] %}
+                View Resolution Details
+            {% else %}
+                Emergency SOS
+            {% endif %}
+        </a>
+    </div>
 </section>
 
 <!-- Key Academic & Operational Metrics Grid (8 Cards) -->
@@ -104,12 +145,12 @@
     <a href="{{ url_for('student_marks') }}" class="dash-card" style="text-decoration: none; color: inherit; background: var(--bg-card); border: 1px solid var(--glass-border); border-radius: var(--card-radius); padding: 20px; display: flex; flex-direction: column; justify-content: space-between;">
         <div class="dash-card-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
             <div style="font-size: 1.4rem;">📈</div>
-            <span class="badge badge-cyan">SGPA {{ student.sgpa|default('8.90') }}</span>
+            <span class="badge badge-cyan">SGPA {{ student.sgpa if student.sgpa is not none else 'N/A' }}</span>
         </div>
         <div>
             <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--text-primary);">Cumulative CGPA</h4>
-            <div style="font-size: 1.7rem; font-weight: 800; font-family: var(--font-mono); color: #34d399; margin: 4px 0;">{{ student.cgpa|default('8.75') }}</div>
-            <p style="font-size: 0.8rem; color: var(--text-muted);">Earned: 112 / 160 Credits</p>
+            <div style="font-size: 1.7rem; font-weight: 800; font-family: var(--font-mono); color: #34d399; margin: 4px 0;">{{ student.cgpa if student.cgpa is not none else 'N/A' }}</div>
+            <p style="font-size: 0.8rem; color: var(--text-muted);">Earned: {{ student.earned_credits|default(0) }} / {{ student.total_credits|default(160) }} Credits</p>
         </div>
     </a>
 
@@ -122,9 +163,9 @@
         <div>
             <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--text-primary);">Today's Lectures</h4>
             <div style="font-size: 1.2rem; font-weight: 700; color: #38bdf8; margin: 4px 0;">
-                {% if today_classes %}{{ today_classes[0].subject_name }}{% else %}No Lectures{% endif %}
+                {% if today_classes %}{{ today_classes[0].subject_name }}{% else %}No Lectures Scheduled{% endif %}
             </div>
-            <p style="font-size: 0.8rem; color: var(--text-muted);">{% if today_classes %}Hall: {{ today_classes[0].room_number }}{% else %}Self Study Day{% endif %}</p>
+            <p style="font-size: 0.8rem; color: var(--text-muted);">{% if today_classes %}Hall: {{ today_classes[0].room_number }}{% else %}Self Study / Free Period{% endif %}</p>
         </div>
     </a>
 
@@ -132,12 +173,16 @@
     <a href="{{ url_for('student_fees') }}" class="dash-card" style="text-decoration: none; color: inherit; background: var(--bg-card); border: 1px solid var(--glass-border); border-radius: var(--card-radius); padding: 20px; display: flex; flex-direction: column; justify-content: space-between;">
         <div class="dash-card-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
             <div style="font-size: 1.4rem;">💳</div>
-            <span class="badge badge-yellow">Dues Pending</span>
+            {% if pending_fees_total == 0 %}
+                <span class="badge badge-green">All Clear</span>
+            {% else %}
+                <span class="badge badge-yellow">Dues Pending</span>
+            {% endif %}
         </div>
         <div>
             <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--text-primary);">Outstanding Fees</h4>
-            <div style="font-size: 1.7rem; font-weight: 800; font-family: var(--font-mono); color: #fbbf24; margin: 4px 0;">₹{{ pending_fees_total|default('15,000') }}</div>
-            <p style="font-size: 0.8rem; color: var(--text-muted);">Exam Fee Due in 12 Days</p>
+            <div style="font-size: 1.7rem; font-weight: 800; font-family: var(--font-mono); color: #fbbf24; margin: 4px 0;">₹{{ "{:,.0f}".format(pending_fees_total|default(0)) }}</div>
+            <p style="font-size: 0.8rem; color: var(--text-muted);">{% if pending_fees_total == 0 %}Zero pending semester balance{% else %}Outstanding semester balance{% endif %}</p>
         </div>
     </a>
 
@@ -158,12 +203,18 @@
     <a href="{{ url_for('student_examinations') }}" class="dash-card" style="text-decoration: none; color: inherit; background: var(--bg-card); border: 1px solid var(--glass-border); border-radius: var(--card-radius); padding: 20px; display: flex; flex-direction: column; justify-content: space-between;">
         <div class="dash-card-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
             <div style="font-size: 1.4rem;">🎯</div>
-            <span class="badge badge-green">Hall Ticket Ready</span>
+            {% if next_exam %}
+                <span class="badge badge-green">{{ next_exam.session_type }}</span>
+            {% else %}
+                <span class="badge badge-cyan">Schedule Clean</span>
+            {% endif %}
         </div>
         <div>
             <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--text-primary);">Upcoming Exams</h4>
-            <div style="font-size: 1.3rem; font-weight: 700; color: var(--text-primary); margin: 4px 0;">FAT Semester 5</div>
-            <p style="font-size: 0.8rem; color: var(--text-muted);">Venue: Exam Hall 3 (Seat C-14)</p>
+            <div style="font-size: 1.1rem; font-weight: 700; color: var(--text-primary); margin: 4px 0;">
+                {% if next_exam %}{{ next_exam.course_code }} • {{ next_exam.exam_date }}{% else %}No Upcoming Exams{% endif %}
+            </div>
+            <p style="font-size: 0.8rem; color: var(--text-muted);">{% if next_exam %}Venue: {{ next_exam.hall_number }}{% else %}Regular Academic Schedule{% endif %}</p>
         </div>
     </a>
 
@@ -171,12 +222,14 @@
     <a href="{{ url_for('student_placements') }}" class="dash-card" style="text-decoration: none; color: inherit; background: var(--bg-card); border: 1px solid var(--glass-border); border-radius: var(--card-radius); padding: 20px; display: flex; flex-direction: column; justify-content: space-between;">
         <div class="dash-card-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
             <div style="font-size: 1.4rem;">💼</div>
-            <span class="badge badge-purple">AI Score: 85/100</span>
+            <span class="badge badge-purple">{{ placements_count|default(0) }} Drives</span>
         </div>
         <div>
             <h4 style="font-size: 0.95rem; font-weight: 700; color: var(--text-primary);">Placement Drives</h4>
-            <div style="font-size: 1.7rem; font-weight: 800; font-family: var(--font-mono); color: var(--text-primary); margin: 4px 0;">6 Eligible</div>
-            <p style="font-size: 0.8rem; color: var(--text-muted);">Top Package: 24.5 LPA</p>
+            <div style="font-size: 1.4rem; font-weight: 800; font-family: var(--font-mono); color: var(--text-primary); margin: 4px 0;">
+                {% if placements_count %}{{ placements_count }} Active Drives{% else %}No Active Drives{% endif %}
+            </div>
+            <p style="font-size: 0.8rem; color: var(--text-muted);">Career &amp; Placement Services</p>
         </div>
     </a>
 
@@ -217,4 +270,14 @@
         <a href="{{ url_for('student_assistant') }}" class="btn-secondary" style="justify-content: center; color: #38bdf8;">🤖 AI Assistant</a>
     </div>
 </section>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        if (typeof initDashboardEmergencyBannerListener === 'function') {
+            initDashboardEmergencyBannerListener('student');
+        }
+    });
+</script>
 {% endblock %}

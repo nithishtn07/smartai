@@ -72,6 +72,10 @@
                         </span>
                     </td>
                 </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 32px;">No attendance report records found for this criteria.</td>
+                </tr>
                 {% endfor %}
             </tbody>
             {% elif report_type == 'marks' %}
@@ -106,6 +110,10 @@
                     <td style="color: #38bdf8; font-weight: 700;">{{ r.grade_points }}</td>
                     <td><span class="badge badge-green">{{ r.status }}</span></td>
                 </tr>
+                {% else %}
+                <tr>
+                    <td colspan="10" style="text-align: center; color: var(--text-muted); padding: 32px;">No academic marks report records found for this criteria.</td>
+                </tr>
                 {% endfor %}
             </tbody>
             {% else %}
@@ -133,6 +141,10 @@
                     <td style="color: #34d399; font-weight: 700;">{{ r.practical_marks }}</td>
                     <td style="color: #38bdf8; font-weight: 700;">{{ r.viva_marks }}</td>
                     <td><span class="badge badge-green">{{ r.record_status }}</span></td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 32px;">No lab assessment report records found for this criteria.</td>
                 </tr>
                 {% endfor %}
             </tbody>

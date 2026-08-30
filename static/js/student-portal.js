@@ -94,14 +94,109 @@ document.addEventListener('DOMContentLoaded', () => {
     const chatInput = document.getElementById('chat-input');
     const chatMessages = document.getElementById('chat-messages');
     const promptChips = document.querySelectorAll('.prompt-chip');
+    const clearChatBtn = document.getElementById('clear-chat-btn');
+    let sessionContext = {};
 
-    function appendMessage(sender, text) {
+    function escapeHtml(text) {
+        if (!text) return '';
+        const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+        return String(text).replace(/[&<>"']/g, m => map[m]);
+    }
+
+    function formatAiResponse(text) {
+        if (!text) return '';
+        let formatted = escapeHtml(text);
+        // Links: [Label](url)
+        formatted = formatted.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_self" style="color: #38bdf8; font-weight: 700; text-decoration: underline;">$1</a>');
+        // Bold: **text**
+        formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        // Italic / emphasis: *text* or _text_
+        formatted = formatted.replace(/\*(.*?)\*/g, '<em>$1</em>');
+        formatted = formatted.replace(/_(.*?)_/g, '<em>$1</em>');
+        // Inline code: `code`
+        formatted = formatted.replace(/`([^`]+)`/g, '<code style="background: rgba(15, 23, 42, 0.7); padding: 2px 6px; border-radius: 4px; color: #38bdf8; font-family: monospace; font-size: 0.85em;">$1</code>');
+        // Linebreaks
+        formatted = formatted.replace(/\n/g, '<br>');
+        return formatted;
+    }
+
+    function appendMessage(sender, text, intent = '', suggestions = [], userQuery = '') {
         if (!chatMessages) return;
         const bubble = document.createElement('div');
+        const msgId = 'msg-' + Date.now();
         bubble.className = sender === 'user' ? 'chat-bubble chat-bubble-user' : 'chat-bubble chat-bubble-ai';
-        bubble.innerHTML = text.replace(/\n/g, '<br>');
+        bubble.id = msgId;
+
+        if (intent === 'EMERGENCY_SAFETY') {
+            bubble.style.border = '1px solid #ef4444';
+            bubble.style.background = 'linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(153, 27, 27, 0.3) 100%)';
+            bubble.style.boxShadow = '0 0 15px rgba(239, 68, 68, 0.3)';
+        }
+
+        if (sender === 'user') {
+            bubble.textContent = text;
+        } else {
+            let inner = formatAiResponse(text);
+            
+            // Render Feedback buttons
+            inner += `
+                <div style="margin-top: 10px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted);">
+                    <span>Was this helpful?</span>
+                    <div style="display: flex; gap: 8px;">
+                        <button type="button" class="ai-feedback-btn" data-rating="up" data-query="${escapeHtml(userQuery)}" style="background: none; border: 1px solid var(--glass-border); border-radius: 6px; padding: 2px 8px; color: var(--text-secondary); cursor: pointer;" title="Helpful response">👍 Helpful</button>
+                        <button type="button" class="ai-feedback-btn" data-rating="down" data-query="${escapeHtml(userQuery)}" style="background: none; border: 1px solid var(--glass-border); border-radius: 6px; padding: 2px 8px; color: var(--text-secondary); cursor: pointer;" title="Not helpful">👎 Not Helpful</button>
+                    </div>
+                </div>
+            `;
+
+            bubble.innerHTML = inner;
+
+            // Render interactive contextual suggestion pills if available
+            if (suggestions && suggestions.length > 0) {
+                const suggContainer = document.createElement('div');
+                suggContainer.style.display = 'flex';
+                suggContainer.style.flexWrap = 'wrap';
+                suggContainer.style.gap = '6px';
+                suggContainer.style.marginTop = '8px';
+
+                suggestions.forEach(s => {
+                    const pill = document.createElement('span');
+                    pill.className = 'prompt-chip';
+                    pill.style.fontSize = '0.74rem';
+                    pill.style.padding = '4px 10px';
+                    pill.textContent = s;
+                    pill.addEventListener('click', () => {
+                        if (chatInput && chatForm) {
+                            chatInput.value = s.replace(/^[^\w\s]+/, '').trim();
+                            chatForm.dispatchEvent(new Event('submit'));
+                        }
+                    });
+                    suggContainer.appendChild(pill);
+                });
+                bubble.appendChild(suggContainer);
+            }
+        }
+
         chatMessages.appendChild(bubble);
         chatMessages.scrollTop = chatMessages.scrollHeight;
+
+        // Attach feedback event listeners
+        bubble.querySelectorAll('.ai-feedback-btn').forEach(btn => {
+            btn.addEventListener('click', async function() {
+                const rating = this.getAttribute('data-rating');
+                const query = this.getAttribute('data-query');
+                const parent = this.parentElement;
+                parent.innerHTML = rating === 'up' ? '<span style="color: #34d399;">✓ Thank you for your feedback!</span>' : '<span style="color: #fbbf24;">✓ Feedback noted.</span>';
+
+                try {
+                    await fetch('/api/student/ai-feedback', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ rating: rating, query: query })
+                    });
+                } catch(e) {}
+            });
+        });
     }
 
     if (chatForm && chatInput && chatMessages) {
@@ -116,7 +211,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const typingBubble = document.createElement('div');
             typingBubble.className = 'chat-bubble chat-bubble-ai';
             typingBubble.id = 'ai-typing-indicator';
-            typingBubble.innerHTML = '<em>CampusGuard AI is reasoning...</em>';
+            typingBubble.innerHTML = '<em>CampusGuard AI is reasoning from verified records...</em>';
             chatMessages.appendChild(typingBubble);
             chatMessages.scrollTop = chatMessages.scrollHeight;
 
@@ -124,20 +219,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 const response = await fetch('/api/student/chat', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: message })
+                    body: JSON.stringify({ message: message, query: message, session_context: sessionContext })
                 });
 
                 const data = await response.json();
                 typingBubble.remove();
 
                 if (data.reply) {
-                    appendMessage('ai', data.reply);
+                    if (data.intent) {
+                        sessionContext.last_intent = data.intent;
+                    }
+                    appendMessage('ai', data.reply, data.intent || '', data.suggestions || [], message);
                 } else {
-                    appendMessage('ai', 'I apologize, but I could not retrieve that information right now.');
+                    appendMessage('ai', 'I apologize, but I could not retrieve that information right now.', '', [], message);
                 }
             } catch (err) {
                 if (typingBubble) typingBubble.remove();
-                appendMessage('ai', 'CampusGuard AI assistant is in fallback offline mode.');
+                appendMessage('ai', 'CampusGuard AI assistant is in fallback offline mode. Your standard campus modules remain fully operational.', '', [], message);
             }
         });
 
@@ -150,6 +248,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
         });
+
+        if (clearChatBtn) {
+            clearChatBtn.addEventListener('click', () => {
+                sessionContext = {};
+                chatMessages.innerHTML = `
+                    <div class="chat-bubble chat-bubble-ai">
+                        🔄 <em>Conversation history cleared.</em><br><br>
+                        How can I assist you with your attendance, lectures, exams, marks, study plan, or safety?
+                    </div>
+                `;
+            });
+        }
     }
 
     // 6. AI Resume Analyzer Simulation

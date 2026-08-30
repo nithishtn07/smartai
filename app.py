@@ -70,7 +70,8 @@ from services.ai_insight_engine import (
     evaluate_exam_reminders,
     evaluate_assignment_alerts,
     generate_student_insights_summary,
-    generate_admin_campus_risk_overview
+    generate_admin_campus_risk_overview,
+    analyze_resume_skills
 )
 
 # Utilities & Security
@@ -92,6 +93,12 @@ from api import register_api
 app = Flask(__name__)
 config_class = get_config()
 app.config.from_object(config_class)
+
+# Initialize ORM Foundation
+from models.base import db_orm
+app.config['SQLALCHEMY_DATABASE_URI'] = getattr(config_class, 'DATABASE_URL', f"sqlite:///{DATABASE_FILE}")
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db_orm.init_app(app)
 
 # Initialize Real-time WebSocket Broker
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
@@ -174,37 +181,6 @@ def generate_assistant_reply(student_id, query):
         return answer_campus_query(student_id, query, conn)
     finally:
         conn.close()
-
-
-def analyze_resume_skills(skills_text, target_role):
-    text = skills_text.lower()
-    score = 75
-    grade = 'Strong Candidate'
-    rec_skills = []
-    
-    if 'python' in text or 'java' in text: score += 8
-    if 'sql' in text or 'database' in text: score += 7
-    if 'docker' in text or 'kubernetes' in text or 'cloud' in text: score += 8
-    else: rec_skills.append('Docker & Containerization')
-    
-    if 'data' in target_role.lower():
-        if 'pandas' not in text: rec_skills.append('Pandas / PyTorch')
-        if 'ml' not in text: rec_skills.append('Scikit-Learn ML Pipelines')
-    else:
-        if 'ci/cd' not in text: rec_skills.append('GitHub Actions CI/CD')
-        if 'system design' not in text: rec_skills.append('System Design & Microservices')
-
-    score = min(score, 94)
-    feedback = f"Your resume shows strong foundational competence for {target_role}. Adding verified cloud and containerization skills will boost your ATS interview shortlist rate by 38%."
-    action_item = "Include measurable impact metrics (e.g. 'Optimized latency by 35%') in project bullet points."
-    
-    return {
-        'score': score,
-        'grade': grade,
-        'feedback': feedback,
-        'recommended_skills': rec_skills[:4],
-        'action_item': action_item
-    }
 
 
 # ---------------------------------------------------------------------------

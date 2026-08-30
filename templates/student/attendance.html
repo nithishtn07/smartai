@@ -98,7 +98,7 @@
                         {% if safe_bunks > 0 %}
                             <span style="color: #34d399; font-weight: 700; font-size: 0.88rem;">Can safely miss <strong>{{ safe_bunks }}</strong> class{% if safe_bunks > 1 %}es{% endif %}</span>
                         {% else %}
-                            <span style="color: #f87171; font-weight: 700; font-size: 0.88rem;">Must attend next <strong>2</strong> classes</span>
+                            <span style="color: #f87171; font-weight: 700; font-size: 0.88rem;">Must attend upcoming classes</span>
                         {% endif %}
                     </td>
                     <td>
@@ -111,6 +111,10 @@
                         {% endif %}
                     </td>
                 </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 32px;">No attendance records available for this semester.</td>
+                </tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -121,7 +125,7 @@
 <section class="content-card" style="margin-top: 20px;">
     <div class="card-header-row">
         <h2 class="card-heading"><span>📅</span> Recent Lecture Session Logs (Date-Wise)</h2>
-        <span class="badge badge-cyan">Last 10 Lectures</span>
+        <span class="badge badge-cyan">Recent Sessions</span>
     </div>
 
     <div class="table-responsive">
@@ -150,6 +154,10 @@
                             <span class="badge badge-red">✕ Absent</span>
                         {% endif %}
                     </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="4" style="text-align: center; color: var(--text-muted); padding: 24px;">No session logs recorded yet.</td>
                 </tr>
                 {% endfor %}
             </tbody>

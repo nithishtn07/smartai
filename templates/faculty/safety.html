@@ -17,35 +17,71 @@
     </div>
 </div>
 
+<!-- Real-Time Emergency SOS Feed -->
+<section class="content-card" style="margin-bottom: 24px; border-left: 4px solid #ef4444;">
+    <div class="card-header-row">
+        <h3 class="card-heading"><span>🚨</span> Real-Time Campus Emergency &amp; SOS Incident Monitor</h3>
+        <span class="badge badge-red">Live Dispatch Feed (Read-Only)</span>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 14px;">
+        {% for inc in active_incidents %}
+        <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 12px; padding: 16px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+            <div>
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                    <span class="badge {% if inc.status == 'ACTIVE' or inc.status == 'TRIGGERED' %}badge-red{% elif inc.status == 'RESOLVED' or inc.status == 'CLOSED' %}badge-green{% else %}badge-amber{% endif %}">
+                        {{ inc.status }}
+                    </span>
+                    <strong style="color: #fff; font-size: 0.95rem;">{{ inc.incident_type|default('Emergency Distress Signal') }}</strong>
+                    <span style="color: #38bdf8; font-family: var(--font-mono); font-size: 0.8rem;">#{{ inc.incident_id }}</span>
+                </div>
+                <div style="font-size: 0.84rem; color: var(--text-secondary);">
+                    📍 <strong>Location:</strong> {{ inc.location|default('Campus Safe Area') }}
+                    {% if inc.description %} • <span style="color: var(--text-muted);">{{ inc.description }}</span>{% endif %}
+                </div>
+            </div>
+            <div style="text-align: right;">
+                <div style="font-size: 0.76rem; color: var(--text-muted); font-family: var(--font-mono);">{{ inc.created_at }}</div>
+                <div style="font-size: 0.75rem; color: #34d399; margin-top: 2px;">Assigned: {{ inc.assigned_to|default('Central Security Command') }}</div>
+            </div>
+        </div>
+        {% else %}
+        <div style="text-align: center; padding: 24px; color: var(--text-muted);">
+            ✓ No active emergency distress signals or safety incidents reported on campus.
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
 <!-- Active Departmental Advisories -->
 <section class="content-card" style="margin-bottom: 24px; border-left: 4px solid #38bdf8;">
     <div class="card-header-row">
-        <h3 class="card-heading"><span>📢</span> Real-Time Campus Safety Advisories</h3>
+        <h3 class="card-heading"><span>📢</span> Real-Time Campus Safety Advisories &amp; Broadcasts</h3>
         <span class="badge badge-purple">Security Command Broadcast</span>
     </div>
 
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; margin-top: 10px;">
+        {% for alt in safety_alerts %}
         <div style="background: rgba(6, 8, 14, 0.4); border: 1px solid var(--glass-border); border-radius: 12px; padding: 16px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                <span class="badge badge-orange">ADVISORY</span>
-                <span style="font-size: 0.75rem; color: var(--text-muted); font-family: var(--font-mono);">Today 08:30 AM</span>
+                <span class="badge {% if alt.priority == 'Critical' %}badge-red{% elif alt.priority == 'High' %}badge-orange{% else %}badge-green{% endif %}">
+                    {{ alt.category|default('ADVISORY')|upper }}
+                </span>
+                <span style="font-size: 0.75rem; color: var(--text-muted); font-family: var(--font-mono);">{{ alt.created_at|default('Recent') }}</span>
             </div>
-            <h4 style="font-size: 0.95rem; font-weight: 700; color: white; margin: 0 0 6px;">Laboratory Chemical Safety Protocol</h4>
+            <h4 style="font-size: 0.95rem; font-weight: 700; color: white; margin: 0 0 6px;">{{ alt.title }}</h4>
             <p style="color: var(--text-secondary); font-size: 0.84rem; line-height: 1.4; margin: 0;">
-                All faculty conducting sessions in Chemistry &amp; Hardware Labs are reminded to ensure emergency eyewash stations and fire blankets are unobstructed.
+                {{ alt.description }}
             </p>
         </div>
-
+        {% else %}
         <div style="background: rgba(6, 8, 14, 0.4); border: 1px solid var(--glass-border); border-radius: 12px; padding: 16px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                <span class="badge badge-green">VERIFIED</span>
-                <span style="font-size: 0.75rem; color: var(--text-muted); font-family: var(--font-mono);">Yesterday 16:00 PM</span>
-            </div>
-            <h4 style="font-size: 0.95rem; font-weight: 700; color: white; margin: 0 0 6px;">Emergency Evacuation Route Inspection</h4>
+            <h4 style="font-size: 0.95rem; font-weight: 700; color: white; margin: 0 0 6px;">Campus Normal Safety Status</h4>
             <p style="color: var(--text-secondary); font-size: 0.84rem; line-height: 1.4; margin: 0;">
-                North &amp; South wing stairwells inspected. Auto-illumination battery backups tested and confirmed at 100% operational charge.
+                All automated safety telemetry sensors, evacuation corridors, and campus perimeters are verified operational.
             </p>
         </div>
+        {% endfor %}
     </div>
 </section>
 
@@ -57,21 +93,21 @@
     </div>
 
     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px;">
+        {% for cont in emergency_contacts %}
+        <div style="padding: 14px; background: rgba(6, 8, 14, 0.4); border-radius: 12px; border: 1px solid var(--glass-border);">
+            <div style="font-size: 0.8rem; color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
+                <span>{{ cont.icon|default('📞') }}</span> {{ cont.service_name }}
+            </div>
+            <strong style="color: #38bdf8; font-size: 1.05rem; font-family: var(--font-mono); display: block; margin: 4px 0;">{{ cont.phone_number }}</strong>
+            <div style="font-size: 0.74rem; color: #94a3b8;">{{ cont.location }} • {{ cont.available_hours }}</div>
+        </div>
+        {% else %}
         <div style="padding: 14px; background: rgba(6, 8, 14, 0.4); border-radius: 12px; border: 1px solid var(--glass-border);">
             <div style="font-size: 0.8rem; color: var(--text-muted);">Security Control Tower</div>
             <strong style="color: #38bdf8; font-size: 1.05rem; font-family: var(--font-mono);">+91 91234 56780</strong>
-            <div style="font-size: 0.74rem; color: #94a3b8; margin-top: 4px;">Main Gate Command</div>
+            <div style="font-size: 0.74rem; color: #94a3b8; margin-top: 4px;">Main Gate Command • 24/7 Continuous</div>
         </div>
-        <div style="padding: 14px; background: rgba(6, 8, 14, 0.4); border-radius: 12px; border: 1px solid var(--glass-border);">
-            <div style="font-size: 0.8rem; color: var(--text-muted);">Medical Rapid Unit</div>
-            <strong style="color: #34d399; font-size: 1.05rem; font-family: var(--font-mono);">+91 91234 56781</strong>
-            <div style="font-size: 0.74rem; color: #94a3b8; margin-top: 4px;">Health Pavilion Block A</div>
-        </div>
-        <div style="padding: 14px; background: rgba(6, 8, 14, 0.4); border-radius: 12px; border: 1px solid var(--glass-border);">
-            <div style="font-size: 0.8rem; color: var(--text-muted);">Estate &amp; Power Emergency</div>
-            <strong style="color: #fbbf24; font-size: 1.05rem; font-family: var(--font-mono);">+91 91234 56785</strong>
-            <div style="font-size: 0.74rem; color: #94a3b8; margin-top: 4px;">Substation &amp; Facilities</div>
-        </div>
+        {% endfor %}
     </div>
 </section>
 

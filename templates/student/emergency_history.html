@@ -1,0 +1,208 @@
+{% extends "student/base_student.html" %}
+
+{% block title %}Emergency SOS Incident History &amp; Audit Trail — CampusGuard AI{% endblock %}
+
+{% block student_content %}
+<link rel="stylesheet" href="/static/css/emergency.css">
+
+<!-- Header Block with Sub-Navigation Switcher -->
+<div class="page-header-block">
+    <div class="page-title-group">
+        <h1><span>📋</span> Emergency SOS Incident History &amp; Audit Logs</h1>
+        <p>Complete historical archive of distress signals, response logs, false alarm stand-downs, and resolution dossiers.</p>
+    </div>
+    <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+        <a href="{{ url_for('student.student_emergency') }}" class="btn-danger" style="font-weight: 800; font-size: 0.88rem; padding: 10px 20px; border-radius: 99px; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 0 20px rgba(239, 68, 68, 0.4);">
+            <span>🚨</span> Go to Live SOS Console
+        </a>
+    </div>
+</div>
+
+<!-- Navigation Tabs between Live Console and History -->
+<div class="tabs-header" style="margin-bottom: 24px;">
+    <a href="{{ url_for('student.student_emergency') }}" class="tab-btn" style="text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
+        <span>🚨</span> Live SOS Console
+    </a>
+    <a href="{{ url_for('student.student_emergency_history') }}" class="tab-btn active" style="text-decoration: none; display: inline-flex; align-items: center; gap: 8px;">
+        <span>📋</span> SOS History &amp; Archive ({{ metrics.total }})
+    </a>
+</div>
+
+<!-- 4 Key Historical Metrics Cards -->
+<section class="attendance-summary-banner" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 24px;">
+    <div class="stat-box" style="border-left: 4px solid #818cf8;">
+        <div class="stat-box-label">Total SOS Distresses</div>
+        <div class="stat-box-num" style="color: #818cf8;">{{ metrics.total }}</div>
+        <div style="font-size: 0.76rem; color: var(--text-muted); margin-top: 4px;">Lifetime student beacons</div>
+    </div>
+    <div class="stat-box" style="border-left: 4px solid #10b981;">
+        <div class="stat-box-label">Resolved Securely</div>
+        <div class="stat-box-num" style="color: #34d399;">{{ metrics.resolved }}</div>
+        <div style="font-size: 0.76rem; color: #a7f3d0; margin-top: 4px;">Confirmed by Campus Security</div>
+    </div>
+    <div class="stat-box" style="border-left: 4px solid #c084fc;">
+        <div class="stat-box-label">False Alarms Stood Down</div>
+        <div class="stat-box-num" style="color: #c084fc;">{{ metrics.stand_down }}</div>
+        <div style="font-size: 0.76rem; color: #e9d5ff; margin-top: 4px;">Safely cancelled by user</div>
+    </div>
+    <div class="stat-box" style="border-left: 4px solid #ef4444;">
+        <div class="stat-box-label">Active Distresses</div>
+        <div class="stat-box-num" style="color: {% if metrics.active > 0 %}#f87171{% else %}#94a3b8{% endif %};">
+            {{ metrics.active }}
+        </div>
+        <div style="font-size: 0.76rem; color: var(--text-muted); margin-top: 4px;">Currently responding</div>
+    </div>
+</section>
+
+<!-- Filter & Search Tool Strip -->
+<div class="content-card" style="margin-bottom: 20px; padding: 16px 20px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+        
+        <!-- Status Filter Pills -->
+        <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+            <span style="font-size: 0.82rem; font-weight: 700; color: var(--text-muted); margin-right: 4px;">Filter Status:</span>
+            <a href="{{ url_for('student.student_emergency_history', status='all', category=current_category_filter) }}" 
+               class="badge {% if current_status_filter == 'all' %}badge-cyan{% else %}badge-purple{% endif %}" 
+               style="text-decoration: none; padding: 6px 12px; font-size: 0.82rem; cursor: pointer;">
+                All ({{ metrics.total }})
+            </a>
+            <a href="{{ url_for('student.student_emergency_history', status='resolved', category=current_category_filter) }}" 
+               class="badge {% if current_status_filter == 'resolved' %}badge-emerald{% else %}badge-green{% endif %}" 
+               style="text-decoration: none; padding: 6px 12px; font-size: 0.82rem; cursor: pointer;">
+                🟢 Resolved ({{ metrics.resolved }})
+            </a>
+            <a href="{{ url_for('student.student_emergency_history', status='stand_down', category=current_category_filter) }}" 
+               class="badge {% if current_status_filter == 'stand_down' %}badge-purple{% else %}badge-blue{% endif %}" 
+               style="text-decoration: none; padding: 6px 12px; font-size: 0.82rem; cursor: pointer;">
+                🛡️ Stood Down / Safe ({{ metrics.stand_down }})
+            </a>
+            <a href="{{ url_for('student.student_emergency_history', status='active', category=current_category_filter) }}" 
+               class="badge {% if current_status_filter == 'active' %}badge-rose{% else %}badge-red{% endif %}" 
+               style="text-decoration: none; padding: 6px 12px; font-size: 0.82rem; cursor: pointer;">
+                🚨 Active ({{ metrics.active }})
+            </a>
+        </div>
+
+        <!-- Search Input -->
+        <div style="display: flex; gap: 10px; align-items: center; flex: 1; max-width: 320px;">
+            <input type="text" id="history-search-input" class="form-input" placeholder="Search by ID or location..." style="font-size: 0.85rem; padding: 7px 12px; width: 100%;" oninput="filterHistoryTable(this.value)">
+        </div>
+    </div>
+</div>
+
+<!-- Main History Records Table -->
+<div class="content-card">
+    <div class="card-header-row">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <div style="font-size: 1.3rem;">📜</div>
+            <h2 class="card-heading">SOS Incident Dossier Archive</h2>
+        </div>
+        <span class="badge badge-purple">Cryptographically Audited</span>
+    </div>
+
+    <div class="table-responsive">
+        <table class="portal-table" id="sos-history-table">
+            <thead>
+                <tr>
+                    <th>Emergency ID</th>
+                    <th>Date &amp; Time</th>
+                    <th>Category</th>
+                    <th>Location / Zone</th>
+                    <th>GPS Telemetry</th>
+                    <th>Final Status</th>
+                    <th>Assigned Responder</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for h in history_records %}
+                <tr class="history-row" data-search="{{ (h.emergency_id or h.incident_id)|lower }} {{ (h.campus_zone or h.location or '')|lower }} {{ (h.category or '')|lower }} {{ h.status|lower }}">
+                    <td>
+                        <strong style="color: #818cf8; font-family: var(--font-mono); font-size: 0.9rem;">
+                            {{ h.emergency_id or h.incident_id }}
+                        </strong>
+                    </td>
+                    <td style="font-size: 0.82rem; color: var(--text-secondary); font-family: var(--font-mono);">
+                        {{ h.created_at[:16] if h.created_at else 'Recent' }}
+                    </td>
+                    <td>
+                        <span class="badge badge-yellow" style="font-size: 0.78rem;">
+                            {{ h.category or 'Personal Safety' }}
+                        </span>
+                    </td>
+                    <td>
+                        <strong style="color: white; font-size: 0.86rem;">
+                            {{ h.campus_zone or h.location or 'Campus Safe Zone' }}
+                        </strong>
+                    </td>
+                    <td style="font-size: 0.8rem; font-family: var(--font-mono); color: #34d399;">
+                        {% if h.latitude and h.latitude != 0.0 %}
+                            {{ h.latitude|round(4) }}, {{ h.longitude|round(4) }}
+                        {% else %}
+                            <span style="color: var(--text-muted);">Beacon Area</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if h.status in ['RESOLVED', 'CLOSED'] %}
+                            <span class="badge badge-emerald">✓ RESOLVED</span>
+                        {% elif h.status in ['STAND_DOWN', 'CANCELLED', 'SAFE'] %}
+                            <span class="badge badge-purple">🛡️ STOOD DOWN (SAFE)</span>
+                        {% elif h.status in ['TRIGGERED', 'ACTIVE'] %}
+                            <span class="badge badge-rose">🚨 TRIGGERED</span>
+                        {% else %}
+                            <span class="badge badge-cyan">{{ h.status }}</span>
+                        {% endif %}
+                    </td>
+                    <td style="font-size: 0.84rem; color: #38bdf8;">
+                        {{ h.assigned_responder or h.assigned_to or 'QRT Unit' }}
+                    </td>
+                    <td>
+                        <div style="display: flex; gap: 6px; align-items: center;">
+                            <a href="/emergency/incident/{{ h.emergency_id or h.incident_id }}" class="btn-secondary" style="font-size: 0.76rem; padding: 4px 10px; text-decoration: none;" title="Open Incident Dossier">
+                                <span>📄</span> Dossier
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr id="empty-history-row">
+                    <td colspan="8" style="text-align: center; padding: 48px 20px; color: var(--text-muted);">
+                        <div style="font-size: 2.2rem; margin-bottom: 8px;">🛡️</div>
+                        <div style="font-size: 1.05rem; font-weight: 700; color: white; margin-bottom: 4px;">No Emergency Incidents Found</div>
+                        <p style="font-size: 0.86rem; color: var(--text-secondary); max-width: 400px; margin: 0 auto 16px;">
+                            You have no recorded emergency incidents matching the selected criteria. The SOS beacon remains on standby.
+                        </p>
+                        <a href="{{ url_for('student.student_emergency') }}" class="btn-primary" style="font-size: 0.84rem; padding: 8px 18px; text-decoration: none;">
+                            <span>🚨</span> Open Live Emergency SOS Console
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+function filterHistoryTable(query) {
+    const q = query.trim().toLowerCase();
+    const rows = document.querySelectorAll('.history-row');
+    let visibleCount = 0;
+
+    rows.forEach(row => {
+        const text = row.getAttribute('data-search') || '';
+        if (!q || text.includes(q)) {
+            row.style.display = '';
+            visibleCount++;
+        } else {
+            row.style.display = 'none';
+        }
+    });
+
+    const emptyRow = document.getElementById('empty-history-row');
+    if (emptyRow) {
+        emptyRow.style.display = (visibleCount === 0 && rows.length > 0) ? '' : 'none';
+    }
+}
+</script>
+{% endblock %}

@@ -11,7 +11,7 @@
     
     <div>
         <span class="badge badge-purple" style="font-size: 0.88rem; padding: 8px 16px;">
-            Residential Tracking • {{ hostel.block_name|default('Hostel Block B') }}
+            {% if hostel %}Residential Tracking • {{ hostel.block_name }}{% else %}Residential Tracking • Day Scholar{% endif %}
         </span>
     </div>
 </div>
@@ -22,17 +22,17 @@
         <div style="padding: 10px; border-right: 1px solid var(--glass-border);">
             <div style="font-size: 0.78rem; color: var(--text-muted); text-transform: uppercase;">Hostel Block</div>
             <div style="font-size: 1.25rem; font-weight: 800; color: #fff; margin-top: 4px;">
-                {{ hostel.block_name|default('Block B (Oak Wing)') }}
+                {% if hostel %}{{ hostel.block_name }}{% else %}Day Scholar{% endif %}
             </div>
-            <div style="font-size: 0.76rem; color: var(--text-secondary);">Room {{ hostel.room_no|default('304') }} • Bed {{ hostel.bed_no|default('Bed A') }}</div>
+            <div style="font-size: 0.76rem; color: var(--text-secondary);">{% if hostel %}Room {{ hostel.room_no }} • Bed {{ hostel.bed_no }}{% else %}Non-Residential Student{% endif %}</div>
         </div>
 
         <div style="padding: 10px; border-right: 1px solid var(--glass-border);">
             <div style="font-size: 0.78rem; color: var(--text-muted); text-transform: uppercase;">Chief Warden</div>
             <div style="font-size: 1.25rem; font-weight: 800; color: #c084fc; margin-top: 4px;">
-                {{ hostel.warden_name|default('Mr. R. Prabhakar') }}
+                {% if hostel %}{{ hostel.warden_name }}{% else %}Campus Warden Desk{% endif %}
             </div>
-            <div style="font-size: 0.76rem; color: var(--text-secondary);">Phone: {{ hostel.warden_phone|default('+91 91234 56784') }}</div>
+            <div style="font-size: 0.76rem; color: var(--text-secondary);">{% if hostel and hostel.warden_phone %}Phone: {{ hostel.warden_phone }}{% else %}Warden Office Helpline: +91 91234 56784{% endif %}</div>
         </div>
 
         <div style="padding: 10px;">
@@ -118,7 +118,7 @@
                     id="remarks" 
                     name="remarks" 
                     class="form-textarea" 
-                    placeholder="e.g. Verified by father (R. S. Kumar). Student is traveling home for the weekend."
+                    placeholder="e.g. Verified by father (Nagaraj). Student is traveling home for the weekend."
                     required
                 ></textarea>
             </div>

@@ -1,6 +1,6 @@
 {% extends "admin/base_admin.html" %}
 
-{% block title %}Central Attendance Monitor{% endblock %}
+{% block title %}Central Attendance Governance{% endblock %}
 
 {% block content %}
 
@@ -8,12 +8,50 @@
 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 24px;">
     <div>
         <h1 style="font-size: 1.6rem; font-weight: 800; color: #fff; margin-bottom: 4px;">Institutional Attendance Monitor</h1>
-        <p style="color: var(--text-secondary); font-size: 0.88rem;">Real-time sync between Faculty Roll Calls, Student Portals, and Parent Alerts.</p>
+        <p style="color: var(--text-secondary); font-size: 0.88rem;">Real-time sync across Faculty Roll Calls, Student Portals, and Parent Alerts.</p>
     </div>
 
-    <div>
-        <span class="badge badge-emerald" style="font-size: 0.85rem; padding: 6px 14px;">Campus Average: {{ "{:.1f}%".format(avg_att|default(88.5)) }}</span>
+    <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+        <span class="badge badge-emerald" style="font-size: 0.85rem; padding: 6px 14px;">Campus Average: {{ "{:.1f}%".format(avg_att|default(0.0)) }}</span>
+        <button type="button" onclick="document.getElementById('correct-modal').style.display='flex'" class="btn-secondary" style="font-size: 0.85rem; padding: 6px 14px; border-color: rgba(99, 102, 241, 0.4); color: #818cf8;">
+            <span>✏️</span> Correct Record
+        </button>
     </div>
+</div>
+
+<!-- Search & Filter Controls -->
+<div style="background: rgba(14, 19, 32, 0.85); border: 1px solid var(--glass-border); border-radius: 16px; padding: 18px; margin-bottom: 24px;">
+    <form method="GET" action="{{ url_for('admin.admin_attendance') }}" style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
+        <div style="flex: 1; min-width: 200px;">
+            <input type="text" name="q" value="{{ search_query|default('') }}" placeholder="Search by student name or register number..." class="form-input" style="width: 100%; font-size: 0.88rem;">
+        </div>
+
+        <div style="min-width: 160px;">
+            <select name="course" class="form-input" style="width: 100%; font-size: 0.88rem;">
+                <option value="">All Subjects</option>
+                {% for c in courses %}
+                <option value="{{ c.course_code }}" {% if selected_course == c.course_code %}selected{% endif %}>{{ c.course_code }} - {{ c.course_name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div style="min-width: 140px;">
+            <select name="status" class="form-input" style="width: 100%; font-size: 0.88rem;">
+                <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All Standing</option>
+                <option value="risk" {% if status_filter == 'risk' %}selected{% endif %}>⚠️ Below Threshold (&lt; {{ threshold }}%)</option>
+                <option value="good" {% if status_filter == 'good' %}selected{% endif %}>✓ Good Standing (≥ {{ threshold }}%)</option>
+            </select>
+        </div>
+
+        <button type="submit" class="btn-primary" style="padding: 8px 16px; font-size: 0.88rem;">
+            <span>🔍</span> Filter
+        </button>
+        {% if search_query or selected_course or (status_filter and status_filter != 'all') %}
+        <a href="{{ url_for('admin.admin_attendance') }}" class="btn-secondary" style="padding: 8px 14px; font-size: 0.88rem; text-decoration: none;">
+            Clear
+        </a>
+        {% endif %}
+    </form>
 </div>
 
 <!-- Low Attendance Alert Watchlist (<75%) -->
@@ -52,7 +90,7 @@
                         <span class="badge badge-rose">{{ "{:.1f}%".format(row.attendance_pct) }}</span>
                     </td>
                     <td style="padding: 14px 10px; text-align: right;">
-                        <form method="POST" action="{{ url_for('admin_attendance_send_warning', student_id=row.student_id) }}" style="display: inline;">
+                        <form method="POST" action="{{ url_for('admin.admin_attendance_send_warning', student_id=row.student_id) }}" style="display: inline;">
                             <button type="submit" class="btn-primary" style="padding: 6px 12px; font-size: 0.78rem; background: #f59e0b;">
                                 📢 Dispatch Warning
                             </button>
@@ -70,11 +108,11 @@
     {% endif %}
 </div>
 
-<!-- Master Attendance Table -->
+<!-- Master Attendance Registry Table -->
 <div style="background: rgba(14, 19, 32, 0.85); border: 1px solid var(--glass-border); border-radius: 18px; padding: 24px;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
         <h3 style="font-size: 1.1rem; font-weight: 700; color: #fff;">Master Course Attendance Registry ({{ all_attendance|length }})</h3>
-        <span class="badge badge-indigo">Synced to Faculty Roll Calls</span>
+        <span class="badge badge-indigo">Single Source of Truth: Database</span>
     </div>
 
     <div class="table-responsive">
@@ -104,9 +142,57 @@
                         </span>
                     </td>
                 </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5" style="padding: 30px; color: var(--text-muted); text-align: center;">No attendance records available for the selected criteria.</td>
+                </tr>
                 {% endfor %}
             </tbody>
         </table>
+    </div>
+</div>
+
+<!-- Admin Correct Attendance Modal -->
+<div id="correct-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center; padding: 20px;">
+    <div style="background: #0e1320; border: 1px solid var(--glass-border); border-radius: 20px; max-width: 500px; width: 100%; padding: 28px; box-shadow: 0 25px 60px rgba(0,0,0,0.6);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h3 style="font-size: 1.25rem; font-weight: 800; color: #fff;">✏️ Correct Attendance Record</h3>
+            <button type="button" onclick="document.getElementById('correct-modal').style.display='none'" style="background: none; border: none; color: var(--text-muted); font-size: 1.3rem; cursor: pointer;">✕</button>
+        </div>
+
+        <form method="POST" action="{{ url_for('admin.admin_attendance_correct') }}">
+            <div style="margin-bottom: 14px;">
+                <label class="form-label">Select Course</label>
+                <select name="course_code" class="form-input" required style="width: 100%;">
+                    {% for c in courses %}
+                    <option value="{{ c.course_code }}">{{ c.course_code }} - {{ c.course_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div style="margin-bottom: 14px;">
+                <label class="form-label">Student ID (Database ID)</label>
+                <input type="number" name="student_id" class="form-input" placeholder="e.g. 10140" required style="width: 100%;">
+            </div>
+
+            <div style="margin-bottom: 14px;">
+                <label class="form-label">Lecture Date</label>
+                <input type="date" name="date" class="form-input" required style="width: 100%;">
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label class="form-label">Corrected Status</label>
+                <select name="status" class="form-input" required style="width: 100%;">
+                    <option value="Present">Present</option>
+                    <option value="Absent">Absent</option>
+                </select>
+            </div>
+
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button type="button" onclick="document.getElementById('correct-modal').style.display='none'" class="btn-secondary" style="padding: 10px 18px;">Cancel</button>
+                <button type="submit" class="btn-primary" style="padding: 10px 20px;">Save Correction</button>
+            </div>
+        </form>
     </div>
 </div>
 

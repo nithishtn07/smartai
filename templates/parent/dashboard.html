@@ -30,7 +30,7 @@
         </div>
         <div style="display: flex; align-items: center; gap: 8px; padding: 8px 14px; background: rgba(10, 14, 26, 0.75); border: 1px solid var(--glass-border); border-radius: 10px; font-size: 0.84rem;">
             <span style="color: var(--text-muted);">CGPA:</span>
-            <span style="color: #34d399; font-weight: 800; font-family: var(--font-mono);">{{ student.cgpa|default('8.75') }}</span>
+            <span style="color: #34d399; font-weight: 800; font-family: var(--font-mono);">{{ student.cgpa if student.cgpa is not none else 'N/A' }}</span>
         </div>
         <div style="display: flex; align-items: center; gap: 8px; padding: 8px 14px; background: rgba(10, 14, 26, 0.75); border: 1px solid var(--glass-border); border-radius: 10px; font-size: 0.84rem;">
             <span style="color: var(--text-muted);">Attendance:</span>
@@ -40,30 +40,44 @@
 </section>
 
 <!-- Emergency SOS & Campus Safety Status Banner -->
-{% if active_sos %}
-<section class="content-card" style="border: 1px solid #ef4444; background: linear-gradient(135deg, rgba(239, 68, 68, 0.18) 0%, rgba(153, 27, 27, 0.25) 100%); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 18px; box-shadow: 0 0 30px var(--sos-glow);">
+<section id="parent-dashboard-sos-banner" class="content-card" style="display: {% if active_sos or (latest_sos and latest_sos.status in ['RESOLVED', 'CLOSED', 'STAND_DOWN', 'CANCELLED']) %}flex{% else %}none{% endif %}; border: 1px solid {% if active_sos %}#ef4444{% else %}rgba(52, 211, 153, 0.5){% endif %}; background: {% if active_sos %}linear-gradient(135deg, rgba(239, 68, 68, 0.18) 0%, rgba(153, 27, 27, 0.25) 100%){% else %}linear-gradient(135deg, rgba(16, 185, 129, 0.14) 0%, rgba(14, 19, 32, 0.96) 100%){% endif %}; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 18px; box-shadow: {% if active_sos %}0 0 30px var(--sos-glow){% else %}none{% endif %};">
     <div style="display: flex; align-items: center; gap: 18px;">
-        <div style="font-size: 2.2rem; width: 54px; height: 54px; background: rgba(239, 68, 68, 0.25); border: 1px solid rgba(239, 68, 68, 0.5); border-radius: 14px; display: flex; align-items: center; justify-content: center;">
-            🚨
+        <div style="font-size: 2.2rem; width: 54px; height: 54px; background: {% if active_sos %}rgba(239, 68, 68, 0.25){% else %}rgba(16, 185, 129, 0.2){% endif %}; border: 1px solid {% if active_sos %}rgba(239, 68, 68, 0.5){% else %}#10b981{% endif %}; border-radius: 14px; display: flex; align-items: center; justify-content: center;">
+            {% if active_sos %}🚨{% elif latest_sos and latest_sos.status in ['STAND_DOWN', 'CANCELLED'] %}🛡️{% else %}✓{% endif %}
         </div>
         <div>
             <div style="display: flex; align-items: center; gap: 8px;">
-                <span class="badge badge-red">CRITICAL SAFETY ALERT</span>
-                <span style="color: var(--text-muted); font-size: 0.8rem;">Incident ID: {{ active_sos.incident_id }}</span>
+                <span class="badge {% if active_sos %}badge-red{% else %}badge-emerald{% endif %}">
+                    {% if active_sos %}CRITICAL SAFETY ALERT{% elif latest_sos and latest_sos.status in ['STAND_DOWN', 'CANCELLED'] %}✓ WARD CONFIRMED SAFE{% else %}✓ RESOLUTION CONFIRMED{% endif %}
+                </span>
+                <span style="color: var(--text-muted); font-size: 0.8rem;">Incident ID: {{ active_sos.incident_id if active_sos else (latest_sos.incident_id if latest_sos else '') }}</span>
             </div>
-            <h3 style="font-size: 1.15rem; font-weight: 800; color: #fca5a5; margin: 4px 0 2px;">
-                Emergency Distress Beacon Triggered by {{ student.name }}
+            <h3 style="font-size: 1.15rem; font-weight: 800; color: {% if active_sos %}#fca5a5{% else %}#6ee7b7{% endif %}; margin: 4px 0 2px;">
+                {% if active_sos %}
+                    Emergency Distress Beacon Triggered by {{ student.name }}
+                {% elif latest_sos and latest_sos.status in ['STAND_DOWN', 'CANCELLED'] %}
+                    ✓ Ward Status: Safe (Stood Down / False Alarm)
+                {% else %}
+                    ✓ Emergency Incident Resolved for {{ student.name }}
+                {% endif %}
             </h3>
             <p style="color: var(--text-secondary); font-size: 0.86rem; margin: 0;">
-                Location: <strong>{{ active_sos.location }}</strong>. Campus Quick Response Security Team and Warden have been dispatched.
+                {% if active_sos %}
+                    Location: <strong>{{ active_sos.location }}</strong>. Campus Quick Response Security Team and Warden have been dispatched.
+                {% elif latest_sos and latest_sos.status in ['STAND_DOWN', 'CANCELLED'] %}
+                    Distress alert was stood down by ward as false alarm. Ward confirmed <strong>SAFE</strong>.
+                {% else %}
+                    The emergency has been safely handled. Situation confirmed secure by Campus Security Command.
+                {% endif %}
             </p>
         </div>
     </div>
-    <a href="{{ url_for('parent_safety') }}" class="btn-danger">
+    <a href="{{ url_for('parent_safety') }}" class="{% if active_sos %}btn-danger{% else %}btn-primary{% endif %}" style="{% if not active_sos %}background: linear-gradient(135deg, #10b981 0%, #059669 100%);{% endif %}">
         <span>🛡️</span> Open Live Safety Center
     </a>
 </section>
-{% elif active_safewalk %}
+
+{% if not active_sos and active_safewalk %}
 <section class="content-card" style="border: 1px solid rgba(56, 189, 248, 0.4); background: linear-gradient(135deg, rgba(56, 189, 248, 0.1) 0%, rgba(14, 165, 233, 0.15) 100%); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 18px;">
     <div style="display: flex; align-items: center; gap: 16px;">
         <div style="font-size: 1.8rem;">🚶‍♀️</div>
@@ -110,14 +124,14 @@
     <a href="{{ url_for('parent_academics') }}" class="stat-card">
         <div class="stat-card-header">
             <span class="stat-card-icon">🎓</span>
-            <span class="badge badge-purple">SGPA: {{ student.sgpa|default('8.90') }}</span>
+            <span class="badge badge-purple">SGPA: {{ student.sgpa if student.sgpa is not none else 'N/A' }}</span>
         </div>
         <div>
             <div class="stat-card-label">Cumulative GPA (CGPA)</div>
             <div class="stat-card-value" style="color: #c084fc;">
-                {{ student.cgpa|default('8.75') }}
+                {{ student.cgpa if student.cgpa is not none else 'N/A' }}
             </div>
-            <div class="stat-card-desc">Credits: {{ student.earned_credits|default(112) }} / {{ student.total_credits|default(160) }} Total</div>
+            <div class="stat-card-desc">Credits: {{ student.earned_credits|default(0) }} / {{ student.total_credits|default(160) }} Total</div>
         </div>
     </a>
 
@@ -344,11 +358,11 @@
     new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: courseLabels.length ? courseLabels : ['CS301', 'CS302', 'CS303', 'CS304', 'CS305'],
+            labels: courseLabels.length ? courseLabels : ['No Course Assessments'],
             datasets: [
                 {
                     label: 'CAT 1 Marks (Out of 50)',
-                    data: catMarks.length ? catMarks : [46.5, 42, 38, 48, 45],
+                    data: catMarks.length ? catMarks : [0],
                     backgroundColor: 'rgba(192, 132, 252, 0.7)',
                     borderColor: '#c084fc',
                     borderWidth: 1,
@@ -356,7 +370,7 @@
                 },
                 {
                     label: 'FAT Final Exam Marks (Out of 100)',
-                    data: fatMarks.length ? fatMarks : [92, 86, 78, 95, 89],
+                    data: fatMarks.length ? fatMarks : [0],
                     backgroundColor: 'rgba(99, 102, 241, 0.7)',
                     borderColor: '#6366f1',
                     borderWidth: 1,
@@ -388,5 +402,9 @@
             }
         }
     });
+
+    if (typeof initDashboardEmergencyBannerListener === 'function') {
+        initDashboardEmergencyBannerListener('parent');
+    }
 </script>
 {% endblock %}

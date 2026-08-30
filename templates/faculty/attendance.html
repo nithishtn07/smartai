@@ -1,104 +1,195 @@
 {% extends "faculty/base_faculty.html" %}
 
-{% block title %}Classroom Attendance Management{% endblock %}
+{% block title %}Classroom Attendance &amp; Date Roll-Call — Faculty Portal{% endblock %}
 
 {% block faculty_content %}
 <div class="page-header-block">
     <div class="page-title-group">
         <h1><span>📊</span> Course Attendance &amp; Roll-Call Center</h1>
-        <p>Conduct full class roll-calls, track threshold compliance, and dispatch automated warning alerts to students and parents.</p>
+        <p>Conduct date-specific lecture roll-calls, modify past attendance logs, monitor 75% threshold compliance, and dispatch alerts.</p>
     </div>
     
-    <div>
+    <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
         <span class="badge badge-green" style="font-size: 0.88rem; padding: 8px 16px;">
             Institutional Minimum: 75.0%
         </span>
+        <a href="{{ url_for('faculty_attendance_analytics') }}" class="btn-secondary" style="text-decoration: none; font-size: 0.85rem; padding: 8px 14px;">
+            <span>📈</span> View Analytics
+        </a>
     </div>
 </div>
 
-<!-- Course Selector Filter Strip -->
-<div style="display: flex; gap: 10px; margin-bottom: 20px; overflow-x: auto; padding-bottom: 4px;">
+<!-- Course Selector Strip -->
+<div style="display: flex; gap: 10px; margin-bottom: 24px; overflow-x: auto; padding-bottom: 6px;">
     {% for c in courses %}
-    <a href="{{ url_for('faculty_attendance', course=c.course_code) }}" 
+    <a href="{{ url_for('faculty.faculty_attendance', course=c.course_code, date=selected_date) }}" 
        class="btn-secondary {% if selected_course == c.course_code %}active{% endif %}"
-       style="{% if selected_course == c.course_code %}background: linear-gradient(135deg, #10b981, #059669); color: #fff; border-color: transparent;{% endif %} padding: 8px 16px; font-size: 0.85rem; text-decoration: none;">
-        📚 {{ c.course_code }} - {{ c.course_name }}
+       style="{% if selected_course == c.course_code %}background: linear-gradient(135deg, #10b981, #059669); color: #fff; border-color: transparent; box-shadow: 0 0 15px rgba(16, 185, 129, 0.35);{% endif %} padding: 9px 18px; font-size: 0.88rem; text-decoration: none; font-weight: 700; white-space: nowrap;">
+        📚 {{ c.course_code }} • {{ c.course_name }}
     </a>
     {% endfor %}
 </div>
 
-<!-- Mode 1: Interactive Full Class Roll-Call Card -->
-<section class="content-card" style="background: linear-gradient(135deg, rgba(14, 19, 32, 0.95) 0%, rgba(20, 27, 45, 0.9) 100%); border-color: rgba(16, 185, 129, 0.3);">
+<!-- 4 Course Summary Metrics -->
+<section class="attendance-summary-banner" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); margin-bottom: 24px;">
+    <div class="stat-box" style="border-left: 4px solid #38bdf8;">
+        <div class="stat-box-label">Enrolled Students</div>
+        <div class="stat-box-num" style="color: #38bdf8;">{{ stats.total_students }}</div>
+        <div style="font-size: 0.76rem; color: var(--text-muted); margin-top: 4px;">Registered in {{ selected_course }}</div>
+    </div>
+    <div class="stat-box" style="border-left: 4px solid #10b981;">
+        <div class="stat-box-label">Class Average Attendance</div>
+        <div class="stat-box-num" style="color: #34d399;">{{ stats.avg_attendance }}%</div>
+        <div style="font-size: 0.76rem; color: #a7f3d0; margin-top: 4px;">Above institutional baseline</div>
+    </div>
+    <div class="stat-box" style="border-left: 4px solid #f43f5e;">
+        <div class="stat-box-label">Attendance Deficits (&lt; 75%)</div>
+        <div class="stat-box-num" style="color: {% if stats.shortage_count > 0 %}#f43f5e{% else %}#94a3b8{% endif %};">
+            {{ stats.shortage_count }}
+        </div>
+        <div style="font-size: 0.76rem; color: {% if stats.shortage_count > 0 %}#fca5a5{% else %}var(--text-muted){% endif %}; margin-top: 4px;">Action required</div>
+    </div>
+    <div class="stat-box" style="border-left: 4px solid #c084fc;">
+        <div class="stat-box-label">Lectures Conducted</div>
+        <div class="stat-box-num" style="color: #c084fc;">{{ stats.lectures_held }}</div>
+        <div style="font-size: 0.76rem; color: #e9d5ff; margin-top: 4px;">Cumulative semester classes</div>
+    </div>
+</section>
+
+<!-- ========================================================================= -->
+<!-- 1. DATE-SPECIFIC ROLL-CALL CARD -->
+<!-- ========================================================================= -->
+<section class="content-card" style="background: linear-gradient(135deg, rgba(14, 19, 32, 0.95) 0%, rgba(20, 27, 45, 0.9) 100%); border-color: rgba(16, 185, 129, 0.35); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);">
     <div class="card-header-row">
         <div>
-            <h2 class="card-heading"><span>✍️</span> Conduct Roll Call: {{ selected_course }}</h2>
-            <p style="font-size: 0.82rem; color: var(--text-muted); margin: 2px 0 0;">
-                Select status for each student and save the entire period roll call to the central database.
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 1.4rem;">✍️</span>
+                <h2 class="card-heading" style="font-size: 1.25rem;">
+                    Record Student Attendance for Specific Date: <span style="color: #34d399;">{{ selected_course }}</span>
+                </h2>
+            </div>
+            <p style="font-size: 0.84rem; color: var(--text-secondary); margin: 4px 0 0;">
+                Select a lecture date below to enter or edit the attendance for each student.
             </p>
         </div>
-        <div style="display: flex; gap: 8px;">
-            <button type="button" class="btn-secondary" onclick="markAllPresent()" style="padding: 6px 12px; font-size: 0.8rem;">
-                ✓ Mark All Present
+        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+            <button type="button" class="btn-secondary" onclick="markAllStatus('Present')" style="padding: 6px 14px; font-size: 0.82rem; border-color: rgba(52, 211, 153, 0.4); color: #34d399;">
+                <span>✓</span> Mark All Present
+            </button>
+            <button type="button" class="btn-secondary" onclick="markAllStatus('Absent')" style="padding: 6px 14px; font-size: 0.82rem; border-color: rgba(244, 63, 94, 0.4); color: #f43f5e;">
+                <span>✕</span> Mark All Absent
             </button>
         </div>
     </div>
 
-    <form method="POST" action="{{ url_for('faculty_attendance') }}" id="rollCallForm">
+    <!-- Attendance Form -->
+    <form method="POST" action="{{ url_for('faculty.faculty_attendance') }}" id="rollCallForm">
         <input type="hidden" name="action_type" value="batch_roll_call">
         <input type="hidden" name="course_code" value="{{ selected_course }}">
 
-        <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 16px; margin-bottom: 16px;">
-            <div class="form-group">
-                <label for="roll_date" class="form-label">Lecture Date</label>
-                <input type="date" id="roll_date" name="date" class="form-input" value="{{ today_date }}" required>
+        <!-- Date & Topic Selection Bar -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin: 18px 0; background: rgba(0,0,0,0.25); padding: 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.06);">
+            
+            <!-- Date Picker -->
+            <div class="form-group" style="margin-bottom: 0;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <label for="roll_date" class="form-label" style="font-weight: 700; color: #fff; margin-bottom: 0;">
+                        📅 Specific Lecture Date
+                    </label>
+                    <div style="display: flex; gap: 6px;">
+                        <button type="button" onclick="setQuickDate('{{ today_date }}')" style="background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.3); color: #38bdf8; padding: 2px 8px; border-radius: 4px; font-size: 0.72rem; cursor: pointer;">Today</button>
+                    </div>
+                </div>
+                <input type="date" id="roll_date" name="date" class="form-input" value="{{ selected_date }}" required onchange="onDateChanged(this.value)" style="width: 100%; font-size: 0.92rem; font-weight: 600;">
+                <span id="date-loading-indicator" style="display: none; font-size: 0.75rem; color: #38bdf8; margin-top: 4px;">
+                    ⏳ Checking recorded logs for selected date...
+                </span>
             </div>
-            <div class="form-group">
-                <label for="roll_topic" class="form-label">Lecture Topic / Syllabus Covered</label>
-                <input type="text" id="roll_topic" name="topic" class="form-input" placeholder="e.g. Query Optimization & B+ Tree Indexing" required>
+
+            <!-- Topic / Syllabus Covered -->
+            <div class="form-group" style="margin-bottom: 0;">
+                <label for="roll_topic" class="form-label" style="font-weight: 700; color: #fff; margin-bottom: 6px;">
+                    📖 Lecture Topic / Syllabus Covered
+                </label>
+                <input type="text" id="roll_topic" name="topic" class="form-input" value="{{ date_topic }}" placeholder="e.g. Relational Algebra, B+ Trees &amp; Indexing" required style="width: 100%; font-size: 0.9rem;">
             </div>
         </div>
 
+        <!-- Real-Time Counter Strip -->
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; padding: 10px 16px; background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 10px; font-size: 0.86rem;">
+            <div style="display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
+                <span>Total Students: <strong style="color: white;" id="cnt-total">{{ students|length }}</strong></span>
+                <span style="color: #34d399;">🟢 Present: <strong id="cnt-present">0</strong></span>
+                <span style="color: #f43f5e;">🔴 Absent: <strong id="cnt-absent">0</strong></span>
+            </div>
+            <div style="font-size: 0.8rem; color: var(--text-muted);">
+                ⚡ Status updates sync to student &amp; parent portals instantly
+            </div>
+        </div>
+
+        <!-- Student Attendance Table -->
         <div class="table-responsive" style="margin-bottom: 20px;">
             <table class="portal-table">
                 <thead>
                     <tr>
-                        <th>Register No</th>
+                        <th style="width: 140px;">Register No</th>
                         <th>Student Name</th>
                         <th>Department</th>
-                        <th>Current Attendance</th>
-                        <th>Roll Call Status</th>
+                        <th style="width: 160px;">Overall Attendance %</th>
+                        <th style="width: 260px; text-align: center;">Attendance Status (On Selected Date)</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="student-roll-tbody">
                     {% for s in students %}
-                    <tr>
+                    {% set recorded_status = date_attendance_map.get(s.id, 'Present') %}
+                    {% set cur_att = 85.0 %}
+                    {% for a in attendance_list if a.student_id == s.id %}
+                        {% set cur_att = a.attendance_pct %}
+                    {% endfor %}
+                    <tr class="student-roll-row" data-student-id="{{ s.id }}">
                         <td>
-                            <span class="badge badge-indigo" style="font-family: monospace;">{{ s.register_number }}</span>
-                        </td>
-                        <td>
-                            <strong style="color: #fff;">{{ s.name }}</strong>
-                        </td>
-                        <td>{{ s.department }}</td>
-                        <td>
-                            {% set cur_att = 85.0 %}
-                            {% for a in attendance_list if a.student_id == s.id %}
-                                {% set cur_att = a.attendance_pct %}
-                            {% endfor %}
-                            <span style="font-weight: 700; color: {% if cur_att >= 85 %}#34d399{% elif cur_att >= 75 %}#fbbf24{% else %}#f43f5e{% endif %};">
-                                {{ cur_att }}%
+                            <span class="badge badge-indigo" style="font-family: var(--font-mono); font-size: 0.85rem;">
+                                {{ s.register_number }}
                             </span>
                         </td>
                         <td>
-                            <div style="display: flex; gap: 16px; align-items: center;">
-                                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; color: #34d399; font-weight: 600; font-size: 0.88rem;">
-                                    <input type="radio" name="status_{{ s.id }}" value="Present" class="status-radio-present" checked>
-                                    Present
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <div style="width: 32px; height: 32px; border-radius: 50%; background: rgba(56, 189, 248, 0.2); border: 1px solid #38bdf8; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; color: #38bdf8;">
+                                    {{ s.name[:1] }}
+                                </div>
+                                <strong style="color: #fff; font-size: 0.92rem;">{{ s.name }}</strong>
+                            </div>
+                        </td>
+                        <td style="color: var(--text-secondary); font-size: 0.85rem;">
+                            {{ s.department }}
+                        </td>
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span style="font-weight: 800; font-family: var(--font-mono); font-size: 0.95rem; color: {% if cur_att >= 85 %}#34d399{% elif cur_att >= 75 %}#fbbf24{% else %}#f43f5e{% endif %};">
+                                    {{ cur_att }}%
+                                </span>
+                                {% if cur_att < 75.0 %}
+                                    <span class="badge badge-rose" style="font-size: 0.7rem; padding: 2px 6px;">&lt; 75%</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            <div style="display: flex; gap: 12px; justify-content: center; align-items: center;">
+                                <label style="display: flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 8px; background: rgba(52, 211, 153, 0.1); border: 1px solid rgba(52, 211, 153, 0.3); cursor: pointer; color: #34d399; font-weight: 700; font-size: 0.86rem; transition: all 0.2s;">
+                                    <input type="radio" name="status_{{ s.id }}" value="Present" class="status-radio status-radio-present" {% if recorded_status == 'Present' %}checked{% endif %} onchange="updateCounts()">
+                                    <span>🟢 Present</span>
                                 </label>
-                                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; color: #f43f5e; font-weight: 600; font-size: 0.88rem;">
-                                    <input type="radio" name="status_{{ s.id }}" value="Absent" class="status-radio-absent">
-                                    Absent
+                                <label style="display: flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 8px; background: rgba(244, 63, 94, 0.1); border: 1px solid rgba(244, 63, 94, 0.3); cursor: pointer; color: #f43f5e; font-weight: 700; font-size: 0.86rem; transition: all 0.2s;">
+                                    <input type="radio" name="status_{{ s.id }}" value="Absent" class="status-radio status-radio-absent" {% if recorded_status == 'Absent' %}checked{% endif %} onchange="updateCounts()">
+                                    <span>🔴 Absent</span>
                                 </label>
                             </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" style="text-align: center; padding: 32px; color: var(--text-muted);">
+                            No students enrolled in this course.
                         </td>
                     </tr>
                     {% endfor %}
@@ -106,16 +197,28 @@
             </table>
         </div>
 
-        <button type="submit" class="btn-primary" style="background: linear-gradient(135deg, #10b981, #059669); font-size: 0.95rem; padding: 10px 24px;">
-            <span>💾</span> Save Roll Call &amp; Dispatch Sync Alerts
-        </button>
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+            <button type="submit" class="btn-primary" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); font-size: 0.95rem; font-weight: 800; padding: 12px 30px; border-radius: 99px; box-shadow: 0 0 25px rgba(16, 185, 129, 0.4);">
+                <span>💾</span> Save Attendance for Selected Date
+            </button>
+            <span style="font-size: 0.82rem; color: var(--text-muted);">
+                Logged under <strong>{{ faculty.name }}</strong> • {{ selected_course }}
+            </span>
+        </div>
     </form>
 </section>
 
-<!-- Student Attendance Roster & Safe Margins -->
-<section class="content-card">
+<!-- ========================================================================= -->
+<!-- 2. STUDENT ATTENDANCE ROSTER & COMPLIANCE WATCHLIST -->
+<!-- ========================================================================= -->
+<section class="content-card" style="margin-top: 24px;">
     <div class="card-header-row">
-        <h2 class="card-heading"><span>📋</span> Course Roster &amp; Compliance Watchlist</h2>
+        <div>
+            <h2 class="card-heading"><span>📋</span> Course Student Compliance Roster</h2>
+            <p style="font-size: 0.82rem; color: var(--text-secondary); margin: 2px 0 0;">
+                Real-time tracking of classes attended, classes missed, and safe absence margins.
+            </p>
+        </div>
         <span class="badge badge-purple">Real-Time Sync</span>
     </div>
 
@@ -123,49 +226,53 @@
         <table class="portal-table">
             <thead>
                 <tr>
-                    <th>Student Name &amp; Reg No</th>
-                    <th>Subject Code</th>
-                    <th>Conducted</th>
+                    <th>Student Details</th>
+                    <th>Course Code</th>
+                    <th>Held</th>
                     <th>Attended</th>
                     <th>Missed</th>
                     <th>Attendance %</th>
                     <th>Status</th>
-                    <th>Actions</th>
+                    <th>Action</th>
                 </tr>
             </thead>
             <tbody>
                 {% for a in attendance_list %}
                 <tr>
                     <td>
-                        <strong style="color: #fff;">{{ a.student_name }}</strong>
-                        <div style="font-size: 0.78rem; color: var(--text-muted); font-family: monospace;">{{ a.register_number }}</div>
+                        <strong style="color: #fff; font-size: 0.92rem;">{{ a.student_name }}</strong>
+                        <div style="font-size: 0.78rem; color: var(--text-muted); font-family: var(--font-mono);">{{ a.register_number }}</div>
                     </td>
                     <td><span class="badge badge-indigo">{{ a.subject_code }}</span></td>
-                    <td>{{ a.classes_held }}</td>
-                    <td style="color: #34d399; font-weight: 700;">{{ a.classes_attended }}</td>
-                    <td style="color: #f43f5e;">{{ a.classes_missed }}</td>
+                    <td style="font-family: var(--font-mono);">{{ a.classes_held }}</td>
+                    <td style="color: #34d399; font-weight: 700; font-family: var(--font-mono);">{{ a.classes_attended }}</td>
+                    <td style="color: #f43f5e; font-weight: 700; font-family: var(--font-mono);">{{ a.classes_missed }}</td>
                     <td>
-                        <strong style="font-size: 1.05rem; color: {% if a.attendance_pct >= 85 %}#34d399{% elif a.attendance_pct >= 75 %}#fbbf24{% else %}#f43f5e{% endif %};">
+                        <strong style="font-size: 1.05rem; font-family: var(--font-mono); color: {% if a.attendance_pct >= 85 %}#34d399{% elif a.attendance_pct >= 75 %}#fbbf24{% else %}#f43f5e{% endif %};">
                             {{ a.attendance_pct }}%
                         </strong>
                     </td>
                     <td>
-                        <span class="badge {% if a.attendance_pct >= 75 %}badge-green{% else %}badge-red{% endif %}">
-                            {% if a.attendance_pct >= 75 %}Compliant{% else %}⚠️ Shortage Alert{% endif %}
+                        <span class="badge {% if a.attendance_pct >= 75 %}badge-green{% else %}badge-rose{% endif %}">
+                            {% if a.attendance_pct >= 75 %}✓ Compliant{% else %}⚠️ Shortage Alert{% endif %}
                         </span>
                     </td>
                     <td>
                         {% if a.attendance_pct < 75.0 %}
-                        <form method="POST" action="{{ url_for('faculty_attendance_send_warning', student_id=a.student_id) }}" style="display: inline;">
+                        <form method="POST" action="{{ url_for('faculty.faculty_attendance_send_warning', student_id=a.student_id) }}" style="display: inline;">
                             <input type="hidden" name="course_code" value="{{ a.subject_code }}">
-                            <button type="submit" class="btn-secondary" style="padding: 4px 10px; font-size: 0.78rem; border-color: #f43f5e; color: #f43f5e;" title="Send Warning to Student & Parent">
+                            <button type="submit" class="btn-secondary" style="padding: 4px 10px; font-size: 0.78rem; border-color: #f43f5e; color: #f43f5e;" title="Send Warning to Student &amp; Parent">
                                 🔔 Send Warning
                             </button>
                         </form>
                         {% else %}
-                        <span style="font-size: 0.8rem; color: #34d399;">✓ In Good Standing</span>
+                        <span style="font-size: 0.8rem; color: #34d399;">✓ Good Standing</span>
                         {% endif %}
                     </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" style="text-align: center; padding: 24px; color: var(--text-muted);">No attendance records yet for this course.</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -173,10 +280,17 @@
     </div>
 </section>
 
-<!-- Recent Lecture Logs -->
-<section class="content-card">
+<!-- ========================================================================= -->
+<!-- 3. RECENT DATE-WISE LECTURE LOGS & HISTORY -->
+<!-- ========================================================================= -->
+<section class="content-card" style="margin-top: 24px;">
     <div class="card-header-row">
-        <h2 class="card-heading"><span>📜</span> Recent Lecture Logs &amp; Roll-Call History</h2>
+        <div>
+            <h2 class="card-heading"><span>📜</span> Date-wise Lecture Logs &amp; Roll-Call History</h2>
+            <p style="font-size: 0.82rem; color: var(--text-secondary); margin: 2px 0 0;">
+                Chronological record of individual student attendance entries across all lecture dates.
+            </p>
+        </div>
         <span class="badge badge-indigo">Classroom Archives</span>
     </div>
 
@@ -185,6 +299,8 @@
             <thead>
                 <tr>
                     <th>Date</th>
+                    <th>Register No</th>
+                    <th>Student Name</th>
                     <th>Course</th>
                     <th>Topic Covered</th>
                     <th>Status</th>
@@ -193,14 +309,20 @@
             <tbody>
                 {% for log in recent_logs %}
                 <tr>
-                    <td style="color: #cbd5e1;">{{ log.date }}</td>
-                    <td><span class="badge badge-indigo">{{ log.course_code }}</span></td>
-                    <td style="color: #fff;">{{ log.topic }}</td>
+                    <td style="color: #cbd5e1; font-family: var(--font-mono); font-size: 0.85rem;">{{ log.date }}</td>
+                    <td><span class="badge badge-indigo" style="font-family: var(--font-mono);">{{ log.register_number }}</span></td>
+                    <td style="color: #fff; font-weight: 600;">{{ log.student_name }}</td>
+                    <td><span class="badge badge-purple">{{ log.course_code }}</span></td>
+                    <td style="color: var(--text-secondary); font-size: 0.85rem;">{{ log.topic }}</td>
                     <td>
-                        <span class="badge {% if log.status == 'Present' %}badge-green{% else %}badge-red{% endif %}">
-                            {{ log.status }}
+                        <span class="badge {% if log.status == 'Present' %}badge-green{% else %}badge-rose{% endif %}">
+                            {% if log.status == 'Present' %}🟢 Present{% else %}🔴 Absent{% endif %}
                         </span>
                     </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" style="text-align: center; padding: 24px; color: var(--text-muted);">No lecture logs recorded yet for this course.</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -209,10 +331,80 @@
 </section>
 
 <script>
-function markAllPresent() {
+function markAllStatus(status) {
+    const isPresent = (status === 'Present');
     document.querySelectorAll('.status-radio-present').forEach(radio => {
-        radio.checked = true;
+        radio.checked = isPresent;
     });
+    document.querySelectorAll('.status-radio-absent').forEach(radio => {
+        radio.checked = !isPresent;
+    });
+    updateCounts();
 }
+
+function updateCounts() {
+    const presentCount = document.querySelectorAll('.status-radio-present:checked').length;
+    const absentCount = document.querySelectorAll('.status-radio-absent:checked').length;
+    const totalCount = document.querySelectorAll('.student-roll-row').length;
+
+    const elPres = document.getElementById('cnt-present');
+    const elAbs = document.getElementById('cnt-absent');
+    const elTot = document.getElementById('cnt-total');
+
+    if (elPres) elPres.textContent = presentCount;
+    if (elAbs) elAbs.textContent = absentCount;
+    if (elTot) elTot.textContent = totalCount;
+}
+
+function setQuickDate(dateStr) {
+    const dateInput = document.getElementById('roll_date');
+    if (dateInput) {
+        dateInput.value = dateStr;
+        onDateChanged(dateStr);
+    }
+}
+
+function onDateChanged(newDate) {
+    const courseCode = '{{ selected_course }}';
+    const indicator = document.getElementById('date-loading-indicator');
+    if (indicator) indicator.style.display = 'block';
+
+    fetch(`/api/faculty/attendance/date-logs?course=${encodeURIComponent(courseCode)}&date=${encodeURIComponent(newDate)}`)
+        .then(res => res.json())
+        .then(data => {
+            if (indicator) indicator.style.display = 'none';
+            if (data.status === 'success') {
+                const topicInput = document.getElementById('roll_topic');
+                if (topicInput && data.topic) {
+                    topicInput.value = data.topic;
+                }
+
+                // If records exist for this date, update the radio inputs
+                if (data.records && Object.keys(data.records).length > 0) {
+                    for (const [stuId, stat] of Object.entries(data.records)) {
+                        const row = document.querySelector(`.student-roll-row[data-student-id="${stuId}"]`);
+                        if (row) {
+                            const presRadio = row.querySelector('.status-radio-present');
+                            const absRadio = row.querySelector('.status-radio-absent');
+                            if (stat === 'Present' && presRadio) presRadio.checked = true;
+                            else if (stat === 'Absent' && absRadio) absRadio.checked = true;
+                        }
+                    }
+                } else {
+                    // If no logs recorded yet for this date, default all to present
+                    document.querySelectorAll('.status-radio-present').forEach(r => r.checked = true);
+                }
+                updateCounts();
+            }
+        })
+        .catch(err => {
+            if (indicator) indicator.style.display = 'none';
+            console.error('Error fetching date logs:', err);
+        });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    updateCounts();
+});
 </script>
 {% endblock %}

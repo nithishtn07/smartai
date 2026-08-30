@@ -12,17 +12,17 @@ CREATE TABLE IF NOT EXISTS students (
     department TEXT NOT NULL,
     year INTEGER NOT NULL,
     program TEXT DEFAULT 'B.Tech',
-    semester INTEGER DEFAULT 5,
+    semester INTEGER DEFAULT 1,
     section TEXT DEFAULT 'A',
-    phone TEXT DEFAULT '+91 98765 43210',
-    dob TEXT DEFAULT '2004-05-14',
-    address TEXT DEFAULT '#42, Green Avenue, Tech City, Karnataka 560001',
-    parent_name TEXT DEFAULT 'R. S. Kumar',
-    parent_phone TEXT DEFAULT '+91 94440 12345',
-    join_date TEXT DEFAULT '2023-08-01',
-    cgpa REAL DEFAULT 8.75,
-    sgpa REAL DEFAULT 8.90,
-    earned_credits INTEGER DEFAULT 112,
+    phone TEXT DEFAULT '',
+    dob TEXT DEFAULT '',
+    address TEXT DEFAULT '',
+    parent_name TEXT DEFAULT '',
+    parent_phone TEXT DEFAULT '',
+    join_date TEXT DEFAULT '',
+    cgpa REAL DEFAULT 0.0,
+    sgpa REAL DEFAULT 0.0,
+    earned_credits INTEGER DEFAULT 0,
     total_credits INTEGER DEFAULT 160,
     profile_image TEXT DEFAULT '',
     status TEXT DEFAULT 'ACTIVE',
@@ -40,16 +40,38 @@ CREATE TABLE IF NOT EXISTS parents (
     email TEXT UNIQUE NOT NULL,
     phone TEXT NOT NULL,
     password_hash TEXT NOT NULL,
-    relationship TEXT DEFAULT 'Father',
+    relationship TEXT DEFAULT 'Guardian',
     student_id INTEGER NOT NULL,
-    occupation TEXT DEFAULT 'Civil Engineer',
-    address TEXT DEFAULT '#42, Green Avenue, Tech City, Karnataka 560001',
+    occupation TEXT DEFAULT '',
+    address TEXT DEFAULT '',
+    alt_phone TEXT DEFAULT '',
+    city TEXT DEFAULT '',
+    state TEXT DEFAULT '',
+    country TEXT DEFAULT 'India',
+    postal_code TEXT DEFAULT '',
+    profile_image TEXT DEFAULT '',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (student_id) REFERENCES students (id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_parents_email ON parents (email);
 CREATE INDEX IF NOT EXISTS idx_parents_student_id ON parents (student_id);
+
+-- 2.1. Parent-Student Relationship Mapping (1-to-Many / Multi-Child)
+CREATE TABLE IF NOT EXISTS parent_student (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    parent_id INTEGER NOT NULL,
+    student_id INTEGER NOT NULL,
+    relationship TEXT DEFAULT 'Guardian',
+    is_primary INTEGER DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(parent_id, student_id),
+    FOREIGN KEY (parent_id) REFERENCES parents (id) ON DELETE CASCADE,
+    FOREIGN KEY (student_id) REFERENCES students (id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_parent_student_parent ON parent_student (parent_id);
+CREATE INDEX IF NOT EXISTS idx_parent_student_student ON parent_student (student_id);
 
 -- 3. Faculties Table
 CREATE TABLE IF NOT EXISTS faculties (
@@ -60,8 +82,8 @@ CREATE TABLE IF NOT EXISTS faculties (
     phone TEXT NOT NULL,
     password_hash TEXT NOT NULL,
     department TEXT NOT NULL,
-    designation TEXT DEFAULT 'Associate Professor & Faculty Advisor',
-    cabin TEXT DEFAULT 'CS-201 (Cabin 4)',
+    designation TEXT DEFAULT 'Faculty',
+    cabin TEXT DEFAULT '',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -113,10 +135,13 @@ CREATE TABLE IF NOT EXISTS marks (
     grade TEXT NOT NULL,
     grade_points REAL NOT NULL,
     status TEXT DEFAULT 'PASS',
+    is_demo INTEGER DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (student_id) REFERENCES students (id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_marks_student_course ON marks (student_id, course_code);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_marks_unique ON marks (student_id, course_code);
 
 -- 7. Attendance Aggregate
 CREATE TABLE IF NOT EXISTS attendance (
@@ -131,7 +156,7 @@ CREATE TABLE IF NOT EXISTS attendance (
     FOREIGN KEY (student_id) REFERENCES students (id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_attendance_student_subject ON attendance (student_id, subject_code);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_attendance_student_subject ON attendance (student_id, subject_code);
 
 -- 8. Date-wise Attendance Logs
 CREATE TABLE IF NOT EXISTS attendance_logs (
@@ -142,9 +167,13 @@ CREATE TABLE IF NOT EXISTS attendance_logs (
     date TEXT NOT NULL,
     status TEXT NOT NULL,
     topic TEXT NOT NULL,
+    faculty_id INTEGER DEFAULT 1,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (student_id) REFERENCES students (id)
 );
 
+CREATE UNIQUE INDEX IF NOT EXISTS idx_att_logs_unique ON attendance_logs (student_id, course_code, date);
 CREATE INDEX IF NOT EXISTS idx_att_logs_student_date ON attendance_logs (student_id, date);
 
 -- 9. Timetable
@@ -226,6 +255,8 @@ CREATE TABLE IF NOT EXISTS fees (
     paid_amount REAL NOT NULL,
     due_date TEXT NOT NULL,
     status TEXT NOT NULL,
+    academic_year TEXT DEFAULT '2026-2027',
+    semester INTEGER DEFAULT 5,
     FOREIGN KEY (student_id) REFERENCES students (id)
 );
 
@@ -241,7 +272,15 @@ CREATE TABLE IF NOT EXISTS payment_transactions (
     payment_method TEXT NOT NULL,
     receipt_no TEXT NOT NULL,
     paid_at TEXT NOT NULL,
-    FOREIGN KEY (student_id) REFERENCES students (id)
+    order_id TEXT DEFAULT '',
+    gateway_payment_id TEXT DEFAULT '',
+    gateway_signature TEXT DEFAULT '',
+    status TEXT DEFAULT 'SUCCESS',
+    parent_id INTEGER DEFAULT NULL,
+    fee_id INTEGER DEFAULT NULL,
+    FOREIGN KEY (student_id) REFERENCES students (id),
+    FOREIGN KEY (parent_id) REFERENCES parents (id),
+    FOREIGN KEY (fee_id) REFERENCES fees (id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_payments_student ON payment_transactions (student_id);
@@ -646,4 +685,53 @@ CREATE TABLE IF NOT EXISTS emergency_audit_logs (
 );
 
 CREATE INDEX IF NOT EXISTS idx_emergency_audit ON emergency_audit_logs (emergency_id, timestamp);
+
+-- 40. Lab Practical Experiments
+CREATE TABLE IF NOT EXISTS lab_experiments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    course_code TEXT NOT NULL,
+    student_id INTEGER NOT NULL,
+    experiment_no INTEGER NOT NULL,
+    title TEXT NOT NULL,
+    conducted_date TEXT NOT NULL,
+    practical_marks REAL DEFAULT 0.0,
+    viva_marks REAL DEFAULT 0.0,
+    record_status TEXT DEFAULT 'Verified',
+    faculty_remarks TEXT DEFAULT '',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (student_id) REFERENCES students (id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_lab_exp_course ON lab_experiments (course_code);
+CREATE INDEX IF NOT EXISTS idx_lab_exp_student ON lab_experiments (student_id);
+
+-- 41. Campus Transport Routes Catalog
+CREATE TABLE IF NOT EXISTS transport_routes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    route_number TEXT UNIQUE NOT NULL,
+    route_name TEXT NOT NULL,
+    bus_number TEXT NOT NULL,
+    driver_name TEXT NOT NULL,
+    driver_phone TEXT NOT NULL,
+    pickup_time TEXT NOT NULL,
+    pickup_location TEXT NOT NULL,
+    eta_campus TEXT NOT NULL,
+    stops_json TEXT DEFAULT '[]',
+    status TEXT DEFAULT 'ACTIVE',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 42. Student Transport Allocation
+CREATE TABLE IF NOT EXISTS student_transport (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    student_id INTEGER UNIQUE NOT NULL,
+    route_id INTEGER NOT NULL,
+    boarding_stop TEXT NOT NULL,
+    status TEXT DEFAULT 'ACTIVE',
+    allocated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (student_id) REFERENCES students (id),
+    FOREIGN KEY (route_id) REFERENCES transport_routes (id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_stu_transport ON student_transport (student_id);
 

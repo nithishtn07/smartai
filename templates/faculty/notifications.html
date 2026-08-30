@@ -73,8 +73,11 @@
                         {{ alert.message }}
                     </p>
 
-                    <div style="font-size: 0.76rem; color: var(--text-muted); font-family: var(--font-mono);">
-                        Timestamp: {{ alert.created_at }}
+                    <div style="font-size: 0.76rem; color: var(--text-muted); font-family: var(--font-mono); display: flex; align-items: center; gap: 12px;">
+                        <span>Timestamp: {{ alert.created_at }}</span>
+                        {% if alert.action_url %}
+                            <a href="{{ alert.action_url }}" style="color: #10b981; text-decoration: none; font-weight: 700;">Action Details →</a>
+                        {% endif %}
                     </div>
                 </div>
             </div>

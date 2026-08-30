@@ -1,75 +1,130 @@
 {% extends "student/base_student.html" %}
 
-{% block title %}Campus Alerts &amp; Broadcasts{% endblock %}
+{% block title %}Student Notification Center{% endblock %}
 
 {% block student_content %}
 <div class="page-header-block">
     <div class="page-title-group">
-        <h1><span>🔔</span> Campus Alerts &amp; Announcements</h1>
-        <p>Institutional security broadcasts, academic updates, and facility notifications.</p>
+        <h1><span>🔔</span> Student Notification Center</h1>
+        <p>Real-time academic alerts, attendance warnings, continuous assessment marks, fee payment receipts, and institutional announcements.</p>
     </div>
 
-    {% if unread_count > 0 %}
-    <form method="POST" action="{{ url_for('student_alerts_read_all') }}">
-        <button type="submit" class="btn-secondary" style="font-size: 0.85rem;">
-            ✓ Mark All As Read
-        </button>
-    </form>
-    {% endif %}
+    <div style="display: flex; gap: 12px; align-items: center;">
+        <span class="badge badge-cyan" style="font-size: 0.88rem; padding: 8px 16px;">
+            {{ unread_count }} Unread Notification{% if unread_count != 1 %}s{% endif %}
+        </span>
+        {% if unread_count > 0 %}
+        <form method="POST" action="{{ url_for('student_alerts_read_all') }}" style="display: inline;">
+            <button type="submit" class="btn-secondary" style="font-size: 0.84rem; padding: 7px 14px;">
+                ✓ Mark All As Read
+            </button>
+        </form>
+        {% endif %}
+    </div>
 </div>
 
-<div style="display: flex; flex-direction: column; gap: 16px;">
+<!-- Filter Pills -->
+<div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px;">
+    <a href="{{ url_for('student_alerts', category='all') }}" 
+       style="padding: 8px 14px; border-radius: var(--pill-radius); text-decoration: none; font-size: 0.84rem; font-weight: 700; border: 1px solid var(--glass-border); {% if category_filter == 'all' and status_filter != 'unread' %}background: var(--student-gradient); color: #fff; border-color: transparent;{% else %}background: rgba(255, 255, 255, 0.04); color: var(--text-secondary);{% endif %}">
+        All ({{ category_counts.all|default(0) }})
+    </a>
+    <a href="{{ url_for('student_alerts', status='unread') }}" 
+       style="padding: 8px 14px; border-radius: var(--pill-radius); text-decoration: none; font-size: 0.84rem; font-weight: 700; border: 1px solid var(--glass-border); {% if status_filter == 'unread' %}background: rgba(56, 189, 248, 0.2); color: #38bdf8; border-color: #38bdf8;{% else %}background: rgba(255, 255, 255, 0.04); color: var(--text-secondary);{% endif %}">
+        Unread ({{ category_counts.unread|default(0) }})
+    </a>
+    <a href="{{ url_for('student_alerts', category='Attendance') }}" 
+       style="padding: 8px 14px; border-radius: var(--pill-radius); text-decoration: none; font-size: 0.84rem; font-weight: 700; border: 1px solid var(--glass-border); {% if category_filter == 'Attendance' %}background: var(--student-gradient); color: #fff; border-color: transparent;{% else %}background: rgba(255, 255, 255, 0.04); color: var(--text-secondary);{% endif %}">
+        📊 Attendance ({{ category_counts.attendance|default(0) }})
+    </a>
+    <a href="{{ url_for('student_alerts', category='Academic') }}" 
+       style="padding: 8px 14px; border-radius: var(--pill-radius); text-decoration: none; font-size: 0.84rem; font-weight: 700; border: 1px solid var(--glass-border); {% if category_filter == 'Academic' %}background: var(--student-gradient); color: #fff; border-color: transparent;{% else %}background: rgba(255, 255, 255, 0.04); color: var(--text-secondary);{% endif %}">
+        📚 Academics &amp; Marks ({{ category_counts.academic|default(0) }})
+    </a>
+    <a href="{{ url_for('student_alerts', category='Fees') }}" 
+       style="padding: 8px 14px; border-radius: var(--pill-radius); text-decoration: none; font-size: 0.84rem; font-weight: 700; border: 1px solid var(--glass-border); {% if category_filter == 'Fees' %}background: var(--student-gradient); color: #fff; border-color: transparent;{% else %}background: rgba(255, 255, 255, 0.04); color: var(--text-secondary);{% endif %}">
+        💳 Fees ({{ category_counts.fees|default(0) }})
+    </a>
+    <a href="{{ url_for('student_alerts', category='Timetable') }}" 
+       style="padding: 8px 14px; border-radius: var(--pill-radius); text-decoration: none; font-size: 0.84rem; font-weight: 700; border: 1px solid var(--glass-border); {% if category_filter == 'Timetable' %}background: var(--student-gradient); color: #fff; border-color: transparent;{% else %}background: rgba(255, 255, 255, 0.04); color: var(--text-secondary);{% endif %}">
+        📅 Timetable ({{ category_counts.timetable|default(0) }})
+    </a>
+    <a href="{{ url_for('student_alerts', category='Announcements') }}" 
+       style="padding: 8px 14px; border-radius: var(--pill-radius); text-decoration: none; font-size: 0.84rem; font-weight: 700; border: 1px solid var(--glass-border); {% if category_filter == 'Announcements' %}background: var(--student-gradient); color: #fff; border-color: transparent;{% else %}background: rgba(255, 255, 255, 0.04); color: var(--text-secondary);{% endif %}">
+        📢 Announcements ({{ category_counts.announcements|default(0) }})
+    </a>
+</div>
+
+<!-- Notification Feed List -->
+<div style="display: flex; flex-direction: column; gap: 14px;">
     {% for alert in alerts %}
-    <div class="content-card" style="border-left: 4px solid {% if alert.priority == 'Critical' or alert.category == 'Emergency' %}#ef4444{% elif alert.priority == 'High' %}#fbbf24{% else %}#38bdf8{% endif %}; {% if not alert.is_read %}background: rgba(14, 23, 42, 0.95);{% endif %}">
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 8px;">
-            <div style="display: flex; align-items: center; gap: 10px;">
-                <span style="font-size: 1.4rem;">
-                    {% if alert.category == 'Emergency' %}🚨{% elif alert.category == 'Maintenance' %}🛠️{% elif alert.category == 'Safety' %}🛡️{% else %}📢{% endif %}
-                </span>
-                <h3 style="font-size: 1.15rem; font-weight: 700; color: var(--text-primary);">{{ alert.title }}</h3>
+    <div class="content-card" style="padding: 20px 24px; {% if not alert.is_read %}border-color: var(--student-border); background: rgba(14, 23, 42, 0.95); box-shadow: 0 0 20px var(--student-glow);{% endif %}">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px;">
+            
+            <div style="display: flex; gap: 16px; align-items: flex-start; flex: 1; min-width: 280px;">
+                <div style="width: 44px; height: 44px; border-radius: 12px; background: {% if alert.priority == 'Critical' %}rgba(239, 68, 68, 0.2){% elif alert.priority == 'High' %}rgba(251, 191, 36, 0.2){% else %}rgba(56, 189, 248, 0.2){% endif %}; display: flex; align-items: center; justify-content: center; font-size: 1.4rem;">
+                    {% if alert.category == 'Attendance' %}📊
+                    {% elif alert.category == 'Academic' %}📚
+                    {% elif alert.category == 'Fees' %}💳
+                    {% elif alert.category == 'Timetable' %}📅
+                    {% elif alert.category == 'Safety' or alert.priority == 'Critical' %}🚨
+                    {% else %}📢{% endif %}
+                </div>
+
+                <div style="flex: 1;">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 4px; flex-wrap: wrap;">
+                        <span class="badge {% if alert.priority == 'Critical' %}badge-red{% elif alert.priority == 'High' %}badge-yellow{% elif alert.priority == 'Informational' %}badge-indigo{% else %}badge-green{% endif %}">
+                            {{ alert.priority|default('Normal') }} Priority
+                        </span>
+                        <span class="badge badge-cyan">{{ alert.category }}</span>
+                        {% if not alert.is_read %}
+                            <span class="badge badge-cyan" style="font-size: 0.68rem;">NEW</span>
+                        {% endif %}
+                    </div>
+
+                    <h3 style="font-size: 1.05rem; font-weight: 800; color: var(--text-primary); margin: 6px 0;">
+                        {{ alert.title }}
+                    </h3>
+
+                    <p style="color: var(--text-secondary); font-size: 0.90rem; line-height: 1.5; margin: 0 0 10px;">
+                        {{ alert.message|default(alert.description) }}
+                    </p>
+
+                    <div style="display: flex; gap: 16px; align-items: center; flex-wrap: wrap; font-size: 0.78rem; color: var(--text-muted); font-family: var(--font-mono);">
+                        <span>Logged: {{ alert.created_at }}</span>
+                        {% if alert.action_url %}
+                            <a href="{{ alert.action_url }}" style="color: var(--student-primary); text-decoration: none; font-weight: 700;">
+                                {% if alert.category == 'Attendance' %}View Attendance →
+                                {% elif alert.category == 'Academic' %}View Marks &amp; CGPA →
+                                {% elif alert.category == 'Fees' %}View Fees / Pay →
+                                {% elif alert.category == 'Timetable' %}View Timetable →
+                                {% else %}View Details →{% endif %}
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
             </div>
 
+            <!-- Mark As Read Action -->
             <div style="display: flex; align-items: center; gap: 8px;">
                 {% if not alert.is_read %}
-                    <span class="badge badge-cyan">NEW</span>
-                {% endif %}
-
-                {% if alert.priority == 'Critical' or alert.category == 'Emergency' %}
-                    <span class="badge badge-red">CRITICAL</span>
-                {% elif alert.priority == 'High' %}
-                    <span class="badge badge-yellow">HIGH</span>
+                    <form method="POST" action="{{ url_for('student_alerts_read_single', alert_id=alert.id) }}">
+                        <button type="submit" class="btn-secondary" style="font-size: 0.78rem; padding: 6px 12px; cursor: pointer;">
+                            Mark as Read
+                        </button>
+                    </form>
                 {% else %}
-                    <span class="badge badge-green">NORMAL</span>
+                    <span style="font-size: 0.78rem; color: var(--text-muted);">✓ Read</span>
                 {% endif %}
             </div>
-        </div>
 
-        <p style="color: var(--text-secondary); font-size: 0.92rem; line-height: 1.6; margin: 12px 0;">
-            {{ alert.description }}
-        </p>
-
-        <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.05); font-size: 0.8rem; color: var(--text-muted);">
-            <div style="display: flex; gap: 16px;">
-                <span>Category: <strong>{{ alert.category }}</strong></span>
-                <span>Broadcasted: <strong style="font-family: var(--font-mono);">{{ alert.created_at[:16] }}</strong></span>
-            </div>
-
-            {% if not alert.is_read %}
-            <form method="POST" action="{{ url_for('student_alerts_read_single', alert_id=alert.id) }}">
-                <button type="submit" style="background: none; border: none; color: var(--student-primary); cursor: pointer; font-weight: 600; font-size: 0.82rem;">
-                    Mark as Read ✓
-                </button>
-            </form>
-            {% else %}
-                <span style="color: #64748b;">Read ✓</span>
-            {% endif %}
         </div>
     </div>
     {% else %}
-    <div class="content-card" style="text-align: center; padding: 48px;">
-        <span style="font-size: 3rem; display: block; margin-bottom: 12px;">🔕</span>
-        <h3 style="font-size: 1.2rem; color: var(--text-primary);">No Alerts At This Time</h3>
-        <p style="color: var(--text-muted); font-size: 0.9rem;">You are up to date on all institutional broadcasts.</p>
+    <div class="content-card" style="text-align: center; padding: 48px; color: var(--text-muted);">
+        <div style="font-size: 2.5rem; margin-bottom: 12px;">📭</div>
+        <h3 style="font-size: 1.1rem; color: #fff; margin-bottom: 4px;">No notifications found</h3>
+        <p style="font-size: 0.88rem;">You are completely up to date.</p>
     </div>
     {% endfor %}
 </div>

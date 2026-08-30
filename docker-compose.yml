@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  campusguard-web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: campusguard_app
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=production
+      - PORT=5000
+      - CAMPUSGUARD_SECRET_KEY=${CAMPUSGUARD_SECRET_KEY:-campusguard-production-key-change-me}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+    volumes:
+      - campusguard_data:/app/database
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  campusguard_data:
+    driver: local

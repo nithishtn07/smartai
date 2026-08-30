@@ -8,31 +8,41 @@
 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 24px;">
     <div>
         <h1 style="font-size: 1.6rem; font-weight: 800; color: #fff; margin-bottom: 4px;">Student Management Directory</h1>
-        <p style="color: var(--text-secondary); font-size: 0.88rem;">Manage student enrollment, academic records, and portal status.</p>
+        <p style="color: var(--text-secondary); font-size: 0.88rem;">Manage student enrollment, record editing, parent linkage, and account lifecycles.</p>
     </div>
 
-    <button type="button" class="btn-primary" onclick="document.getElementById('add-student-modal').style.display='flex'" style="background: linear-gradient(135deg, #6366f1, #4f46e5); padding: 10px 18px; font-size: 0.88rem;">
-        <span>+</span> Add New Student
+    <button type="button" class="btn-primary" onclick="document.getElementById('add-student-modal').style.display='flex'" style="background: linear-gradient(135deg, #6366f1, #4f46e5); padding: 10px 18px; font-size: 0.88rem; display: inline-flex; align-items: center; gap: 6px;">
+        <span>➕</span> Add New Student &amp; Link Parent
     </button>
 </div>
 
 <!-- Search & Filters -->
 <div style="background: rgba(14, 19, 32, 0.8); border: 1px solid var(--glass-border); border-radius: 16px; padding: 18px 20px; margin-bottom: 24px;">
     <form method="GET" action="{{ url_for('admin_students') }}" style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
-        <div style="flex: 1; min-width: 200px;">
-            <input type="text" name="q" value="{{ query|default('') }}" placeholder="Search by name, register number or email..." class="form-input" style="padding: 10px 14px;">
+        <div style="flex: 2; min-width: 220px;">
+            <input type="text" name="q" value="{{ query|default('') }}" placeholder="Search by student name, reg number, email, phone, or parent..." class="form-input" style="padding: 10px 14px;">
         </div>
-        <div style="min-width: 150px;">
+        <div style="flex: 1; min-width: 160px;">
             <select name="dept" class="form-input" style="padding: 10px 14px;">
                 <option value="">All Departments</option>
                 <option value="Computer Science & Engineering" {% if dept == 'Computer Science & Engineering' %}selected{% endif %}>Computer Science (CSE)</option>
                 <option value="Electronics & Communication" {% if dept == 'Electronics & Communication' %}selected{% endif %}>Electronics (ECE)</option>
                 <option value="Information Technology" {% if dept == 'Information Technology' %}selected{% endif %}>Information Tech (IT)</option>
+                <option value="Mechanical Engineering" {% if dept == 'Mechanical Engineering' %}selected{% endif %}>Mechanical (ME)</option>
+                <option value="Civil Engineering" {% if dept == 'Civil Engineering' %}selected{% endif %}>Civil (CE)</option>
+                <option value="Electrical & Electronics" {% if dept == 'Electrical & Electronics' %}selected{% endif %}>Electrical (EEE)</option>
             </select>
         </div>
-        <button type="submit" class="btn-primary" style="padding: 10px 16px;">Filter</button>
-        {% if query or dept %}
-            <a href="{{ url_for('admin_students') }}" class="btn-secondary" style="padding: 10px 14px; text-decoration: none;">Clear</a>
+        <div style="flex: 1; min-width: 130px;">
+            <select name="status" class="form-input" style="padding: 10px 14px;">
+                <option value="">All Statuses</option>
+                <option value="ACTIVE" {% if current_status == 'ACTIVE' %}selected{% endif %}>Active</option>
+                <option value="DISABLED" {% if current_status == 'DISABLED' %}selected{% endif %}>Disabled</option>
+            </select>
+        </div>
+        <button type="submit" class="btn-primary" style="padding: 10px 18px;">🔍 Search</button>
+        {% if query or dept or current_status %}
+            <a href="{{ url_for('admin_students') }}" class="btn-secondary" style="padding: 10px 14px; text-decoration: none;">✕ Clear</a>
         {% endif %}
     </form>
 </div>
@@ -41,7 +51,7 @@
 <div style="background: rgba(14, 19, 32, 0.85); border: 1px solid var(--glass-border); border-radius: 18px; padding: 24px;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
         <h3 style="font-size: 1.1rem; font-weight: 700; color: #fff;">Registered Students ({{ students|length }})</h3>
-        <span class="badge badge-indigo">Single Source Database</span>
+        <span class="badge badge-indigo">Relational Student Store</span>
     </div>
 
     <div class="table-responsive">
@@ -49,10 +59,10 @@
             <thead>
                 <tr style="border-bottom: 1px solid var(--glass-border); text-align: left; color: var(--text-muted);">
                     <th style="padding: 12px 10px;">Reg No</th>
-                    <th style="padding: 12px 10px;">Student Name</th>
-                    <th style="padding: 12px 10px;">Department</th>
+                    <th style="padding: 12px 10px;">Student Details</th>
+                    <th style="padding: 12px 10px;">Department &amp; Program</th>
                     <th style="padding: 12px 10px;">Year / Sem</th>
-                    <th style="padding: 12px 10px;">CGPA</th>
+                    <th style="padding: 12px 10px;">Linked Parent</th>
                     <th style="padding: 12px 10px;">Status</th>
                     <th style="padding: 12px 10px; text-align: right;">Actions</th>
                 </tr>
@@ -60,14 +70,30 @@
             <tbody>
                 {% for stu in students %}
                 <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.04);">
-                    <td style="padding: 14px 10px; font-family: var(--font-mono); font-weight: 700; color: #38bdf8;">{{ stu.register_number }}</td>
+                    <td style="padding: 14px 10px; font-family: var(--font-mono); font-weight: 700; color: #38bdf8;">
+                        {{ stu.register_number }}
+                    </td>
                     <td style="padding: 14px 10px;">
                         <div style="font-weight: 700; color: #fff;">{{ stu.name }}</div>
                         <div style="font-size: 0.75rem; color: var(--text-muted);">{{ stu.email }}</div>
+                        {% if stu.phone %}
+                            <div style="font-size: 0.73rem; color: #34d399;">📞 {{ stu.phone }}</div>
+                        {% endif %}
                     </td>
-                    <td style="padding: 14px 10px; color: var(--text-secondary);">{{ stu.department }}</td>
-                    <td style="padding: 14px 10px; color: var(--text-secondary);">Year {{ stu.year }} (Sem {{ stu.semester }})</td>
-                    <td style="padding: 14px 10px; font-weight: 700; color: #34d399;">{{ stu.cgpa|default(8.92) }}</td>
+                    <td style="padding: 14px 10px;">
+                        <div style="color: var(--text-secondary); font-weight: 600;">{{ stu.department }}</div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">{{ stu.program|default('B.Tech') }} • Sec {{ stu.section|default('A') }}</div>
+                    </td>
+                    <td style="padding: 14px 10px; color: var(--text-secondary);">
+                        Year {{ stu.year }} (Sem {{ stu.semester }})
+                    </td>
+                    <td style="padding: 14px 10px;">
+                        <div style="font-weight: 600; color: #c084fc;">{{ stu.parent_name }}</div>
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">{{ stu.relationship }} • {{ stu.parent_phone }}</div>
+                        {% if stu.parent_account_id %}
+                            <span class="badge badge-purple" style="font-family: var(--font-mono); font-size: 0.72rem; margin-top: 4px; display: inline-block;">{{ stu.parent_account_id }}</span>
+                        {% endif %}
+                    </td>
                     <td style="padding: 14px 10px;">
                         {% if stu.status == 'DISABLED' %}
                             <span class="badge" style="background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.4);">DISABLED</span>
@@ -76,21 +102,36 @@
                         {% endif %}
                     </td>
                     <td style="padding: 14px 10px; text-align: right;">
-                        <div style="display: inline-flex; gap: 8px;">
-                            <a href="{{ url_for('admin_student_view', id=stu.id) }}" class="btn-secondary" style="padding: 6px 12px; font-size: 0.78rem; text-decoration: none;">
-                                View 360°
+                        <div style="display: inline-flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end;">
+                            <a href="{{ url_for('admin_student_view', id=stu.id) }}" class="btn-secondary" style="padding: 6px 10px; font-size: 0.78rem; text-decoration: none;" title="View Complete 360° Profile">
+                                👁️ View
                             </a>
+                            <button type="button" class="btn-secondary" onclick="openEditStudentModal({{ stu.id }}, '{{ stu.name|escape }}', '{{ stu.register_number|escape }}', '{{ stu.email|escape }}', '{{ stu.phone|escape }}', '{{ stu.department|escape }}', '{{ stu.program|default('B.Tech')|escape }}', {{ stu.year }}, {{ stu.semester }}, '{{ stu.section|default('A')|escape }}', '{{ stu.dob|default('')|escape }}', '{{ stu.address|default('')|escape }}', '{{ stu.status|default('ACTIVE')|escape }}', '{{ stu.parent_name|escape }}', '{{ stu.parent_phone|escape }}', '{{ stu.relationship|escape }}')" style="padding: 6px 10px; font-size: 0.78rem; color: #818cf8;" title="Edit Student &amp; Parent">
+                                ✏️ Edit
+                            </button>
                             <form method="POST" action="{{ url_for('admin_student_toggle_status', id=stu.id) }}" style="display: inline;">
-                                <button type="submit" class="btn-secondary" style="padding: 6px 10px; font-size: 0.78rem; color: {% if stu.status == 'DISABLED' %}#34d399{% else %}#f87171{% endif %};">
+                                <button type="submit" class="btn-secondary" style="padding: 6px 9px; font-size: 0.78rem; color: {% if stu.status == 'DISABLED' %}#34d399{% else %}#f59e0b{% endif %};" title="Toggle Active / Disabled">
                                     {% if stu.status == 'DISABLED' %}Activate{% else %}Disable{% endif %}
                                 </button>
                             </form>
+                            <button type="button" class="btn-secondary" onclick="confirmDeleteStudent({{ stu.id }}, '{{ stu.name|escape }}', '{{ stu.register_number|escape }}')" style="padding: 6px 9px; font-size: 0.78rem; color: #f87171; border-color: rgba(239, 68, 68, 0.3);" title="Delete Student Record">
+                                🗑️ Delete
+                            </button>
                         </div>
                     </td>
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="7" style="text-align: center; padding: 30px; color: var(--text-muted);">No student records found matching criteria.</td>
+                    <td colspan="7" style="text-align: center; padding: 48px 20px; color: var(--text-muted);">
+                        <div style="font-size: 2.2rem; margin-bottom: 10px;">📋</div>
+                        <div style="font-weight: 700; color: #fff; font-size: 1.05rem; margin-bottom: 6px;">No student records found</div>
+                        <p style="font-size: 0.85rem; color: var(--text-secondary); max-width: 420px; margin: 0 auto 16px auto;">
+                            No students match your search criteria. You can register a new student or clear search filters.
+                        </p>
+                        <button type="button" class="btn-primary" onclick="document.getElementById('add-student-modal').style.display='flex'" style="padding: 10px 20px; font-size: 0.88rem;">
+                            ➕ Add New Student
+                        </button>
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -99,65 +140,345 @@
 </div>
 
 <!-- Add Student Modal -->
-<div id="add-student-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center; padding: 20px;">
-    <div style="background: #0e1320; border: 1px solid var(--parent-border); border-radius: 20px; max-width: 540px; width: 100%; padding: 28px; box-shadow: 0 25px 60px rgba(0,0,0,0.6);">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <h3 style="font-size: 1.25rem; font-weight: 800; color: #fff;">🎓 Add New Student</h3>
+<div id="add-student-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1000; align-items: center; justify-content: center; padding: 20px; overflow-y: auto;">
+    <div style="background: #0e1320; border: 1px solid var(--parent-border); border-radius: 20px; max-width: 640px; width: 100%; padding: 28px; box-shadow: 0 25px 60px rgba(0,0,0,0.6); max-height: 90vh; overflow-y: auto;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 14px;">
+            <div>
+                <h3 style="font-size: 1.25rem; font-weight: 800; color: #fff;">🎓 Add New Student &amp; Link Parent</h3>
+                <p style="color: var(--text-muted); font-size: 0.8rem; margin-top: 2px;">Enrolls student and automatically provisions linked parent monitoring credentials.</p>
+            </div>
             <button type="button" onclick="document.getElementById('add-student-modal').style.display='none'" style="background: none; border: none; color: var(--text-muted); font-size: 1.3rem; cursor: pointer;">✕</button>
         </div>
 
         <form method="POST" action="{{ url_for('admin_student_create') }}">
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
-                <div>
-                    <label class="form-label">Register Number</label>
-                    <input type="text" name="register_number" class="form-input" placeholder="e.g. STU002" required>
+            <!-- SECTION 1: STUDENT DETAILS -->
+            <div style="margin-bottom: 18px;">
+                <h4 style="font-size: 0.92rem; font-weight: 700; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
+                    <span>👤</span> 1. Student Academic Details
+                </h4>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                    <div>
+                        <label class="form-label">Register Number *</label>
+                        <input type="text" name="register_number" class="form-input" placeholder="e.g. 23BCS101" required autocomplete="off">
+                    </div>
+                    <div>
+                        <label class="form-label">Full Name *</label>
+                        <input type="text" name="name" class="form-input" placeholder="e.g. Aditi Sharma" required autocomplete="off">
+                    </div>
                 </div>
-                <div>
-                    <label class="form-label">Full Name</label>
-                    <input type="text" name="name" class="form-input" placeholder="Student Name" required>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                    <div>
+                        <label class="form-label">Campus Email *</label>
+                        <input type="email" name="email" class="form-input" placeholder="e.g. aditi.sharma@campus.edu" required autocomplete="off">
+                    </div>
+                    <div>
+                        <label class="form-label">Student Phone *</label>
+                        <input type="text" name="phone" class="form-input" placeholder="e.g. +91 98765 43210" required autocomplete="off">
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                    <div>
+                        <label class="form-label">Department *</label>
+                        <select name="department" class="form-input" required>
+                            <option value="" disabled selected>-- Select Department --</option>
+                            <option value="Computer Science & Engineering">Computer Science (CSE)</option>
+                            <option value="Electronics & Communication">Electronics (ECE)</option>
+                            <option value="Information Technology">Information Tech (IT)</option>
+                            <option value="Mechanical Engineering">Mechanical (ME)</option>
+                            <option value="Civil Engineering">Civil (CE)</option>
+                            <option value="Electrical & Electronics">Electrical (EEE)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label">Year *</label>
+                        <select name="year" class="form-input" required>
+                            <option value="" disabled selected>-- Year --</option>
+                            <option value="1">1st Year</option>
+                            <option value="2">2nd Year</option>
+                            <option value="3">3rd Year</option>
+                            <option value="4">4th Year</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label">Semester *</label>
+                        <select name="semester" class="form-input" required>
+                            <option value="" disabled selected>-- Sem --</option>
+                            <option value="1">Sem 1</option>
+                            <option value="2">Sem 2</option>
+                            <option value="3">Sem 3</option>
+                            <option value="4">Sem 4</option>
+                            <option value="5">Sem 5</option>
+                            <option value="6">Sem 6</option>
+                            <option value="7">Sem 7</option>
+                            <option value="8">Sem 8</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
+                    <div>
+                        <label class="form-label">Program</label>
+                        <input type="text" name="program" class="form-input" value="B.Tech" placeholder="e.g. B.Tech">
+                    </div>
+                    <div>
+                        <label class="form-label">Section</label>
+                        <input type="text" name="section" class="form-input" value="A" placeholder="e.g. A">
+                    </div>
+                    <div>
+                        <label class="form-label">Date of Birth</label>
+                        <input type="date" name="dob" class="form-input">
+                    </div>
                 </div>
             </div>
 
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px;">
-                <div>
-                    <label class="form-label">Campus Email</label>
-                    <input type="email" name="email" class="form-input" placeholder="student@example.com" required>
+            <!-- SECTION 2: PARENT / GUARDIAN INFORMATION -->
+            <div style="margin-bottom: 20px; padding-top: 14px; border-top: 1px dashed rgba(255,255,255,0.08);">
+                <h4 style="font-size: 0.92rem; font-weight: 700; color: #c084fc; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; display: flex; align-items: center; gap: 6px;">
+                    <span>👨‍👩‍👧</span> 2. Parent / Guardian Information
+                </h4>
+
+                <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 12px; margin-bottom: 12px;">
+                    <div>
+                        <label class="form-label">Parent/Guardian Full Name *</label>
+                        <input type="text" name="parent_name" class="form-input" placeholder="e.g. Rajesh Sharma" required autocomplete="off">
+                    </div>
+                    <div>
+                        <label class="form-label">Relationship *</label>
+                        <select name="parent_relationship" class="form-input" required>
+                            <option value="" disabled selected>-- Select Relationship --</option>
+                            <option value="Father">Father</option>
+                            <option value="Mother">Mother</option>
+                            <option value="Guardian">Guardian</option>
+                        </select>
+                    </div>
                 </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                    <div>
+                        <label class="form-label">Parent Email (Login ID) *</label>
+                        <input type="email" name="parent_email" class="form-input" placeholder="e.g. rajesh.sharma@gmail.com" required autocomplete="off">
+                    </div>
+                    <div>
+                        <label class="form-label">Parent Mobile Phone *</label>
+                        <input type="text" name="parent_phone" class="form-input" placeholder="e.g. +91 98765 43211" required autocomplete="off">
+                    </div>
+                </div>
+
                 <div>
-                    <label class="form-label">Phone Number</label>
-                    <input type="text" name="phone" class="form-input" placeholder="+91 98765 43210" required>
+                    <label class="form-label">Residential Address</label>
+                    <input type="text" name="address" class="form-input" placeholder="e.g. Flat 302, Green Glen Layout, Bengaluru" autocomplete="off">
                 </div>
             </div>
 
-            <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 14px; margin-bottom: 20px;">
-                <div>
-                    <label class="form-label">Department</label>
-                    <select name="department" class="form-input" required>
-                        <option value="Computer Science & Engineering">Computer Science (CSE)</option>
-                        <option value="Electronics & Communication">Electronics (ECE)</option>
-                        <option value="Information Technology">Information Tech (IT)</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="form-label">Year</label>
-                    <input type="number" name="year" class="form-input" value="3" min="1" max="4" required>
-                </div>
-                <div>
-                    <label class="form-label">Semester</label>
-                    <input type="number" name="semester" class="form-input" value="5" min="1" max="8" required>
-                </div>
-            </div>
-
-            <div style="background: rgba(99, 102, 241, 0.08); border: 1px dashed rgba(99, 102, 241, 0.3); border-radius: 10px; padding: 12px; margin-bottom: 20px; font-size: 0.8rem; color: var(--text-secondary);">
-                Default temporary login password will be set to: <strong style="color: #34d399;">Student@123</strong>
+            <!-- Credentials Notice Banner -->
+            <div style="background: rgba(99, 102, 241, 0.08); border: 1px solid rgba(99, 102, 241, 0.25); border-radius: 10px; padding: 12px; margin-bottom: 20px; font-size: 0.8rem; color: var(--text-secondary); line-height: 1.5;">
+                ⚡ <strong>Automatic Account Provisioning:</strong> Student password will be <strong style="color: #38bdf8;">Student@123</strong>. Linked Parent account will be configured with password <strong style="color: #c084fc;">Parent@123</strong>.
             </div>
 
             <div style="display: flex; justify-content: flex-end; gap: 10px;">
                 <button type="button" onclick="document.getElementById('add-student-modal').style.display='none'" class="btn-secondary">Cancel</button>
-                <button type="submit" class="btn-primary" style="background: linear-gradient(135deg, #6366f1, #4f46e5);">Create Student Account</button>
+                <button type="submit" class="btn-primary" style="background: linear-gradient(135deg, #6366f1, #4f46e5);">Create Student &amp; Link Parent</button>
             </div>
         </form>
     </div>
 </div>
+
+<!-- Edit Student Modal -->
+<div id="edit-student-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1000; align-items: center; justify-content: center; padding: 20px; overflow-y: auto;">
+    <div style="background: #0e1320; border: 1px solid var(--parent-border); border-radius: 20px; max-width: 620px; width: 100%; padding: 28px; box-shadow: 0 25px 60px rgba(0,0,0,0.6); max-height: 90vh; overflow-y: auto;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 14px;">
+            <div>
+                <h3 style="font-size: 1.25rem; font-weight: 800; color: #fff;">✏️ Edit Student &amp; Parent Details</h3>
+                <p style="color: var(--text-muted); font-size: 0.8rem; margin-top: 2px;">Update student academic profile and synchronized parent guardian contacts.</p>
+            </div>
+            <button type="button" onclick="document.getElementById('edit-student-modal').style.display='none'" style="background: none; border: none; color: var(--text-muted); font-size: 1.3rem; cursor: pointer;">✕</button>
+        </div>
+
+        <form id="edit-student-form" method="POST" action="">
+            <!-- STUDENT FIELDS -->
+            <div style="margin-bottom: 18px;">
+                <h4 style="font-size: 0.92rem; font-weight: 700; color: #38bdf8; text-transform: uppercase; margin-bottom: 12px;">👤 Academic &amp; Personal Info</h4>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                    <div>
+                        <label class="form-label">Full Name *</label>
+                        <input type="text" id="edit-student-name" name="name" class="form-input" required>
+                    </div>
+                    <div>
+                        <label class="form-label">Register Number *</label>
+                        <input type="text" id="edit-student-reg" name="register_number" class="form-input" required>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                    <div>
+                        <label class="form-label">Email Address *</label>
+                        <input type="email" id="edit-student-email" name="email" class="form-input" required>
+                    </div>
+                    <div>
+                        <label class="form-label">Phone Number</label>
+                        <input type="text" id="edit-student-phone" name="phone" class="form-input">
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                    <div>
+                        <label class="form-label">Department *</label>
+                        <select id="edit-student-dept" name="department" class="form-input" required>
+                            <option value="Computer Science & Engineering">Computer Science (CSE)</option>
+                            <option value="Electronics & Communication">Electronics (ECE)</option>
+                            <option value="Information Technology">Information Tech (IT)</option>
+                            <option value="Mechanical Engineering">Mechanical (ME)</option>
+                            <option value="Civil Engineering">Civil (CE)</option>
+                            <option value="Electrical & Electronics">Electrical (EEE)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label">Year *</label>
+                        <select id="edit-student-year" name="year" class="form-input" required>
+                            <option value="1">1st Year</option>
+                            <option value="2">2nd Year</option>
+                            <option value="3">3rd Year</option>
+                            <option value="4">4th Year</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label">Semester *</label>
+                        <select id="edit-student-semester" name="semester" class="form-input" required>
+                            <option value="1">Sem 1</option>
+                            <option value="2">Sem 2</option>
+                            <option value="3">Sem 3</option>
+                            <option value="4">Sem 4</option>
+                            <option value="5">Sem 5</option>
+                            <option value="6">Sem 6</option>
+                            <option value="7">Sem 7</option>
+                            <option value="8">Sem 8</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                    <div>
+                        <label class="form-label">Program</label>
+                        <input type="text" id="edit-student-program" name="program" class="form-input" value="B.Tech">
+                    </div>
+                    <div>
+                        <label class="form-label">Section</label>
+                        <input type="text" id="edit-student-section" name="section" class="form-input" value="A">
+                    </div>
+                    <div>
+                        <label class="form-label">Date of Birth</label>
+                        <input type="text" id="edit-student-dob" name="dob" class="form-input" placeholder="YYYY-MM-DD">
+                    </div>
+                    <div>
+                        <label class="form-label">Status</label>
+                        <select id="edit-student-status" name="status" class="form-input">
+                            <option value="ACTIVE">ACTIVE</option>
+                            <option value="DISABLED">DISABLED</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="form-label">Address</label>
+                    <input type="text" id="edit-student-address" name="address" class="form-input" placeholder="Residential Address">
+                </div>
+            </div>
+
+            <!-- PARENT FIELDS -->
+            <div style="margin-bottom: 20px; padding-top: 14px; border-top: 1px dashed rgba(255,255,255,0.08);">
+                <h4 style="font-size: 0.88rem; font-weight: 700; color: #c084fc; margin-bottom: 12px;">👨‍👩‍👧 Linked Parent / Guardian Information</h4>
+                <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 12px; margin-bottom: 12px;">
+                    <div>
+                        <label class="form-label">Parent Full Name</label>
+                        <input type="text" id="edit-parent-name" name="parent_name" class="form-input">
+                    </div>
+                    <div>
+                        <label class="form-label">Relationship</label>
+                        <select id="edit-parent-rel" name="parent_relationship" class="form-input">
+                            <option value="Father">Father</option>
+                            <option value="Mother">Mother</option>
+                            <option value="Guardian">Guardian</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="form-label">Parent Contact Phone</label>
+                    <input type="text" id="edit-parent-phone" name="parent_phone" class="form-input">
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" onclick="document.getElementById('edit-student-modal').style.display='none'" class="btn-secondary">Cancel</button>
+                <button type="submit" class="btn-primary" style="background: linear-gradient(135deg, #6366f1, #4f46e5);">💾 Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Delete Student Confirmation Modal -->
+<div id="delete-student-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 1000; align-items: center; justify-content: center; padding: 20px;">
+    <div style="background: #0e1320; border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 20px; max-width: 480px; width: 100%; padding: 28px; box-shadow: 0 25px 60px rgba(0,0,0,0.6); text-align: center;">
+        <div style="width: 56px; height: 56px; border-radius: 50%; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); display: flex; align-items: center; justify-content: center; font-size: 1.8rem; margin: 0 auto 16px auto;">
+            ⚠️
+        </div>
+        
+        <h3 style="font-size: 1.25rem; font-weight: 800; color: #fff; margin-bottom: 8px;">Delete Student Account</h3>
+        
+        <p style="color: #fca5a5; font-size: 0.92rem; font-weight: 600; margin-bottom: 12px;">
+            "Are you sure you want to delete this account? This action cannot be undone."
+        </p>
+
+        <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--glass-border); border-radius: 12px; padding: 14px; margin-bottom: 24px; text-align: left; font-size: 0.85rem;">
+            <div style="color: var(--text-muted); margin-bottom: 4px;">Target Record:</div>
+            <div style="font-weight: 700; color: #fff; font-size: 0.95rem;" id="del-student-name">-</div>
+            <div style="color: #38bdf8; font-family: var(--font-mono); font-size: 0.82rem;" id="del-student-reg">-</div>
+            <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 8px;">
+                ℹ️ All linked parent mappings and student dependencies will be safely unlinked in compliance with database integrity rules.
+            </div>
+        </div>
+
+        <form id="delete-student-form" method="POST" action="">
+            <div style="display: flex; justify-content: center; gap: 12px;">
+                <button type="button" onclick="document.getElementById('delete-student-modal').style.display='none'" class="btn-secondary" style="padding: 10px 20px;">Cancel</button>
+                <button type="submit" class="btn-primary" style="background: linear-gradient(135deg, #ef4444, #dc2626); border-color: #ef4444; padding: 10px 20px;">
+                    🗑️ Yes, Delete Account
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openEditStudentModal(studentId, name, regNum, email, phone, dept, program, year, sem, section, dob, address, status, parentName, parentPhone, parentRel) {
+    document.getElementById('edit-student-form').action = '/admin/students/edit/' + studentId;
+    document.getElementById('edit-student-name').value = name || '';
+    document.getElementById('edit-student-reg').value = regNum || '';
+    document.getElementById('edit-student-email').value = email || '';
+    document.getElementById('edit-student-phone').value = phone || '';
+    document.getElementById('edit-student-dept').value = dept || '';
+    document.getElementById('edit-student-program').value = program || 'B.Tech';
+    document.getElementById('edit-student-year').value = year || 1;
+    document.getElementById('edit-student-semester').value = sem || 1;
+    document.getElementById('edit-student-section').value = section || 'A';
+    document.getElementById('edit-student-dob').value = dob || '';
+    document.getElementById('edit-student-address').value = address || '';
+    document.getElementById('edit-student-status').value = status || 'ACTIVE';
+    document.getElementById('edit-parent-name').value = parentName || '';
+    document.getElementById('edit-parent-phone').value = parentPhone || '';
+    document.getElementById('edit-parent-rel').value = parentRel || 'Guardian';
+    document.getElementById('edit-student-modal').style.display = 'flex';
+}
+
+function confirmDeleteStudent(studentId, studentName, studentReg) {
+    document.getElementById('delete-student-form').action = '/admin/students/delete/' + studentId;
+    document.getElementById('del-student-name').textContent = studentName;
+    document.getElementById('del-student-reg').textContent = studentReg;
+    document.getElementById('delete-student-modal').style.display = 'flex';
+}
+</script>
 
 {% endblock %}

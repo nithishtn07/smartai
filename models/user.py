@@ -89,6 +89,19 @@ class StudentModel:
         finally:
             conn.close()
 
+    @staticmethod
+    def delete(student_id):
+        conn = get_db_connection()
+        try:
+            # Clean up parent-student relations
+            conn.execute("DELETE FROM parent_student WHERE student_id = ?", (student_id,))
+            # Soft delete student record
+            conn.execute("UPDATE students SET status = 'DELETED' WHERE id = ?", (student_id,))
+            conn.commit()
+            return True
+        finally:
+            conn.close()
+
 
 class ParentModel:
     @staticmethod
@@ -108,6 +121,30 @@ class ParentModel:
             conn.close()
 
     @staticmethod
+    def get_with_students(parent_id):
+        conn = get_db_connection()
+        try:
+            parent = conn.execute("SELECT * FROM parents WHERE id = ? OR parent_id = ?", (parent_id, parent_id)).fetchone()
+            if not parent:
+                return None
+            students = conn.execute("""
+                SELECT s.*, ps.relationship as link_relationship, ps.is_primary
+                FROM students s
+                JOIN parent_student ps ON s.id = ps.student_id
+                WHERE ps.parent_id = ? AND s.status != 'DELETED'
+            """, (parent['id'],)).fetchall()
+            # If no parent_student link, check parent.student_id
+            if not students and parent['student_id'] and parent['student_id'] > 0:
+                s = conn.execute("SELECT * FROM students WHERE id = ? AND status != 'DELETED'", (parent['student_id'],)).fetchone()
+                if s:
+                    students = [dict(s)]
+            p_dict = dict(parent)
+            p_dict['students'] = [dict(st) for st in students]
+            return p_dict
+        finally:
+            conn.close()
+
+    @staticmethod
     def get_all(search_query=None, limit=100, offset=0):
         conn = get_db_connection()
         try:
@@ -119,9 +156,9 @@ class ParentModel:
             """
             params = []
             if search_query:
-                query += " AND (p.name LIKE ? OR p.email LIKE ? OR p.parent_id LIKE ? OR s.name LIKE ?)"
+                query += " AND (p.name LIKE ? OR p.email LIKE ? OR p.parent_id LIKE ? OR p.phone LIKE ? OR s.name LIKE ? OR s.register_number LIKE ?)"
                 q = f"%{search_query}%"
-                params.extend([q, q, q, q])
+                params.extend([q, q, q, q, q, q])
             query += " ORDER BY p.id DESC LIMIT ? OFFSET ?"
             params.extend([limit, offset])
             return conn.execute(query, params).fetchall()
@@ -138,8 +175,48 @@ class ParentModel:
                 INSERT INTO parents (parent_id, name, email, phone, password_hash, relationship, student_id, occupation, address)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (parent_id.strip().upper(), name.strip(), email.strip().lower(), phone.strip(), pw_hash, relationship, int(student_id), occupation, address))
+            p_id = cursor.lastrowid
+            # Also create parent_student mapping
+            if student_id and int(student_id) > 0:
+                cursor.execute("""
+                    INSERT OR IGNORE INTO parent_student (parent_id, student_id, relationship, is_primary)
+                    VALUES (?, ?, ?, 1)
+                """, (p_id, int(student_id), relationship))
             conn.commit()
-            return cursor.lastrowid
+            return p_id
+        finally:
+            conn.close()
+
+    @staticmethod
+    def update(parent_id, **kwargs):
+        conn = get_db_connection()
+        try:
+            fields = []
+            params = []
+            for key, val in kwargs.items():
+                fields.append(f"{key} = ?")
+                params.append(val)
+            params.append(parent_id)
+            conn.execute(f"UPDATE parents SET {', '.join(fields)} WHERE id = ?", params)
+            conn.commit()
+            return True
+        finally:
+            conn.close()
+
+    @staticmethod
+    def delete(parent_id):
+        conn = get_db_connection()
+        try:
+            # Remove parent_student mapping
+            conn.execute("DELETE FROM parent_student WHERE parent_id = ?", (parent_id,))
+            # Remove parent_messages
+            conn.execute("DELETE FROM parent_messages WHERE parent_id = ?", (parent_id,))
+            # Remove parent_alert_reads
+            conn.execute("DELETE FROM parent_alert_reads WHERE parent_id = ?", (parent_id,))
+            # Delete parent record
+            conn.execute("DELETE FROM parents WHERE id = ?", (parent_id,))
+            conn.commit()
+            return True
         finally:
             conn.close()
 

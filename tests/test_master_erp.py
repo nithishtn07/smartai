@@ -46,7 +46,7 @@ class TestMasterCampusGuardERP(unittest.TestCase):
             'name': 'Nithish Nagaraj',
             'email': 'student@example.com',
             'phone': '+91 98765 00000',
-            'parent_name': 'R. S. Kumar',
+            'parent_name': 'Nagaraj',
             'parent_phone': '+91 94440 99999',
             'address': '#42, Green Avenue, Tech City, Karnataka 560001'
         }, follow_redirects=True)

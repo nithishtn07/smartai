@@ -29,6 +29,26 @@ VALID_STATUSES = [
 ]
 
 
+# Active vs Completed status categories
+ACTIVE_EMERGENCY_STATUSES = [
+    'TRIGGERED',
+    'ACKNOWLEDGED',
+    'ASSIGNED',
+    'RESPONDER_ASSIGNED',
+    'EN_ROUTE',
+    'ON_SCENE',
+    'ACTIVE',
+    'RESPONDING'
+]
+
+COMPLETED_EMERGENCY_STATUSES = [
+    'RESOLVED',
+    'CLOSED',
+    'STAND_DOWN',
+    'CANCELLED'
+]
+
+
 def generate_emergency_id() -> str:
     """
     Generates a human-readable, unique emergency identifier: EMG-YYYY-XXXXXX.
@@ -72,15 +92,20 @@ def create_emergency(
         now_str = now_dt.strftime('%Y-%m-%d %H:%M:%S')
 
         # Idempotency / Duplicate click prevention (same reporter within 8 seconds)
-        if not skip_idempotency:
+        if not skip_idempotency and reporter_id and reporter_role:
             recent = conn.execute("""
                 SELECT * FROM emergencies 
                 WHERE user_id = ? AND user_role = ? AND status = 'TRIGGERED'
-                AND created_at >= datetime('now', '-8 seconds')
+                ORDER BY created_at DESC LIMIT 1
             """, (reporter_id, reporter_role)).fetchone()
 
-            if recent:
-                return {'status': 'success', 'emergency': dict(recent), 'is_duplicate': True}
+            if recent and recent['created_at']:
+                try:
+                    rec_time = datetime.datetime.strptime(recent['created_at'][:19], '%Y-%m-%d %H:%M:%S')
+                    if (now - rec_time).total_seconds() < 8:
+                        return {'status': 'success', 'emergency': dict(recent), 'is_duplicate': True}
+                except Exception:
+                    pass
 
         emg_id = generate_emergency_id()
 
@@ -134,7 +159,8 @@ def create_emergency(
             title=f"🚨 {severity} EMERGENCY: {category} ({emg_id})",
             message=f"Reported by {reporter_name} ({reporter_role.upper()}) at {loc_str or campus_zone}. Distress Beacon active.",
             category='Safety',
-            priority='Critical'
+            priority='Critical',
+            db_conn=conn
         )
 
         # B. Linked Parent Alert (if reporter is a student)
@@ -150,7 +176,8 @@ def create_emergency(
                     f"🚨 Emergency Alert for {reporter_name}",
                     parent_msg,
                     category='Emergency',
-                    priority='Critical'
+                    priority='Critical',
+                    db_conn=conn
                 )
                 conn.execute("""
                     INSERT INTO emergency_notifications (
@@ -165,7 +192,8 @@ def create_emergency(
             title=f"Campus Safety Notice: Incident reported at {campus_zone}",
             message=f"A {category} response is underway near {loc_str or campus_zone}. Security personnel are actively responding.",
             category='Safety',
-            priority='High'
+            priority='High',
+            db_conn=conn
         )
 
         # D. Real-time WebSocket emission
@@ -275,19 +303,70 @@ def transition_emergency_status(
                 VALUES (?, 1, ?, ?, ?, ?)
             """, (emergency_id, actor_name, actor_role, notes, now_str))
 
+        # Multi-Channel Notifications for Student & Linked Parent
+        if emg['user_role'] == 'student' and emg['user_id']:
+            student_id = emg['user_id']
+            reporter_name = emg['reporter_name'] or 'Student'
+            loc_str = emg['campus_zone'] or 'Campus Safe Zone'
+            assigned_unit = emg['assigned_responder'] or 'Quick Response Team'
+
+            if new_status == 'ACKNOWLEDGED':
+                notify_student(student_id, "🛡️ Emergency Acknowledged", f"Campus Security Command has acknowledged your SOS ({emergency_id}). Response units mobilized.", category="Emergency", priority="High", db_conn=conn)
+            elif new_status in ['ASSIGNED', 'RESPONDER_ASSIGNED']:
+                notify_student(student_id, "⚡ Response Unit Assigned", f"{assigned_unit} has been dispatched to your coordinates.", category="Emergency", priority="High", db_conn=conn)
+            elif new_status == 'EN_ROUTE':
+                notify_student(student_id, "🚑 Responder En Route", f"Your assigned responder ({assigned_unit}) is en route to your location. ETA ~4m.", category="Emergency", priority="Critical", db_conn=conn)
+            elif new_status == 'ON_SCENE':
+                notify_student(student_id, "📍 Responder On Scene", f"{assigned_unit} has arrived at your reported location ({loc_str}).", category="Emergency", priority="Critical", db_conn=conn)
+            elif new_status == 'RESOLVED':
+                notify_student(student_id, "✓ Emergency Resolved", f"Your emergency ({emergency_id}) has been safely handled and marked as resolved.", category="Emergency", priority="Normal", db_conn=conn)
+            elif new_status in ['STAND_DOWN', 'CANCELLED']:
+                notify_student(student_id, "🛡️ Stand Down Confirmed (Safe)", f"Emergency distress beacon ({emergency_id}) stood down as false alarm. You are marked SAFE.", category="Emergency", priority="Normal", db_conn=conn)
+            elif new_status == 'CLOSED':
+                notify_student(student_id, "✓ Emergency Closed", f"Emergency incident ({emergency_id}) has been closed.", category="Emergency", priority="Normal", db_conn=conn)
+
+            # Linked Parent Notifications
+            parent = conn.execute("SELECT id, name FROM parents WHERE student_id = ?", (student_id,)).fetchone()
+            if parent:
+                if new_status == 'ACKNOWLEDGED':
+                    notify_parent(parent['id'], f"Emergency Acknowledged ({emergency_id})", f"Campus Security Command has acknowledged the emergency alert for your ward {reporter_name}.", category="Emergency", priority="High", db_conn=conn)
+                elif new_status in ['ASSIGNED', 'RESPONDER_ASSIGNED']:
+                    notify_parent(parent['id'], f"Responder Assigned ({emergency_id})", f"{assigned_unit} assigned to ward {reporter_name}'s emergency.", category="Emergency", priority="High", db_conn=conn)
+                elif new_status == 'EN_ROUTE':
+                    notify_parent(parent['id'], f"Responder En Route ({emergency_id})", f"Emergency unit {assigned_unit} is en route to your ward's location.", category="Emergency", priority="Critical", db_conn=conn)
+                elif new_status == 'ON_SCENE':
+                    notify_parent(parent['id'], f"Responder On Scene ({emergency_id})", f"Response unit {assigned_unit} has arrived on scene with your ward {reporter_name}.", category="Emergency", priority="Critical", db_conn=conn)
+                elif new_status == 'RESOLVED':
+                    notify_parent(parent['id'], f"✓ Emergency Resolved ({emergency_id})", f"The emergency alert for your ward {reporter_name} has been successfully resolved. Safety confirmed.", category="Emergency", priority="Normal", db_conn=conn)
+                elif new_status in ['STAND_DOWN', 'CANCELLED']:
+                    notify_parent(parent['id'], f"🛡️ Emergency Stood Down — Ward Safe ({emergency_id})", f"Distress beacon for your ward {reporter_name} stood down as false alarm. Ward confirmed SAFE.", category="Emergency", priority="Normal", db_conn=conn)
+                elif new_status == 'CLOSED':
+                    notify_parent(parent['id'], f"Emergency Closed ({emergency_id})", f"The emergency incident for your ward {reporter_name} is formally closed.", category="Emergency", priority="Normal", db_conn=conn)
+
         conn.commit()
 
-        # Emit realtime update
+        # Emit enriched realtime update to all portals
+        is_active = new_status in ACTIVE_EMERGENCY_STATUSES
         emit_event('emergency_status_update', {
             'emergency_id': emergency_id,
+            'incident_id': emergency_id,
+            'student_id': emg['user_id'] if emg['user_role'] == 'student' else None,
             'old_status': old_status,
             'new_status': new_status,
+            'status': new_status,
+            'is_active': is_active,
+            'is_safe': not is_active,
+            'assigned_responder': emg['assigned_responder'],
+            'location': emg['campus_zone'],
+            'category': emg['category'],
+            'severity': emg['severity'],
+            'resolved_at': emg['resolved_at'] or (now_str if new_status == 'RESOLVED' else None),
             'updated_by': actor_name,
             'timestamp': now_str
         })
 
         updated = conn.execute("SELECT * FROM emergencies WHERE emergency_id = ?", (emergency_id,)).fetchone()
-        return {'status': 'success', 'emergency': dict(updated), 'old_status': old_status, 'new_status': new_status}
+        return {'status': 'success', 'emergency': dict(updated), 'old_status': old_status, 'new_status': new_status, 'is_active': is_active, 'is_safe': not is_active}
 
     finally:
         if should_close:
@@ -480,6 +559,232 @@ def get_emergency_full_dossier(emergency_id: str, conn: Optional[sqlite3.Connect
             'notifications': notifications,
             'metrics': metrics
         }
+    finally:
+        if should_close:
+            conn.close()
+
+
+def get_student_latest_emergency(student_id: int, conn: Optional[sqlite3.Connection] = None) -> Dict[str, Any]:
+    """
+    Retrieves the authoritative latest emergency for a student:
+    1. Active emergency (TRIGGERED, ACKNOWLEDGED, ASSIGNED, EN_ROUTE, ON_SCENE) takes precedence.
+    2. If no active emergency, retrieves the most recent resolved or closed emergency.
+    3. Handles legacy incidents table synchronization for complete backward compatibility.
+    """
+    should_close = False
+    if conn is None:
+        conn = get_db_connection()
+        should_close = True
+
+    try:
+        # 1. Search for active emergency
+        active_row = conn.execute("""
+            SELECT * FROM emergencies 
+            WHERE user_id = ? AND user_role = 'student' 
+              AND status IN ('TRIGGERED', 'ACKNOWLEDGED', 'ASSIGNED', 'RESPONDER_ASSIGNED', 'EN_ROUTE', 'ON_SCENE')
+            ORDER BY created_at DESC, id DESC LIMIT 1
+        """, (student_id,)).fetchone()
+
+        if active_row:
+            emg = dict(active_row)
+            return {
+                'success': True,
+                'has_emergency': True,
+                'is_active': True,
+                'is_safe': False,
+                'is_stood_down': False,
+                'incident_id': emg.get('emergency_id'),
+                'emergency_id': emg.get('emergency_id'),
+                'status': emg.get('status'),
+                'category': emg.get('category') or emg.get('emergency_type') or 'Personal Safety',
+                'emergency_type': emg.get('emergency_type') or emg.get('category') or 'Emergency SOS',
+                'severity': emg.get('severity') or 'HIGH',
+                'location': emg.get('campus_zone') or 'Campus Safe Zone',
+                'campus_zone': emg.get('campus_zone') or 'Campus Safe Zone',
+                'assigned_responder': emg.get('assigned_responder') or 'Awaiting assignment',
+                'assigned_to': emg.get('assigned_responder') or 'Awaiting assignment',
+                'latitude': emg.get('latitude'),
+                'longitude': emg.get('longitude'),
+                'created_at': emg.get('created_at'),
+                'updated_at': emg.get('updated_at') or emg.get('created_at'),
+                'acknowledged_at': emg.get('acknowledged_at'),
+                'assigned_at': emg.get('assigned_at'),
+                'response_started_at': emg.get('response_started_at'),
+                'arrived_at': emg.get('arrived_at'),
+                'resolved_at': emg.get('resolved_at'),
+                'closed_at': emg.get('closed_at'),
+                'message': f"Emergency {emg.get('status')}: Response team is active."
+            }
+
+        # 2. Check legacy incidents table for active records
+        legacy_active = conn.execute("""
+            SELECT * FROM incidents 
+            WHERE student_id = ? AND incident_type = 'EMERGENCY_SOS' AND status IN ('ACTIVE', 'RESPONDING', 'ACKNOWLEDGED')
+            ORDER BY created_at DESC, id DESC LIMIT 1
+        """, (student_id,)).fetchone()
+
+        if legacy_active:
+            inc = dict(legacy_active)
+            return {
+                'success': True,
+                'has_emergency': True,
+                'is_active': True,
+                'is_safe': False,
+                'is_stood_down': False,
+                'incident_id': inc.get('incident_id'),
+                'emergency_id': inc.get('incident_id'),
+                'status': inc.get('status') if inc.get('status') != 'ACTIVE' else 'TRIGGERED',
+                'category': 'Personal Safety',
+                'emergency_type': 'Emergency SOS',
+                'severity': 'HIGH',
+                'location': inc.get('location') or 'Campus Safe Zone',
+                'campus_zone': inc.get('location') or 'Campus Safe Zone',
+                'assigned_responder': inc.get('assigned_to') or 'Quick Response Team',
+                'assigned_to': inc.get('assigned_to') or 'Quick Response Team',
+                'latitude': inc.get('latitude'),
+                'longitude': inc.get('longitude'),
+                'created_at': inc.get('created_at'),
+                'updated_at': inc.get('created_at'),
+                'acknowledged_at': None,
+                'assigned_at': None,
+                'response_started_at': None,
+                'arrived_at': None,
+                'resolved_at': None,
+                'closed_at': None,
+                'message': "Emergency active: Response units mobilized."
+            }
+
+        # 3. If no active emergency, fetch most recent resolved/closed emergency
+        recent_row = conn.execute("""
+            SELECT * FROM emergencies 
+            WHERE user_id = ? AND user_role = 'student'
+            ORDER BY created_at DESC, id DESC LIMIT 1
+        """, (student_id,)).fetchone()
+
+        if recent_row:
+            emg = dict(recent_row)
+            is_active = emg.get('status') in ACTIVE_EMERGENCY_STATUSES
+            is_stood_down = emg.get('status') in ['STAND_DOWN', 'CANCELLED']
+            return {
+                'success': True,
+                'has_emergency': True,
+                'is_active': is_active,
+                'is_safe': not is_active,
+                'is_stood_down': is_stood_down,
+                'incident_id': emg.get('emergency_id'),
+                'emergency_id': emg.get('emergency_id'),
+                'status': emg.get('status'),
+                'category': emg.get('category') or emg.get('emergency_type') or 'Personal Safety',
+                'emergency_type': emg.get('emergency_type') or emg.get('category') or 'Emergency SOS',
+                'severity': emg.get('severity') or 'HIGH',
+                'location': emg.get('campus_zone') or 'Campus Safe Zone',
+                'campus_zone': emg.get('campus_zone') or 'Campus Safe Zone',
+                'assigned_responder': emg.get('assigned_responder') or 'Quick Response Team',
+                'assigned_to': emg.get('assigned_responder') or 'Quick Response Team',
+                'latitude': emg.get('latitude'),
+                'longitude': emg.get('longitude'),
+                'created_at': emg.get('created_at'),
+                'updated_at': emg.get('updated_at') or emg.get('created_at'),
+                'acknowledged_at': emg.get('acknowledged_at'),
+                'assigned_at': emg.get('assigned_at'),
+                'response_started_at': emg.get('response_started_at'),
+                'arrived_at': emg.get('arrived_at'),
+                'resolved_at': emg.get('resolved_at'),
+                'closed_at': emg.get('closed_at'),
+                'message': "Emergency stood down (Marked Safe)." if is_stood_down else f"Emergency {emg.get('status')}."
+            }
+
+        # 4. Check legacy recent
+        legacy_recent = conn.execute("""
+            SELECT * FROM incidents 
+            WHERE student_id = ? AND incident_type = 'EMERGENCY_SOS'
+            ORDER BY created_at DESC, id DESC LIMIT 1
+        """, (student_id,)).fetchone()
+
+        if legacy_recent:
+            inc = dict(legacy_recent)
+            is_active = inc['status'] in ['ACTIVE', 'RESPONDING', 'ACKNOWLEDGED']
+            is_stood_down = inc['status'] in ['CANCELLED', 'STAND_DOWN']
+            return {
+                'success': True,
+                'has_emergency': True,
+                'is_active': is_active,
+                'is_safe': not is_active,
+                'is_stood_down': is_stood_down,
+                'incident_id': inc['incident_id'],
+                'emergency_id': inc['incident_id'],
+                'status': inc['status'],
+                'category': 'Personal Safety',
+                'emergency_type': 'Emergency SOS',
+                'severity': 'HIGH',
+                'location': inc['location'] or 'Campus Safe Zone',
+                'campus_zone': inc['location'] or 'Campus Safe Zone',
+                'assigned_responder': inc['assigned_to'] or 'Quick Response Team',
+                'assigned_to': inc['assigned_to'] or 'Quick Response Team',
+                'latitude': inc['latitude'],
+                'longitude': inc['longitude'],
+                'created_at': inc['created_at'],
+                'updated_at': inc['created_at'],
+                'acknowledged_at': None,
+                'assigned_at': None,
+                'response_started_at': None,
+                'arrived_at': None,
+                'resolved_at': None,
+                'closed_at': None,
+                'message': "Emergency stood down (Marked Safe)." if is_stood_down else f"Emergency {inc['status']}."
+            }
+
+        return {
+            'success': True,
+            'has_emergency': False,
+            'is_active': False,
+            'is_safe': True,
+            'is_stood_down': False,
+            'incident_id': None,
+            'emergency_id': None,
+            'status': 'READY',
+            'category': 'None',
+            'emergency_type': 'None',
+            'severity': 'LOW',
+            'location': 'Campus Safe Zone',
+            'campus_zone': 'Campus Safe Zone',
+            'assigned_responder': None,
+            'assigned_to': None,
+            'created_at': None,
+            'updated_at': None,
+            'resolved_at': None,
+            'closed_at': None,
+            'message': 'No active emergency. System is Ready.'
+        }
+    finally:
+        if should_close:
+            conn.close()
+
+
+def get_parent_ward_emergency(parent_id: int, conn: Optional[sqlite3.Connection] = None) -> Dict[str, Any]:
+    """
+    Retrieves the authoritative latest emergency for the parent's linked student ward.
+    """
+    should_close = False
+    if conn is None:
+        conn = get_db_connection()
+        should_close = True
+
+    try:
+        parent = conn.execute("SELECT student_id, name FROM parents WHERE id = ?", (parent_id,)).fetchone()
+        if not parent or not parent['student_id']:
+            return {
+                'success': False,
+                'has_emergency': False,
+                'is_active': False,
+                'incident_id': None,
+                'status': 'READY',
+                'message': 'No linked student ward found for this parent.'
+            }
+
+        res = get_student_latest_emergency(parent['student_id'], conn)
+        res['student_id'] = parent['student_id']
+        return res
     finally:
         if should_close:
             conn.close()

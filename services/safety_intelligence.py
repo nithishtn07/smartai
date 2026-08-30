@@ -474,8 +474,18 @@ def generate_executive_safety_briefing(incidents_list: list, complaints_list: li
     """
     Generates an institutional Safety Intelligence Briefing for authorized administrators.
     """
+    def _get_item(obj, key):
+        if hasattr(obj, 'keys') and key in obj.keys():
+            return obj[key]
+        if isinstance(obj, dict):
+            return obj.get(key, '')
+        return getattr(obj, key, '')
+
     total_incidents = len(incidents_list) if incidents_list else 0
-    active_emergencies = sum(1 for i in incidents_list if (i['incident_type'] if hasattr(i, '__getitem__') else getattr(i, 'incident_type', '')) == 'EMERGENCY_SOS' and (i['status'] if hasattr(i, '__getitem__') else getattr(i, 'status', '')) == 'ACTIVE')
+    active_emergencies = sum(1 for i in incidents_list if (
+        _get_item(i, 'incident_type') in ('EMERGENCY_SOS', 'Medical', 'Security', 'Fire', 'Other', 'Personal Safety', 'Distress') or
+        _get_item(i, 'category') in ('EMERGENCY_SOS', 'Medical', 'Security', 'Fire', 'Other', 'Personal Safety', 'Distress')
+    ) and _get_item(i, 'status') in ('ACTIVE', 'TRIGGERED', 'ACKNOWLEDGED', 'ASSIGNED', 'RESPONDER_ASSIGNED', 'EN_ROUTE', 'ON_SCENE', 'RESPONDING'))
 
     # Find highest risk zone
     highest_zone = max(zone_scores.values(), key=lambda z: z['risk_score']) if zone_scores else None

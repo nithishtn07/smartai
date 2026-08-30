@@ -79,7 +79,7 @@
                 <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 8px; padding: 8px 12px;">
                     <div style="font-size: 0.7rem; color: var(--text-muted);">Current CGPA</div>
                     <div style="font-size: 1.1rem; font-weight: 800; color: #38bdf8;">
-                        {{ s.cgpa|default(8.5) }}
+                        {{ s.cgpa if s.cgpa is not none else 'N/A' }}
                     </div>
                 </div>
             </div>
@@ -102,6 +102,10 @@
             </a>
         </div>
 
+    </div>
+    {% else %}
+    <div class="content-card" style="text-align: center; color: var(--text-muted); padding: 32px; grid-column: 1 / -1;">
+        No registered student records found.
     </div>
     {% endfor %}
 </div>

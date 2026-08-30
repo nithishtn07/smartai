@@ -71,12 +71,15 @@
                 <a href="{{ url_for('parent_exams') }}" class="nav-link {% if active_page == 'exams' %}active{% endif %}" id="nav-exams">
                     <span>🎯</span> <span class="nav-text">Exams &amp; Results</span>
                 </a>
+                <a href="/parent/assistant" class="nav-link {% if active_page == 'assistant' %}active{% endif %}" id="nav-assistant">
+                    <span>🤖</span> <span class="nav-text">AI Ward Assistant</span>
+                </a>
 
                 <!-- 2. FINANCE & RESIDENTIAL -->
                 <span class="nav-category">Finance &amp; Residential</span>
                 
                 <a href="{{ url_for('parent_fees') }}" class="nav-link {% if active_page == 'fees' %}active{% endif %}" id="nav-fees">
-                    <span>💳</span> <span class="nav-text">Fee Dues &amp; Ledger</span>
+                    <span>💳</span> <span class="nav-text">College Fee Center</span>
                 </a>
                 <a href="{{ url_for('parent_leave') }}" class="nav-link {% if active_page == 'leave' %}active{% endif %}" id="nav-leave">
                     <span>🏢</span> <span class="nav-text">Leave &amp; Outpass</span>
@@ -128,19 +131,66 @@
                         <span>Live Connected</span>
                     </div>
 
-                    <!-- Active Ward Pill -->
+                    <!-- Active Ward Pill / Multi-Child Selector -->
                     {% if student %}
-                    <div class="topbar-student-pill" title="Linked Student Record">
-                        <div class="student-avatar-circle">
-                            {{ student.name[:1] }}
+                        {% if linked_students and linked_students|length > 1 %}
+                        <div class="ward-selector-dropdown-wrapper" style="position: relative; display: inline-block;">
+                            <div class="topbar-student-pill" style="cursor: pointer; border: 1px solid rgba(192, 132, 252, 0.4); background: rgba(192, 132, 252, 0.08);" onclick="toggleWardMenu(event)" title="Click to switch between linked children">
+                                <div class="student-avatar-circle" style="background: linear-gradient(135deg, #a855f7, #6366f1); color: #fff;">
+                                    {{ student.name[:1] }}
+                                </div>
+                                <div>
+                                    <strong style="color: var(--text-primary);">{{ student.name }}</strong>
+                                    <span class="hide-mobile" style="color: var(--text-muted); font-size: 0.78rem;">
+                                        ({{ student.register_number }}) • {{ student.department }} ▾
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div id="ward-switcher-menu" style="display: none; position: absolute; top: calc(100% + 8px); left: 0; min-width: 240px; background: #0e1320; border: 1px solid var(--parent-border); border-radius: 12px; box-shadow: 0 16px 36px rgba(0,0,0,0.6); z-index: 200; padding: 8px;">
+                                <div style="padding: 6px 10px; font-size: 0.72rem; text-transform: uppercase; color: var(--text-muted); font-weight: 800; border-bottom: 1px solid rgba(255,255,255,0.06); margin-bottom: 4px;">
+                                    Switch Linked Ward ({{ linked_students|length }})
+                                </div>
+                                {% for s in linked_students %}
+                                <a href="{{ url_for('parent.parent_switch_student', student_id=s.id) }}" style="display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; text-decoration: none; color: #fff; background: {% if s.id == student.id %}rgba(192, 132, 252, 0.15){% else %}transparent{% endif %}; margin-bottom: 2px;">
+                                    <div style="width: 28px; height: 28px; border-radius: 50%; background: #2e1065; color: #c084fc; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.8rem;">
+                                        {{ s.name[:1] }}
+                                    </div>
+                                    <div style="flex: 1;">
+                                        <div style="font-size: 0.84rem; font-weight: 600;">{{ s.name }}</div>
+                                        <div style="font-size: 0.72rem; color: var(--text-muted);">{{ s.register_number }} • {{ s.relationship }}</div>
+                                    </div>
+                                    {% if s.id == student.id %}
+                                    <span style="color: #34d399; font-size: 0.8rem;">✓</span>
+                                    {% endif %}
+                                </a>
+                                {% endfor %}
+                            </div>
                         </div>
-                        <div>
-                            <strong style="color: var(--text-primary);">{{ student.name }}</strong>
-                            <span class="hide-mobile" style="color: var(--text-muted); font-size: 0.78rem;">
-                                ({{ student.register_number }}) • {{ student.department }} Sem {{ student.semester|default(5) }}
-                            </span>
+                        <script>
+                        function toggleWardMenu(e) {
+                            e.stopPropagation();
+                            const m = document.getElementById('ward-switcher-menu');
+                            if (m) m.style.display = m.style.display === 'block' ? 'none' : 'block';
+                        }
+                        document.addEventListener('click', () => {
+                            const m = document.getElementById('ward-switcher-menu');
+                            if (m) m.style.display = 'none';
+                        });
+                        </script>
+                        {% else %}
+                        <div class="topbar-student-pill" title="Linked Student Record">
+                            <div class="student-avatar-circle">
+                                {{ student.name[:1] }}
+                            </div>
+                            <div>
+                                <strong style="color: var(--text-primary);">{{ student.name }}</strong>
+                                <span class="hide-mobile" style="color: var(--text-muted); font-size: 0.78rem;">
+                                    ({{ student.register_number }}) • {{ student.department }} Sem {{ student.semester|default(5) }}
+                                </span>
+                            </div>
                         </div>
-                    </div>
+                        {% endif %}
                     {% endif %}
                 </div>
 
@@ -216,6 +266,7 @@
         window.CURRENT_USER_ID = {{ parent.id if parent else 0 }};
     </script>
     <script src="{{ url_for('static', filename='js/parent.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/emergency.js') }}"></script>
     <script src="{{ url_for('static', filename='js/campusguard-realtime.js') }}"></script>
     {% block extra_scripts %}{% endblock %}
 

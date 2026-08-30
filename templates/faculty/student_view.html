@@ -83,7 +83,7 @@
             <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 12px; padding: 14px; text-align: center;">
                 <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Cumulative CGPA</div>
                 <div style="font-size: 1.8rem; font-weight: 800; color: #38bdf8; margin-top: 4px;">
-                    {{ student.cgpa|default(8.75) }}
+                    {{ student.cgpa if student.cgpa is not none else 'N/A' }}
                 </div>
                 <div style="font-size: 0.78rem; color: #34d399;">Scale: 10.0</div>
             </div>
@@ -91,7 +91,7 @@
             <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 12px; padding: 14px; text-align: center;">
                 <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">Semester SGPA</div>
                 <div style="font-size: 1.8rem; font-weight: 800; color: #a855f7; margin-top: 4px;">
-                    {{ student.sgpa|default(8.90) }}
+                    {{ student.sgpa if student.sgpa is not none else 'N/A' }}
                 </div>
                 <div style="font-size: 0.78rem; color: var(--text-muted);">Current Sem</div>
             </div>
@@ -138,6 +138,10 @@
                             {% if a.attendance_pct >= 75 %}Compliant{% else %}Shortage Alert{% endif %}
                         </span>
                     </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 24px;">No attendance records registered.</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -186,6 +190,10 @@
                             {{ m.status }}
                         </span>
                     </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 24px;">No academic assessment marks available.</td>
                 </tr>
                 {% endfor %}
             </tbody>

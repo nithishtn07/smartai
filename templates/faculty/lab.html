@@ -80,6 +80,10 @@
                         </span>
                     </td>
                 </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 32px;">No laboratory experiments recorded yet.</td>
+                </tr>
                 {% endfor %}
             </tbody>
         </table>

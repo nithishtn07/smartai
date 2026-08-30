@@ -79,8 +79,8 @@
             <div class="form-group" style="margin-bottom: 14px;">
                 <label for="recipient_role" class="form-label" style="display: block; font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 6px;">Select Recipient</label>
                 <select id="recipient_role" name="recipient_role" class="form-select" style="width: 100%; padding: 10px; border-radius: 8px; background: rgba(14, 19, 32, 0.8); border: 1px solid var(--glass-border); color: #fff;" required>
-                    <option value="parent">Parent / Guardian ({{ student.parent_name|default('R. S. Kumar') }})</option>
-                    <option value="faculty">Class Faculty Advisor (Dr. Ramesh Rao)</option>
+                    <option value="parent">Parent / Guardian{% if student.parent_name %} ({{ student.parent_name }}){% endif %}</option>
+                    <option value="faculty">Class Faculty Advisor / Department</option>
                 </select>
             </div>
 

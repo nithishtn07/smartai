@@ -43,7 +43,7 @@
                     <td style="padding: 14px 10px; color: var(--text-secondary);">{{ c.department }}</td>
                     <td style="padding: 14px 10px; color: var(--text-secondary);">Semester {{ c.semester }}</td>
                     <td style="padding: 14px 10px; font-weight: 700; color: #34d399;">{{ c.credits }} Credits</td>
-                    <td style="padding: 14px 10px; color: #38bdf8;">{{ c.faculty_name|default('Dr. Ramesh Rao') }}</td>
+                    <td style="padding: 14px 10px; color: #38bdf8;">{{ c.faculty_name|default('Unassigned') }}</td>
                 </tr>
                 {% else %}
                 <tr>

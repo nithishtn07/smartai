@@ -11,7 +11,7 @@
     
     <div>
         <span class="badge badge-purple" style="font-size: 0.88rem; padding: 8px 16px;">
-            Semester {{ student.semester|default(5) }} • Cumulative GPA: <strong>{{ student.cgpa|default('8.75') }}</strong>
+            Semester {{ student.semester|default(1) }} • Cumulative GPA: <strong>{{ student.cgpa if student.cgpa is not none else 'N/A' }}</strong>
         </span>
     </div>
 </div>
@@ -22,25 +22,25 @@
         <div style="padding: 12px; border-right: 1px solid var(--glass-border);">
             <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">Current CGPA</div>
             <div style="font-size: 1.8rem; font-weight: 800; color: #c084fc; font-family: var(--font-mono); margin-top: 4px;">
-                {{ student.cgpa|default('8.75') }}
+                {{ student.cgpa if student.cgpa is not none else 'N/A' }}
             </div>
             <div style="font-size: 0.76rem; color: var(--text-secondary);">Scale of 10.0</div>
         </div>
 
         <div style="padding: 12px; border-right: 1px solid var(--glass-border);">
-            <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">Semester 5 SGPA</div>
+            <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">Current SGPA</div>
             <div style="font-size: 1.8rem; font-weight: 800; color: #34d399; font-family: var(--font-mono); margin-top: 4px;">
-                {{ student.sgpa|default('8.90') }}
+                {{ student.sgpa if student.sgpa is not none else 'N/A' }}
             </div>
-            <div style="font-size: 0.76rem; color: #34d399;">First Class with Distinction</div>
+            <div style="font-size: 0.76rem; color: #34d399;">Academic Standing</div>
         </div>
 
         <div style="padding: 12px; border-right: 1px solid var(--glass-border);">
             <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">Earned Credits</div>
             <div style="font-size: 1.8rem; font-weight: 800; color: #38bdf8; font-family: var(--font-mono); margin-top: 4px;">
-                {{ student.earned_credits|default(112) }} <span style="font-size: 0.9rem; color: var(--text-muted);">/ {{ student.total_credits|default(160) }}</span>
+                {{ student.earned_credits|default(0) }} <span style="font-size: 0.9rem; color: var(--text-muted);">/ {{ student.total_credits|default(160) }}</span>
             </div>
-            <div style="font-size: 0.76rem; color: var(--text-secondary);">70% Degree Completed</div>
+            <div style="font-size: 0.76rem; color: var(--text-secondary);">Degree Progress</div>
         </div>
 
         <div style="padding: 12px;">
@@ -92,6 +92,7 @@
             <thead>
                 <tr>
                     <th>Course Code &amp; Title</th>
+                    <th>Credits</th>
                     <th>CAT 1 (50)</th>
                     <th>CAT 2 (50)</th>
                     <th>Quiz (10)</th>
@@ -110,6 +111,7 @@
                         <div style="font-weight: 700; color: var(--text-primary);">{{ item.course_name }}</div>
                         <div style="font-size: 0.78rem; color: var(--text-muted); font-family: var(--font-mono);">{{ item.course_code }}</div>
                     </td>
+                    <td><strong style="color: #a855f7; font-family: var(--font-mono);">{{ item.credits|default(4) }}</strong></td>
                     <td style="font-family: var(--font-mono);">{{ item.cat1 }}</td>
                     <td style="font-family: var(--font-mono);">{{ item.cat2 }}</td>
                     <td style="font-family: var(--font-mono);">{{ item.quiz }}</td>
@@ -128,7 +130,7 @@
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="10" style="text-align: center; color: var(--text-muted); padding: 24px;">No academic marks available yet.</td>
+                    <td colspan="11" style="text-align: center; color: var(--text-muted); padding: 24px;">No academic marks available yet.</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -167,6 +169,10 @@
                     <td>{{ c.room_number }}</td>
                     <td style="font-size: 0.82rem; color: var(--text-muted);">{{ c.timing }}</td>
                 </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 24px;">No registered courses available.</td>
+                </tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -186,23 +192,23 @@
     new Chart(detailedCtx, {
         type: 'bar',
         data: {
-            labels: courseCodes.length ? courseCodes : ['CS301', 'CS302', 'CS303', 'CS304', 'CS305'],
+            labels: courseCodes.length ? courseCodes : ['No Course Assessments'],
             datasets: [
                 {
                     label: 'CAT 1 (50)',
-                    data: cat1Data.length ? cat1Data : [46.5, 42, 38, 48, 45],
+                    data: cat1Data.length ? cat1Data : [0],
                     backgroundColor: 'rgba(192, 132, 252, 0.65)',
                     borderRadius: 4
                 },
                 {
                     label: 'CAT 2 (50)',
-                    data: cat2Data.length ? cat2Data : [48, 44.5, 39.5, 49, 46.5],
+                    data: cat2Data.length ? cat2Data : [0],
                     backgroundColor: 'rgba(129, 140, 248, 0.65)',
                     borderRadius: 4
                 },
                 {
                     label: 'FAT Exam (100)',
-                    data: fatData.length ? fatData : [92, 86, 78, 95, 89],
+                    data: fatData.length ? fatData : [0],
                     backgroundColor: 'rgba(52, 211, 153, 0.65)',
                     borderRadius: 4
                 }
@@ -223,13 +229,18 @@
 
     // Grade Distribution Doughnut Chart
     const gradeCtx = document.getElementById('gradeDistributionChart').getContext('2d');
+    const sGradeCount = {{ s_grades|default(0) }};
+    const aGradeCount = {{ a_plus_grades|default(0) }};
+    const otherGradeCount = {{ (marks|length - s_grades|default(0) - a_plus_grades|default(0)) if (marks|length >= (s_grades|default(0) + a_plus_grades|default(0))) else 0 }};
+    const hasGrades = (sGradeCount + aGradeCount + otherGradeCount) > 0;
+
     new Chart(gradeCtx, {
         type: 'doughnut',
         data: {
-            labels: ["'S' Grade (90-100%)", "'A+' Grade (85-89%)", "'A' Grade (75-84%)"],
+            labels: hasGrades ? ["'S' Grade (90-100%)", "'A+' Grade (85-89%)", "'Other Passing'"] : ["No Grade Records"],
             datasets: [{
-                data: [{{ s_grades|default(2) }}, {{ a_plus_grades|default(3) }}, 0],
-                backgroundColor: ['#34d399', '#c084fc', '#818cf8'],
+                data: hasGrades ? [sGradeCount, aGradeCount, otherGradeCount] : [1],
+                backgroundColor: hasGrades ? ['#34d399', '#c084fc', '#818cf8'] : ['rgba(255,255,255,0.1)'],
                 borderColor: '#0b0f19',
                 borderWidth: 2
             }]

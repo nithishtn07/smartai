@@ -1,0 +1,222 @@
+{% extends "parent/base_parent.html" %}
+
+{% block title %}AI Ward Assistant — CampusGuard AI{% endblock %}
+
+{% block extra_head %}
+<style>
+    .assistant-container {
+        display: flex;
+        flex-direction: column;
+        height: calc(100vh - 180px);
+        min-height: 580px;
+        max-width: 960px;
+        margin: 0 auto;
+        background: rgba(14, 19, 32, 0.85);
+        border: 1px solid var(--parent-border);
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
+        backdrop-filter: var(--glass-blur);
+    }
+    .assistant-header {
+        padding: 16px 24px;
+        background: rgba(255, 255, 255, 0.02);
+        border-bottom: 1px solid var(--glass-border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    .chat-messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+    .chat-bubble {
+        max-width: 80%;
+        padding: 14px 18px;
+        border-radius: 16px;
+        font-size: 0.92rem;
+        line-height: 1.55;
+    }
+    .bubble-user {
+        align-self: flex-end;
+        background: var(--parent-gradient);
+        color: #fff;
+        border-bottom-right-radius: 4px;
+        box-shadow: 0 4px 15px rgba(147, 51, 234, 0.3);
+    }
+    .bubble-ai {
+        align-self: flex-start;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid var(--glass-border);
+        color: var(--text-primary);
+        border-bottom-left-radius: 4px;
+    }
+    .bubble-ai p { margin: 0 0 8px 0; }
+    .bubble-ai p:last-child { margin-bottom: 0; }
+    .bubble-ai ul { margin: 6px 0 6px 20px; padding: 0; }
+    .bubble-ai li { margin-bottom: 4px; }
+
+    .quick-chips-row {
+        padding: 10px 20px;
+        background: rgba(255, 255, 255, 0.01);
+        border-top: 1px solid rgba(255, 255, 255, 0.04);
+        display: flex;
+        gap: 8px;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+    .quick-chip {
+        background: rgba(168, 85, 247, 0.1);
+        border: 1px solid rgba(168, 85, 247, 0.25);
+        color: #c084fc;
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 0.78rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    .quick-chip:hover {
+        background: rgba(168, 85, 247, 0.25);
+        color: #fff;
+        border-color: #a855f7;
+    }
+    .chat-input-container {
+        padding: 16px 20px;
+        background: rgba(10, 14, 26, 0.95);
+        border-top: 1px solid var(--glass-border);
+        display: flex;
+        gap: 12px;
+        align-items: center;
+    }
+    .chat-input {
+        flex: 1;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid var(--glass-border);
+        border-radius: 12px;
+        padding: 12px 18px;
+        color: #fff;
+        font-size: 0.92rem;
+        outline: none;
+    }
+    .chat-input:focus {
+        border-color: var(--parent-primary);
+        box-shadow: 0 0 12px rgba(147, 51, 234, 0.3);
+    }
+</style>
+{% endblock %}
+
+{% block parent_content %}
+<div class="page-header" style="margin-bottom: 16px;">
+    <div>
+        <div style="font-size: 0.76rem; color: var(--parent-primary); font-weight: 700; text-transform: uppercase;">
+            🤖 Real-Time Ward Intelligence
+        </div>
+        <h1 style="font-size: 1.5rem; font-weight: 800; color: #fff; margin: 4px 0 0;">
+            AI Ward Assistant — {{ student.name }}
+        </h1>
+    </div>
+    <span class="badge badge-purple" style="font-size: 0.78rem;">
+        ⚡ Powered by Gemini &amp; Database
+    </span>
+</div>
+
+<div class="assistant-container">
+    <div class="assistant-header">
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <div style="width: 10px; height: 10px; border-radius: 50%; background: #10b981; box-shadow: 0 0 8px #10b981;"></div>
+            <strong style="color: #fff; font-size: 0.9rem;">CampusGuard Parent AI Intelligence</strong>
+        </div>
+        <div style="font-size: 0.78rem; color: var(--text-muted);">
+            Ward: <strong style="color: #fff;">{{ student.name }}</strong> ({{ student.register_number }})
+        </div>
+    </div>
+
+    <!-- Message Thread -->
+    <div class="chat-messages" id="chat-thread">
+        <div class="chat-bubble bubble-ai">
+            👋 Hello <strong>{{ parent.name }}</strong>! I am your AI Parent Assistant. I am linked to <strong>{{ student.name }}</strong>'s academic and fee records. Ask me anything about their <strong>attendance</strong>, <strong>CGPA</strong>, <strong>pending fees</strong>, or <strong>class schedule</strong>.
+        </div>
+    </div>
+
+    <!-- Quick Chips -->
+    <div class="quick-chips-row">
+        <button type="button" class="quick-chip" onclick="sendQuickPrompt('How is {{ student.name }} performing overall?')">📊 Performance</button>
+        <button type="button" class="quick-chip" onclick="sendQuickPrompt('What is {{ student.name }}\'s attendance?')">🟢 Attendance</button>
+        <button type="button" class="quick-chip" onclick="sendQuickPrompt('What is {{ student.name }}\'s CGPA?')">🎓 CGPA &amp; Marks</button>
+        <button type="button" class="quick-chip" onclick="sendQuickPrompt('Does {{ student.name }} have pending fees?')">💰 Pending Fees</button>
+        <button type="button" class="quick-chip" onclick="sendQuickPrompt('What classes does {{ student.name }} have tomorrow?')">📅 Timetable</button>
+    </div>
+
+    <!-- Input Form -->
+    <form id="chat-form" class="chat-input-container" onsubmit="handleChatSubmit(event)">
+        <input type="text" id="query-input" class="chat-input" placeholder="Ask about your ward's marks, attendance, fees, or schedule..." autocomplete="off">
+        <button type="submit" class="btn-primary" style="padding: 12px 22px; font-weight: 700;">
+            <span>Send ➔</span>
+        </button>
+    </form>
+</div>
+
+<script>
+    function renderMarkdown(text) {
+        if (!text) return '';
+        let html = text
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+        html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+        html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+        html = html.replace(/`(.*?)`/g, '<code style="background:rgba(255,255,255,0.08);padding:2px 5px;border-radius:4px;">$1</code>');
+        html = html.replace(/\n• (.*?)(?=\n|$)/g, '<br>• $1');
+        html = html.replace(/\n\n/g, '<br><br>');
+        html = html.replace(/\n/g, '<br>');
+        return html;
+    }
+
+    async function handleChatSubmit(e) {
+        if (e) e.preventDefault();
+        const input = document.getElementById('query-input');
+        const query = input.value.trim();
+        if (!query) return;
+
+        input.value = '';
+        const thread = document.getElementById('chat-thread');
+
+        // Append User Bubble
+        const userBubble = document.createElement('div');
+        userBubble.className = 'chat-bubble bubble-user';
+        userBubble.innerText = query;
+        thread.appendChild(userBubble);
+        thread.scrollTop = thread.scrollHeight;
+
+        // Append Typing Bubble
+        const typingBubble = document.createElement('div');
+        typingBubble.className = 'chat-bubble bubble-ai';
+        typingBubble.innerHTML = '<em>Thinking and analyzing CampusGuard records...</em>';
+        thread.appendChild(typingBubble);
+        thread.scrollTop = thread.scrollHeight;
+
+        try {
+            const resp = await fetch('/api/parent/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query: query })
+            });
+            const data = await resp.json();
+            typingBubble.innerHTML = renderMarkdown(data.reply || 'No response received.');
+        } catch (err) {
+            typingBubble.innerHTML = '⚠️ Communication error. Please try again.';
+        }
+        thread.scrollTop = thread.scrollHeight;
+    }
+
+    function sendQuickPrompt(prompt) {
+        document.getElementById('query-input').value = prompt;
+        handleChatSubmit();
+    }
+</script>
+{% endblock %}

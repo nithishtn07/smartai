@@ -32,25 +32,43 @@
                     <th>Description</th>
                     <th>Due Date</th>
                     <th>Max Marks</th>
-                    <th>Student Status</th>
+                    <th>Submissions</th>
+                    <th style="text-align: right;">Actions</th>
                 </tr>
             </thead>
             <tbody>
                 {% for a in assignments %}
                 <tr>
                     <td><strong style="color: #34d399; font-family: var(--font-mono);">{{ a.course_code }}</strong></td>
-                    <td><strong style="color: var(--text-primary);">{{ a.title }}</strong></td>
-                    <td style="font-size: 0.85rem; color: var(--text-secondary); max-width: 300px;">{{ a.description }}</td>
-                    <td style="font-family: var(--font-mono); font-weight: 700; color: #fbbf24;">{{ a.due_date }}</td>
-                    <td>{{ a.max_marks }}</td>
                     <td>
-                        {% if a.status == 'Evaluated' %}
-                            <span class="badge badge-green">✓ Evaluated ({{ a.obtained_marks }}/{{ a.max_marks }})</span>
-                        {% elif a.status == 'Submitted' %}
-                            <span class="badge badge-cyan">Submitted</span>
-                        {% else %}
-                            <span class="badge badge-yellow">Pending Submission</span>
-                        {% endif %}
+                        <strong style="color: var(--text-primary);">{{ a.title }}</strong>
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">{{ a.course_name|default('') }}</div>
+                    </td>
+                    <td style="font-size: 0.85rem; color: var(--text-secondary); max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ a.description }}</td>
+                    <td style="font-family: var(--font-mono); font-weight: 700; color: #fbbf24;">{{ a.due_date }}</td>
+                    <td>{{ a.max_marks }} pts</td>
+                    <td>
+                        <a href="{{ url_for('faculty.faculty_assignment_submissions', assignment_id=a.id) }}" class="badge badge-cyan" style="text-decoration: none; padding: 6px 10px; font-size: 0.8rem;">
+                            📥 View Submissions
+                        </a>
+                    </td>
+                    <td style="text-align: right;">
+                        <div style="display: inline-flex; gap: 8px; justify-content: flex-end;">
+                            <a href="{{ url_for('faculty.faculty_assignment_submissions', assignment_id=a.id) }}" class="btn-secondary" style="padding: 5px 10px; font-size: 0.78rem; text-decoration: none;">
+                                📝 Grade
+                            </a>
+                            <form method="POST" action="{{ url_for('faculty.faculty_assignment_delete', assignment_id=a.id) }}" onsubmit="return confirm('Are you sure you want to delete this assignment?');" style="display: inline;">
+                                <button type="submit" class="btn-secondary" style="padding: 5px 10px; font-size: 0.78rem; color: #f87171; border-color: rgba(239,68,68,0.3);">
+                                    🗑️ Delete
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" style="text-align: center; padding: 32px; color: var(--text-muted);">
+                        No assignments posted yet. Click 'Post New Assignment' to publish tasks for your classes.
                     </td>
                 </tr>
                 {% endfor %}

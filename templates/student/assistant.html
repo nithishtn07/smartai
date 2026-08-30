@@ -5,41 +5,49 @@
 {% block student_content %}
 <div class="page-header-block">
     <div class="page-title-group">
-        <h1><span>🤖</span> CampusGuard AI Assistant</h1>
-        <p>Your intelligent, privacy-first companion for attendance, timetable, complaints, and campus safety.</p>
+        <h1><span>🤖</span> CampusGuard AI — Smart Campus Assistant</h1>
+        <p>Your intelligent, privacy-first companion for attendance, timetable, exam countdowns, marks, study planning, and campus safety.</p>
     </div>
 </div>
 
 <div class="chat-container">
     <div class="chat-header">
         <div style="display: flex; align-items: center; gap: 10px;">
-            <div style="width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, #0284c7, #38bdf8); display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">
+            <div style="width: 38px; height: 38px; border-radius: 10px; background: linear-gradient(135deg, #0284c7, #38bdf8); display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">
                 🤖
             </div>
             <div>
-                <h3 style="font-size: 0.95rem; font-weight: 700; color: var(--text-primary);">CampusGuard AI Neural Assistant</h3>
-                <span style="font-size: 0.72rem; color: #34d399; font-weight: 600;">● Online • Context: {{ student.name }} ({{ student.register_number }})</span>
+                <h3 style="font-size: 0.98rem; font-weight: 700; color: var(--text-primary); margin: 0;">CampusGuard AI Neural Assistant</h3>
+                <span style="font-size: 0.74rem; color: #34d399; font-weight: 600;">● Online • Context: {{ student.name }} ({{ student.register_number }})</span>
             </div>
         </div>
 
-        <span class="badge badge-cyan">v2.4 Intelligent ERP</span>
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <button id="clear-chat-btn" type="button" class="btn-secondary" style="padding: 4px 10px; font-size: 0.75rem; border-radius: 8px;" title="Reset conversation">
+                🔄 Clear Chat
+            </button>
+            <span class="badge badge-cyan">v3.0 Smart AI</span>
+        </div>
     </div>
 
     <!-- Messages Window -->
     <div class="chat-messages" id="chat-messages">
-        <div class="chat-bubble chat-bubble-ai">
-            👋 Hello {{ student.name }}! I am your personal CampusGuard AI Assistant.<br><br>
-            I can check your real-time course attendance, lookup your lecture schedule, track filed complaints, and guide you through campus safety services. How can I assist you today?
+        <div class="chat-bubble chat-bubble-ai" data-msg-id="intro">
+            👋 Hello <strong>{{ student.name }}</strong>! I am your personal **CampusGuard AI Smart Campus Assistant**.<br><br>
+            I have real-time access to your academic schedule, course attendance, marks, examinations, pending assignments, and fee status. I can also help you build customized study plans and provide instant campus safety assistance.<br><br>
+            <em>What would you like to explore today?</em>
         </div>
     </div>
 
-    <!-- Quick Prompt Suggestions -->
-    <div class="chat-prompt-chips">
-        <span class="prompt-chip" data-prompt="What is my overall attendance?">📊 Overall Attendance</span>
-        <span class="prompt-chip" data-prompt="When is my next class?">📅 When is my next class?</span>
-        <span class="prompt-chip" data-prompt="What are my pending complaints?">📝 Check My Complaints</span>
-        <span class="prompt-chip" data-prompt="Who do I contact for an emergency?">🚨 Emergency Contacts</span>
-        <span class="prompt-chip" data-prompt="What is my attendance in DBMS?">📚 Attendance in DBMS</span>
+    <!-- Quick Prompt Suggestions Chips -->
+    <div class="chat-prompt-chips" id="quick-prompt-chips">
+        <span class="prompt-chip" data-prompt="How am I performing academically?">📊 My Performance</span>
+        <span class="prompt-chip" data-prompt="What is my attendance?">🟢 My Attendance</span>
+        <span class="prompt-chip" data-prompt="What is my CGPA?">🎓 My CGPA</span>
+        <span class="prompt-chip" data-prompt="What classes do I have tomorrow?">📅 My Timetable</span>
+        <span class="prompt-chip" data-prompt="How much fee is pending?">💰 My Fees</span>
+        <span class="prompt-chip" data-prompt="Which subject has the lowest attendance?">📉 Lowest Subject</span>
+        <span class="prompt-chip" data-prompt="Who do I contact for an emergency?">🚨 Safety Help</span>
     </div>
 
     <!-- Message Input Bar -->
@@ -48,11 +56,11 @@
             type="text" 
             id="chat-input" 
             class="chat-input" 
-            placeholder="Ask anything about your timetable, attendance, safety or campus services..." 
+            placeholder="Ask anything about attendance, classes, exams, assignments, study plans..." 
             autocomplete="off"
             required
         >
-        <button type="submit" class="chat-send-btn" title="Send query">
+        <button type="submit" class="chat-send-btn" title="Send query" id="chat-send-button">
             ➤
         </button>
     </form>

@@ -9,7 +9,7 @@
     <a href="{{ url_for('admin_safety') }}" class="alert-banner-card" style="border-left: 4px solid #ef4444;">
         <div class="alert-banner-icon" style="background: rgba(239, 68, 68, 0.15); color: #f87171;">🚨</div>
         <div>
-            <div style="font-size: 1.25rem; font-weight: 800; color: #fff;">{{ active_sos_count|default(0) }} Active SOS</div>
+            <div id="dashboard-banner-active-sos-count" style="font-size: 1.25rem; font-weight: 800; color: #fff;">{{ active_sos_count|default(0) }} Active SOS</div>
             <div style="font-size: 0.78rem; color: #fca5a5;">Real-time Distress Beacons</div>
         </div>
     </a>
@@ -68,8 +68,8 @@
             <span>Students</span>
             <span>🎓</span>
         </div>
-        <div style="font-size: 1.8rem; font-weight: 800; color: #fff; margin-top: 8px;">{{ total_students|default(1) }}</div>
-        <div style="color: #34d399; font-size: 0.78rem; margin-top: 4px;">100% Enrolled &amp; Active</div>
+        <div style="font-size: 1.8rem; font-weight: 800; color: #fff; margin-top: 8px;">{{ total_students|default(0) }}</div>
+        <div style="color: #34d399; font-size: 0.78rem; margin-top: 4px;">Enrolled &amp; Active</div>
     </div>
 
     <div class="kpi-card" style="background: rgba(14, 19, 32, 0.8); border: 1px solid var(--glass-border); border-radius: 16px; padding: 20px;">
@@ -77,7 +77,7 @@
             <span>Parents</span>
             <span>👨‍👩‍👧</span>
         </div>
-        <div style="font-size: 1.8rem; font-weight: 800; color: #fff; margin-top: 8px;">{{ total_parents|default(1) }}</div>
+        <div style="font-size: 1.8rem; font-weight: 800; color: #fff; margin-top: 8px;">{{ total_parents|default(0) }}</div>
         <div style="color: #c084fc; font-size: 0.78rem; margin-top: 4px;">Connected &amp; Verified</div>
     </div>
 
@@ -86,7 +86,7 @@
             <span>Faculty</span>
             <span>👨‍🏫</span>
         </div>
-        <div style="font-size: 1.8rem; font-weight: 800; color: #fff; margin-top: 8px;">{{ total_faculty|default(1) }}</div>
+        <div style="font-size: 1.8rem; font-weight: 800; color: #fff; margin-top: 8px;">{{ total_faculty|default(0) }}</div>
         <div style="color: #38bdf8; font-size: 0.78rem; margin-top: 4px;">Assigned Advisors</div>
     </div>
 
@@ -95,7 +95,7 @@
             <span>Campus Attendance</span>
             <span>📊</span>
         </div>
-        <div style="font-size: 1.8rem; font-weight: 800; color: #fff; margin-top: 8px;">{{ "{:.1f}%".format(avg_attendance|default(88.5)) }}</div>
+        <div style="font-size: 1.8rem; font-weight: 800; color: #fff; margin-top: 8px;">{{ "{:.1f}%".format(avg_attendance|default(0.0)) }}</div>
         <div style="color: #34d399; font-size: 0.78rem; margin-top: 4px;">Institution Average</div>
     </div>
 
@@ -104,8 +104,8 @@
             <span>Active Courses</span>
             <span>📚</span>
         </div>
-        <div style="font-size: 1.8rem; font-weight: 800; color: #fff; margin-top: 8px;">{{ total_courses|default(5) }}</div>
-        <div style="color: #818cf8; font-size: 0.78rem; margin-top: 4px;">Fall 2026 Curriculum</div>
+        <div style="font-size: 1.8rem; font-weight: 800; color: #fff; margin-top: 8px;">{{ total_courses|default(0) }}</div>
+        <div style="color: #818cf8; font-size: 0.78rem; margin-top: 4px;">Active Curriculum</div>
     </div>
 </div>
 
@@ -113,10 +113,10 @@
 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 20px; margin-bottom: 28px;">
     
     <!-- Chart 1: Subject Attendance Compliance -->
-    <div style="background: rgba(14, 19, 32, 0.8); border: 1px solid var(--glass-border); border-radius: 18px; padding: 22px;">
+    <div style="background: rgba(14, 19, 32, 0.85); border: 1px solid var(--glass-border); border-radius: 18px; padding: 24px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-            <h3 style="font-size: 1.05rem; font-weight: 700; color: #fff;">Subject Attendance Compliance</h3>
-            <span class="badge badge-purple">Real-Time DB</span>
+            <h3 style="font-size: 1.05rem; font-weight: 700; color: #fff;">📊 Subject Attendance Compliance</h3>
+            <span class="badge badge-emerald">Real-Time Sync</span>
         </div>
         <div style="height: 220px; position: relative;">
             <canvas id="attendanceChart"></canvas>
@@ -124,10 +124,10 @@
     </div>
 
     <!-- Chart 2: Institutional Safety & Emergency Status -->
-    <div style="background: rgba(14, 19, 32, 0.8); border: 1px solid var(--glass-border); border-radius: 18px; padding: 22px;">
+    <div style="background: rgba(14, 19, 32, 0.85); border: 1px solid var(--glass-border); border-radius: 18px; padding: 24px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-            <h3 style="font-size: 1.05rem; font-weight: 700; color: #fff;">Campus Safety Incident Resolution</h3>
-            <span class="badge badge-indigo">QRT Engine</span>
+            <h3 style="font-size: 1.05rem; font-weight: 700; color: #fff;">🛡️ Safety Incident Resolution</h3>
+            <span class="badge badge-indigo">Security Grid</span>
         </div>
         <div style="height: 220px; position: relative;">
             <canvas id="safetyChart"></canvas>
@@ -136,24 +136,24 @@
 
 </div>
 
-<!-- Active SOS Incidents Queue -->
-<div style="background: rgba(14, 19, 32, 0.85); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 18px; padding: 24px; margin-bottom: 28px;">
+<!-- Real-Time SOS Alert Monitor -->
+<div style="background: rgba(14, 19, 32, 0.85); border: 1px solid var(--glass-border); border-radius: 18px; padding: 24px; margin-bottom: 28px;">
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 10px;">
         <div>
-            <h2 style="font-size: 1.25rem; font-weight: 800; color: #fca5a5; display: flex; align-items: center; gap: 8px;">
-                <span>🚨</span> Real-Time Emergency SOS Queue &amp; Response
-            </h2>
-            <p style="font-size: 0.82rem; color: var(--text-secondary); margin-top: 2px;">4-Stage Response State Machine: Active &rarr; Acknowledged &rarr; Responding &rarr; Resolved</p>
+            <h3 style="font-size: 1.15rem; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 8px;">
+                <span>🚨</span> Real-Time Emergency SOS Queue &amp; Incident Console
+            </h3>
+            <p style="color: var(--text-secondary); font-size: 0.82rem; margin-top: 2px;">Real-time distress signals dispatched from campus students &amp; perimeter beacons.</p>
         </div>
-        <a href="{{ url_for('admin_safety') }}" class="btn-secondary" style="font-size: 0.82rem; padding: 8px 14px;">Full Safety Radar →</a>
+        <span id="dashboard-active-sos-badge" class="badge badge-rose">{{ active_sos_count|default(0) }} Active Distress</span>
     </div>
 
-    {% if incidents %}
+    {% if active_sos_alerts and active_sos_alerts|length > 0 %}
     <div class="table-responsive">
         <table class="data-table" style="width: 100%; border-collapse: collapse; font-size: 0.88rem;">
             <thead>
                 <tr style="border-bottom: 1px solid var(--glass-border); text-align: left; color: var(--text-muted);">
-                    <th style="padding: 12px 10px;">Incident ID</th>
+                    <th style="padding: 12px 10px;">SOS ID</th>
                     <th style="padding: 12px 10px;">Student</th>
                     <th style="padding: 12px 10px;">Location</th>
                     <th style="padding: 12px 10px;">Status</th>
@@ -161,41 +161,51 @@
                     <th style="padding: 12px 10px; text-align: right;">Action</th>
                 </tr>
             </thead>
-            <tbody>
-                {% for inc in incidents %}
-                <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.04);">
-                    <td style="padding: 14px 10px; font-family: var(--font-mono); color: #818cf8;">{{ inc.incident_id }}</td>
-                    <td style="padding: 14px 10px;">
-                        <strong style="color: var(--text-primary);">{{ inc.student_name|default('Nithish Nagaraj') }}</strong>
-                        <div style="font-size: 0.75rem; color: var(--text-muted);">{{ inc.register_number|default('STU001') }}</div>
+            <tbody id="dashboard-active-sos-tbody">
+                {% for inc in active_sos_alerts %}
+                <tr id="dashboard-sos-row-{{ inc.incident_id }}" style="border-bottom: 1px solid rgba(255, 255, 255, 0.04);">
+                    <td style="padding: 14px 10px; font-family: var(--font-mono); font-weight: 700; color: #818cf8;">
+                        <a href="/emergency/incident/{{ inc.incident_id }}" style="color: inherit; text-decoration: none;">
+                            {{ inc.incident_id }}
+                        </a>
                     </td>
-                    <td style="padding: 14px 10px; color: var(--text-secondary);">{{ inc.location|default('Campus North Block') }}</td>
                     <td style="padding: 14px 10px;">
-                        {% if inc.status == 'ACTIVE' %}
-                            <span class="badge" style="background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.4);">ACTIVE</span>
+                        <strong style="color: var(--text-primary);">{{ inc.student_name|default('Campus User') }}</strong>
+                        <div style="font-size: 0.75rem; color: var(--text-muted);">{{ inc.register_number|default('-') }}</div>
+                    </td>
+                    <td style="padding: 14px 10px; color: var(--text-secondary);">{{ inc.location|default('Campus Perimeter') }}</td>
+                    <td style="padding: 14px 10px;">
+                        {% if inc.status in ['ACTIVE', 'TRIGGERED'] %}
+                            <span class="badge" style="background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.4); font-weight: 700;">🚨 TRIGGERED</span>
                         {% elif inc.status == 'ACKNOWLEDGED' %}
-                            <span class="badge" style="background: rgba(245, 158, 11, 0.2); color: #fcd34d; border: 1px solid rgba(245, 158, 11, 0.4);">ACKNOWLEDGED</span>
-                        {% elif inc.status == 'RESPONDING' %}
-                            <span class="badge" style="background: rgba(56, 189, 248, 0.2); color: #7dd3fc; border: 1px solid rgba(56, 189, 248, 0.4);">RESPONDING</span>
+                            <span class="badge" style="background: rgba(245, 158, 11, 0.2); color: #fcd34d; border: 1px solid rgba(245, 158, 11, 0.4); font-weight: 700;">⚠️ ACKNOWLEDGED</span>
+                        {% elif inc.status in ['RESPONDING', 'RESPONDER_ASSIGNED', 'ASSIGNED', 'EN_ROUTE'] %}
+                            <span class="badge" style="background: rgba(56, 189, 248, 0.2); color: #7dd3fc; border: 1px solid rgba(56, 189, 248, 0.4); font-weight: 700;">🚑 EN ROUTE</span>
+                        {% elif inc.status == 'ON_SCENE' %}
+                            <span class="badge" style="background: rgba(192, 132, 252, 0.2); color: #e9d5ff; border: 1px solid rgba(192, 132, 252, 0.4); font-weight: 700;">📍 ON SCENE</span>
                         {% else %}
-                            <span class="badge" style="background: rgba(52, 211, 153, 0.2); color: #6ee7b7; border: 1px solid rgba(52, 211, 153, 0.4);">RESOLVED</span>
+                            <span class="badge" style="background: rgba(52, 211, 153, 0.2); color: #6ee7b7; border: 1px solid rgba(52, 211, 153, 0.4);">{{ inc.status }}</span>
                         {% endif %}
                     </td>
-                    <td style="padding: 14px 10px; color: var(--text-muted); font-size: 0.8rem;">{{ inc.created_at }}</td>
+                    <td style="padding: 14px 10px; color: var(--text-muted); font-size: 0.8rem; font-family: var(--font-mono);">{{ inc.created_at }}</td>
                     <td style="padding: 14px 10px; text-align: right;">
                         <form method="POST" action="{{ url_for('admin_sos_status_update') }}" style="display: inline-flex; gap: 6px;">
                             <input type="hidden" name="incident_id" value="{{ inc.incident_id }}">
-                            {% if inc.status == 'ACTIVE' %}
+                            {% if inc.status in ['ACTIVE', 'TRIGGERED'] %}
                                 <input type="hidden" name="new_status" value="ACKNOWLEDGED">
                                 <button type="submit" class="btn-primary" style="padding: 6px 12px; font-size: 0.78rem; background: #f59e0b;">Acknowledge</button>
                             {% elif inc.status == 'ACKNOWLEDGED' %}
-                                <input type="hidden" name="new_status" value="RESPONDING">
+                                <input type="hidden" name="new_status" value="EN_ROUTE">
                                 <button type="submit" class="btn-primary" style="padding: 6px 12px; font-size: 0.78rem; background: #38bdf8;">Dispatch QRT</button>
-                            {% elif inc.status == 'RESPONDING' %}
+                            {% elif inc.status in ['RESPONDING', 'RESPONDER_ASSIGNED', 'ASSIGNED', 'EN_ROUTE'] %}
+                                <input type="hidden" name="new_status" value="ON_SCENE">
+                                <button type="submit" class="btn-primary" style="padding: 6px 12px; font-size: 0.78rem; background: #a855f7;">Mark On Scene</button>
+                            {% elif inc.status == 'ON_SCENE' %}
                                 <input type="hidden" name="new_status" value="RESOLVED">
                                 <button type="submit" class="btn-primary" style="padding: 6px 12px; font-size: 0.78rem; background: #10b981;">Resolve</button>
                             {% else %}
-                                <span style="font-size: 0.75rem; color: #34d399;">✓ Safe Closed</span>
+                                <input type="hidden" name="new_status" value="RESOLVED">
+                                <button type="submit" class="btn-primary" style="padding: 6px 12px; font-size: 0.78rem; background: #10b981;">Resolve</button>
                             {% endif %}
                         </form>
                     </td>
@@ -205,8 +215,10 @@
         </table>
     </div>
     {% else %}
-    <div style="text-align: center; padding: 30px; color: var(--text-muted);">
-        <span>🛡️</span> All campus sectors clear. Zero active SOS distress beacons.
+    <div id="dashboard-active-sos-empty" style="text-align: center; padding: 36px 20px; color: var(--text-muted);">
+        <div style="font-size: 2rem; margin-bottom: 8px;">🛡️</div>
+        <div style="font-size: 1rem; font-weight: 700; color: #34d399; margin-bottom: 4px;">All Campus Sectors Clear</div>
+        <div style="font-size: 0.84rem; color: var(--text-secondary);">Zero active SOS distress signals. Distress telemetry is fully operational and standing by.</div>
     </div>
     {% endif %}
 </div>
@@ -270,13 +282,24 @@
         // Attendance Chart
         const ctxAtt = document.getElementById('attendanceChart');
         if (ctxAtt) {
+            const subjectLabels = [
+                {% for s in subject_stats %}
+                    "{{ s.subject_code }}",
+                {% endfor %}
+            ];
+            const subjectData = [
+                {% for s in subject_stats %}
+                    {{ "%.1f"|format(s.avg_att) }},
+                {% endfor %}
+            ];
+
             new Chart(ctxAtt, {
                 type: 'bar',
                 data: {
-                    labels: ['DBMS (CS301)', 'OS (CS302)', 'Data Science (CS303)', 'Networks (CS304)', 'Software Eng (CS305)'],
+                    labels: subjectLabels.length ? subjectLabels : ['No Course Records'],
                     datasets: [{
                         label: 'Attendance Compliance %',
-                        data: [92.5, 84.2, 77.1, 95.2, 91.7],
+                        data: subjectData.length ? subjectData : [0],
                         backgroundColor: ['rgba(56, 189, 248, 0.6)', 'rgba(52, 211, 153, 0.6)', 'rgba(251, 191, 36, 0.6)', 'rgba(192, 132, 252, 0.6)', 'rgba(99, 102, 241, 0.6)'],
                         borderColor: ['#38bdf8', '#34d399', '#fbbf24', '#c084fc', '#6366f1'],
                         borderWidth: 1.5,
@@ -298,13 +321,18 @@
         // Safety Resolution Chart
         const ctxSafe = document.getElementById('safetyChart');
         if (ctxSafe) {
+            const safeResolved = {{ resolved_incidents_count|default(0) }};
+            const safeActive = {{ active_incidents_count|default(0) }};
+            const safeMonitored = {{ monitoring_incidents_count|default(0) }};
+            const hasData = (safeResolved + safeActive + safeMonitored) > 0;
+
             new Chart(ctxSafe, {
                 type: 'doughnut',
                 data: {
-                    labels: ['Resolved & Verified', 'Active Radar', 'Responding (QRT)'],
+                    labels: hasData ? ['Resolved & Closed', 'Active Radar', 'In Progress'] : ['No Incidents'],
                     datasets: [{
-                        data: [95, 2, 3],
-                        backgroundColor: ['#10b981', '#ef4444', '#38bdf8'],
+                        data: hasData ? [safeResolved, safeActive, safeMonitored] : [1],
+                        backgroundColor: hasData ? ['#10b981', '#ef4444', '#38bdf8'] : ['rgba(255,255,255,0.1)'],
                         borderWidth: 0
                     }]
                 },

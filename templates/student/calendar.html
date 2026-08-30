@@ -37,6 +37,11 @@
                     <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; font-family: var(--font-mono);">⏰ {{ ev.time }} • 📍 {{ ev.venue }}</div>
                 </div>
             </div>
+            {% else %}
+            <div style="text-align: center; padding: 36px 16px; color: var(--text-muted);">
+                <div style="font-size: 2rem; margin-bottom: 8px;">🗓️</div>
+                <p>No upcoming academic calendar events or examination milestones scheduled.</p>
+            </div>
             {% endfor %}
         </div>
     </div>

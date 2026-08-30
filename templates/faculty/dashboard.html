@@ -1,287 +1,780 @@
 {% extends "faculty/base_faculty.html" %}
 
-{% block title %}Faculty ERP Dashboard{% endblock %}
+{% block title %}Faculty Command ERP Dashboard — CampusGuard AI{% endblock %}
 
 {% block faculty_content %}
-<!-- Ward / Faculty Profile Header Card -->
-<section class="content-card" style="background: linear-gradient(135deg, rgba(14, 19, 32, 0.95) 0%, rgba(20, 27, 45, 0.9) 100%); border-color: rgba(16, 185, 129, 0.3);">
-    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px;">
-        
-        <div style="display: flex; align-items: center; gap: 20px;">
-            <div style="width: 68px; height: 68px; border-radius: 18px; background: linear-gradient(135deg, #10b981, #059669); display: flex; align-items: center; justify-content: center; font-size: 2rem; font-weight: 800; color: #fff; box-shadow: 0 0 25px rgba(16, 185, 129, 0.3);">
-                {{ faculty.name[:1] }}
+<div class="faculty-erp-container">
+
+    <!-- ========================================================================= -->
+    <!-- 1. HERO FACULTY PROFILE & COMMAND BAR -->
+    <!-- ========================================================================= -->
+    <section class="faculty-hero-banner">
+        <div class="faculty-hero-inner">
+            
+            <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
+                <div class="faculty-avatar-large">
+                    {{ faculty.name[:1] if faculty else 'F' }}
+                </div>
+                <div class="faculty-hero-text">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px; flex-wrap: wrap;">
+                        <span class="badge badge-green" style="font-weight: 800; font-size: 0.78rem;">
+                            👨‍🏫 {{ (faculty.designation or 'Faculty Advisor')|upper }}
+                        </span>
+                        <span class="badge badge-indigo" style="font-family: var(--font-mono); font-size: 0.78rem;">
+                            ID: {{ faculty.faculty_id if faculty else 'FAC001' }}
+                        </span>
+                        <span class="badge" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); font-size: 0.78rem;">
+                            🟢 {{ current_date_str }}
+                        </span>
+                    </div>
+                    <h1>
+                        {{ greeting_time|default('Good Day') }}, {{ faculty.name if faculty else 'Professor' }} 👋
+                    </h1>
+                    <div style="font-size: 0.86rem; color: #34d399; font-weight: 600; margin-bottom: 4px;">
+                        Welcome back to Faculty Command ERP
+                    </div>
+                    <div class="faculty-hero-meta">
+                        <span>🏛️ Department of <strong style="color: #fff;">{{ faculty.department if faculty else 'Computer Science & Engineering' }}</strong></span>
+                        <span>•</span>
+                        <span>📍 Cabin: <strong style="color: #cbd5e1;">{{ faculty.cabin or 'Faculty Block, Floor 2' }}</strong></span>
+                        <span>•</span>
+                        <span>📧 <strong style="color: #38bdf8;">{{ faculty.email }}</strong></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Action Shortcuts in Header -->
+            <div class="faculty-hero-actions">
+                <a href="{{ url_for('faculty.faculty_attendance') }}" class="btn-primary" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); font-weight: 700; padding: 10px 18px; border-radius: 99px; text-decoration: none; box-shadow: 0 0 20px rgba(16, 185, 129, 0.35); display: inline-flex; align-items: center; gap: 6px;">
+                    <span>📊</span> Mark Roll Call
+                </a>
+                <a href="{{ url_for('faculty.faculty_marks') }}" class="btn-secondary" style="font-weight: 700; padding: 10px 18px; border-radius: 99px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+                    <span>📝</span> Gradebook
+                </a>
+                <button type="button" class="btn-secondary" onclick="openFacultyAiModal()" style="font-weight: 700; padding: 10px 18px; border-radius: 99px; border-color: rgba(129, 140, 248, 0.45); color: #c7d2fe; display: inline-flex; align-items: center; gap: 6px; cursor: pointer;">
+                    <span>🤖</span> Ask AI Assistant
+                </button>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- 2. NEXT CLASS PULSE BANNER -->
+    <!-- ========================================================================= -->
+    {% if next_class %}
+    <div class="next-class-pulse-card">
+        <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+            <div class="next-class-icon-wrapper">
+                ⏰
             </div>
             <div>
-                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 4px; flex-wrap: wrap;">
-                    <span class="badge badge-green">FACULTY ADVISOR</span>
-                    <span class="badge badge-indigo">ID: {{ faculty.faculty_id }}</span>
-                    <span style="color: var(--text-muted); font-size: 0.8rem;">Academic Year 2026–2027 (Semester 5)</span>
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 3px; flex-wrap: wrap;">
+                    <span class="badge badge-cyan" style="font-size: 0.74rem; font-weight: 800;">UPCOMING LECTURE TODAY</span>
+                    <span style="color: #38bdf8; font-family: var(--font-mono); font-size: 0.86rem; font-weight: 700;">
+                        {{ next_class.start_time }} – {{ next_class.end_time }}
+                    </span>
                 </div>
-                <h1 style="font-size: 1.6rem; font-weight: 800; color: #fff; margin: 0 0 4px;">
-                    Welcome back, {{ faculty.name }}
-                </h1>
-                <p style="color: var(--text-secondary); font-size: 0.88rem; margin: 0;">
-                    {{ faculty.designation }} • {{ faculty.department }} • Cabin: {{ faculty.cabin }}
-                </p>
+                <div style="font-size: 1.15rem; font-weight: 800; color: #fff;">
+                    {{ next_class.subject_name or next_class.course_name }} 
+                    <span style="color: #a855f7; font-family: var(--font-mono); font-size: 0.95rem;">({{ next_class.subject_code or next_class.course_code }})</span>
+                </div>
+                <div style="font-size: 0.84rem; color: var(--fac-text-muted); margin-top: 2px;">
+                    🏛️ Room: <strong style="color: #fff;">{{ next_class.room_number }}</strong> • Department of {{ next_class.department }} (Year {{ next_class.year|default(3) }})
+                </div>
+            </div>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+            <a href="{{ url_for('faculty.faculty_attendance', course=next_class.subject_code or next_class.course_code) }}" class="btn-primary" style="background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%); font-weight: 800; padding: 10px 20px; border-radius: 99px; text-decoration: none; box-shadow: 0 0 20px rgba(6, 182, 212, 0.4); display: inline-flex; align-items: center; gap: 6px;">
+                <span>🚀</span> Launch Roll Call
+            </a>
+            <a href="{{ url_for('faculty.faculty_students') }}" class="btn-secondary" style="font-size: 0.85rem; padding: 10px 16px; border-radius: 99px; text-decoration: none;">
+                <span>👥</span> View Roster
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- ========================================================================= -->
+    <!-- 3. 6 KEY KPI METRIC CARDS -->
+    <!-- ========================================================================= -->
+    <section class="kpi-metrics-grid">
+        
+        <!-- Total Advisees -->
+        <div class="kpi-card kpi-cyan">
+            <div class="kpi-card-header">
+                <div class="kpi-card-title">Total Advisees</div>
+                <div class="kpi-icon-pill">🎓</div>
+            </div>
+            <div class="kpi-value">{{ total_students|default(0) }}</div>
+            <div class="kpi-subtext">
+                <span>{{ faculty.department if faculty else 'Active' }} Enrolled</span>
             </div>
         </div>
 
-        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-            <a href="{{ url_for('faculty_attendance') }}" class="btn-primary" style="background: linear-gradient(135deg, #10b981, #059669);">
-                <span>📊</span> Mark Attendance
-            </a>
-            <a href="{{ url_for('faculty_marks') }}" class="btn-secondary">
-                <span>📝</span> Publish Marks
-            </a>
-            <a href="{{ url_for('faculty_assignments') }}" class="btn-secondary">
-                <span>📋</span> Post Assignment
-            </a>
-        </div>
-
-    </div>
-</section>
-
-<!-- 4 Key Performance Metric KPI Cards -->
-<div class="kpi-grid">
-    
-    <div class="kpi-card">
-        <div class="kpi-icon-wrap" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">
-            📚
-        </div>
-        <div class="kpi-data">
-            <div class="kpi-label">Assigned Courses</div>
+        <!-- Assigned Courses -->
+        <div class="kpi-card kpi-emerald">
+            <div class="kpi-card-header">
+                <div class="kpi-card-title">Assigned Courses</div>
+                <div class="kpi-icon-pill">📚</div>
+            </div>
             <div class="kpi-value">{{ courses|length }}</div>
-            <div class="kpi-subtext">Core Theory &amp; Practical Labs</div>
-        </div>
-    </div>
-
-    <div class="kpi-card">
-        <div class="kpi-icon-wrap" style="background: rgba(56, 189, 248, 0.15); color: #38bdf8;">
-            🎓
-        </div>
-        <div class="kpi-data">
-            <div class="kpi-label">Total Advisees</div>
-            <div class="kpi-value">{{ total_students|default(1) }}</div>
-            <div class="kpi-subtext">CS Year 3 Enrolled</div>
-        </div>
-    </div>
-
-    <div class="kpi-card">
-        <div class="kpi-icon-wrap" style="background: rgba(251, 191, 36, 0.15); color: #fbbf24;">
-            ⏳
-        </div>
-        <div class="kpi-data">
-            <div class="kpi-label">Pending Outpasses</div>
-            <div class="kpi-value" style="color: #fbbf24;">{{ pending_leaves|length }}</div>
-            <div class="kpi-subtext">Requires Review</div>
-        </div>
-    </div>
-
-    <div class="kpi-card">
-        <div class="kpi-icon-wrap" style="background: rgba(244, 63, 94, 0.15); color: #f43f5e;">
-            ⚠️
-        </div>
-        <div class="kpi-data">
-            <div class="kpi-label">Low Attendance Watchlist</div>
-            <div class="kpi-value" style="color: #f43f5e;">{{ low_att_students|default(0) }}</div>
-            <div class="kpi-subtext">&lt; 75% Threshold Alert</div>
-        </div>
-    </div>
-
-</div>
-
-<!-- 2-Column Section: Today's Schedule & Pending Tasks -->
-<div style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 24px; margin-bottom: 24px;">
-
-    <!-- Today's Lecture Schedule -->
-    <section class="content-card" style="margin-bottom: 0;">
-        <div class="card-header-row">
-            <h2 class="card-heading">
-                <span>📅</span> Today's Lecture Schedule ({{ today_name }})
-            </h2>
-            <a href="{{ url_for('faculty_timetable') }}" style="font-size: 0.85rem; color: #34d399; text-decoration: none;">View Full Timetable →</a>
+            <div class="kpi-subtext">
+                <span>Active Teaching Modules</span>
+            </div>
         </div>
 
-        {% if today_classes %}
-        <div style="display: flex; flex-direction: column; gap: 12px;">
-            {% for slot in today_classes %}
-            <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 12px; padding: 14px 18px;">
-                <div style="display: flex; align-items: center; gap: 16px;">
-                    <div style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 10px; padding: 8px 12px; text-align: center;">
-                        <div style="font-size: 0.75rem; color: #34d399; font-weight: 700;">{{ slot.start_time }}</div>
-                        <div style="font-size: 0.7rem; color: var(--text-muted);">{{ slot.end_time }}</div>
-                    </div>
+        <!-- Class Attendance Average -->
+        <div class="kpi-card kpi-purple">
+            <div class="kpi-card-header">
+                <div class="kpi-card-title">Class Attendance Avg</div>
+                <div class="kpi-icon-pill">📊</div>
+            </div>
+            <div class="kpi-value">{{ avg_attendance }}%</div>
+            <div class="kpi-subtext">
+                <span style="color: #c084fc;">Target Benchmark: 75.0%</span>
+            </div>
+        </div>
+
+        <!-- Attendance Deficits -->
+        <div class="kpi-card kpi-rose">
+            <div class="kpi-card-header">
+                <div class="kpi-card-title">Attendance Deficits</div>
+                <div class="kpi-icon-pill">⚠️</div>
+            </div>
+            <div class="kpi-value" style="color: {% if low_att_students > 0 %}#fb7185{% else %}#94a3b8{% endif %};">
+                {{ low_att_students }}
+            </div>
+            <div class="kpi-subtext" style="color: {% if low_att_students > 0 %}#fca5a5{% else %}var(--fac-text-faint){% endif %};">
+                <span>Students Below 75%</span>
+            </div>
+        </div>
+
+        <!-- Pending Assignment Evaluations -->
+        <div class="kpi-card kpi-indigo">
+            <div class="kpi-card-header">
+                <div class="kpi-card-title">Pending Grading</div>
+                <div class="kpi-icon-pill">📝</div>
+            </div>
+            <div class="kpi-value">{{ pending_assignments_count|default(0) }}</div>
+            <div class="kpi-subtext">
+                <span>Submissions Awaiting Review</span>
+            </div>
+        </div>
+
+        <!-- Pending Outpass Approvals -->
+        <div class="kpi-card kpi-amber">
+            <div class="kpi-card-header">
+                <div class="kpi-card-title">Pending Outpasses</div>
+                <div class="kpi-icon-pill">🚪</div>
+            </div>
+            <div class="kpi-value">{{ pending_leaves|length }}</div>
+            <div class="kpi-subtext">
+                <span>Leave Sign-off Required</span>
+            </div>
+        </div>
+
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- 4. QUICK ACTIONS BAR -->
+    <!-- ========================================================================= -->
+    <section class="quick-actions-bar">
+        <a href="{{ url_for('faculty.faculty_attendance') }}" class="quick-action-tile">
+            <span class="icon">📊</span>
+            <span>Take Attendance</span>
+        </a>
+        <a href="{{ url_for('faculty.faculty_marks') }}" class="quick-action-tile">
+            <span class="icon">📝</span>
+            <span>Enter Marks</span>
+        </a>
+        <a href="{{ url_for('faculty.faculty_assignments') }}" class="quick-action-tile">
+            <span class="icon">📋</span>
+            <span>Assignments</span>
+        </a>
+        <a href="{{ url_for('faculty.faculty_students') }}" class="quick-action-tile">
+            <span class="icon">🎓</span>
+            <span>My Advisees</span>
+        </a>
+        <a href="{{ url_for('faculty.faculty_announcements') }}" class="quick-action-tile">
+            <span class="icon">📢</span>
+            <span>Announcement</span>
+        </a>
+        <a href="{{ url_for('faculty.faculty_timetable') }}" class="quick-action-tile">
+            <span class="icon">📅</span>
+            <span>Full Timetable</span>
+        </a>
+        <button type="button" class="quick-action-tile" onclick="openFacultyAiModal()" style="border-color: rgba(129, 140, 248, 0.35); color: #c7d2fe;">
+            <span class="icon">🤖</span>
+            <span>Ask Campus AI</span>
+        </button>
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- 5. 2-COLUMN SECTION: TODAY'S SCHEDULE + TASKS / AI ADVISORY -->
+    <!-- ========================================================================= -->
+    <div class="dashboard-columns-grid">
+
+        <!-- Left Column: Today's Schedule Timeline & Analytics Chart -->
+        <div class="dashboard-column">
+            
+            <!-- Today's Schedule -->
+            <section class="content-card" style="margin-bottom: 0;">
+                <div class="card-header-row">
                     <div>
-                        <div style="font-weight: 700; color: #fff; font-size: 0.95rem;">
-                            {{ slot.subject_name }} <span style="font-size: 0.8rem; color: #a855f7;">({{ slot.subject_code }})</span>
-                        </div>
-                        <div style="font-size: 0.82rem; color: var(--text-muted); margin-top: 2px;">
-                            🏛️ Room: <strong style="color: #38bdf8;">{{ slot.room_number }}</strong> • Dept: {{ slot.department }} • Year {{ slot.year }}
-                        </div>
+                        <h2 class="card-heading">
+                            <span>📅</span> Today's Lecture Schedule ({{ today_name }})
+                        </h2>
+                        <p style="font-size: 0.82rem; color: var(--fac-text-muted); margin: 2px 0 0;">
+                            Hourly teaching periods assigned to {{ faculty.name if faculty else 'Faculty' }}
+                        </p>
                     </div>
+                    <a href="{{ url_for('faculty.faculty_timetable') }}" class="btn-secondary" style="font-size: 0.8rem; padding: 6px 12px; text-decoration: none;">
+                        Full Week Timetable →
+                    </a>
                 </div>
 
-                <div>
-                    <a href="{{ url_for('faculty_attendance', course=slot.subject_code) }}" class="btn-primary" style="padding: 6px 14px; font-size: 0.82rem; background: linear-gradient(135deg, #10b981, #059669);">
-                        <span>📊</span> Roll Call
+                {% if today_classes %}
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+                    {% for slot in today_classes %}
+                    <div class="schedule-item-row">
+                        <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+                            <div class="schedule-time-box">
+                                <div class="schedule-time-start">{{ slot.start_time }}</div>
+                                <div class="schedule-time-end">{{ slot.end_time }}</div>
+                            </div>
+                            <div>
+                                <div style="font-weight: 800; color: #fff; font-size: 1rem;">
+                                    {{ slot.subject_name }} <span style="font-size: 0.82rem; color: #a855f7; font-family: var(--font-mono);">({{ slot.subject_code }})</span>
+                                </div>
+                                <div style="font-size: 0.82rem; color: var(--fac-text-muted); margin-top: 3px;">
+                                    🏛️ Room: <strong style="color: #38bdf8;">{{ slot.room_number }}</strong> • {{ slot.department }} • Year {{ slot.year }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <a href="{{ url_for('faculty.faculty_attendance', course=slot.subject_code) }}" class="btn-primary" style="padding: 7px 16px; font-size: 0.84rem; background: linear-gradient(135deg, #10b981 0%, #059669 100%); text-decoration: none; border-radius: 99px; font-weight: 700; display: inline-flex; align-items: center; gap: 5px;">
+                                <span>📊</span> Roll Call
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="erp-empty-state">
+                    <div class="erp-empty-icon">☕</div>
+                    <div class="erp-empty-title">No Scheduled Lectures for Today ({{ today_name }})</div>
+                    <p class="erp-empty-desc">
+                        You have no timetable periods assigned for today. Use this session for curriculum development, grading, or research.
+                    </p>
+                </div>
+                {% endif %}
+            </section>
+
+            <!-- Course Attendance & Marks Analytics Chart -->
+            <section class="content-card" style="margin-bottom: 0;">
+                <div class="card-header-row">
+                    <div>
+                        <h2 class="card-heading"><span>📊</span> Course Attendance &amp; Marks Analytics</h2>
+                        <p style="font-size: 0.82rem; color: var(--fac-text-muted); margin: 2px 0 0;">
+                            Comparative metrics distribution across assigned teaching subjects
+                        </p>
+                    </div>
+                    <a href="{{ url_for('faculty.faculty_attendance_analytics') }}" class="btn-secondary" style="font-size: 0.8rem; padding: 6px 12px; text-decoration: none;">
+                        Detailed Analytics →
                     </a>
+                </div>
+
+                <div style="height: 240px; position: relative; padding: 6px 0;">
+                    <canvas id="facultyCourseChart"></canvas>
+                </div>
+            </section>
+
+        </div>
+
+        <!-- Right Column: AI Insights & Action Items Queue -->
+        <div class="dashboard-column">
+
+            <!-- CampusGuard AI Faculty Insights Card -->
+            <section class="ai-faculty-insights-card">
+                <div class="card-header-row" style="margin-bottom: 12px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 1.4rem;">🤖</span>
+                        <div>
+                            <h2 class="card-heading" style="font-size: 1.05rem; color: #c7d2fe; margin: 0;">
+                                CAMPUSGUARD AI — Faculty Insights
+                            </h2>
+                            <div style="font-size: 0.76rem; color: var(--fac-text-muted);">Real-time Academic Intelligence</div>
+                        </div>
+                    </div>
+                    <span class="badge badge-purple" style="font-size: 0.72rem;">Live Synthesized</span>
+                </div>
+
+                <!-- Synthesized Insights List -->
+                <div class="ai-insights-list">
+                    {% for insight in ai_insights_list %}
+                    <div class="ai-insight-item {{ insight.type }}">
+                        <span style="font-size: 1.1rem; flex-shrink: 0;">
+                            {% if insight.type == 'warning' %}⚠️{% elif insight.type == 'info' %}📋{% elif insight.type == 'amber' %}🚪{% elif insight.type == 'trend' %}📈{% else %}✓{% endif %}
+                        </span>
+                        <div>
+                            <div style="font-size: 0.72rem; font-weight: 800; text-transform: uppercase; color: #94a3b8; margin-bottom: 2px;">
+                                {{ insight.badge }}
+                            </div>
+                            <div>{{ insight.text }}</div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="ai-insight-item success">
+                        <span style="font-size: 1.1rem;">✓</span>
+                        <div>All academic compliance indicators across your teaching sections are in good standing.</div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap;">
+                    <button type="button" class="btn-primary" onclick="openFacultyAiModal()" style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); font-weight: 700; font-size: 0.84rem; padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;">
+                        <span>🤖</span> Ask Assistant
+                    </button>
+                    <a href="{{ url_for('faculty.faculty_insights') }}" class="btn-secondary" style="font-size: 0.84rem; padding: 8px 14px; text-decoration: none; border-radius: 8px;">
+                        View Insights Engine →
+                    </a>
+                </div>
+            </section>
+
+            <!-- Urgent Action Items & Tasks Queue -->
+            <section class="content-card" style="margin-bottom: 0;">
+                <div class="card-header-row">
+                    <div>
+                        <h2 class="card-heading"><span>⚡</span> Action Items &amp; Tasks Queue</h2>
+                        <p style="font-size: 0.82rem; color: var(--fac-text-muted); margin: 2px 0 0;">
+                            Pending student requests &amp; review items requiring advisor sign-off
+                        </p>
+                    </div>
+                    <span class="badge badge-amber">{{ pending_leaves|length + low_att_students }} Tasks</span>
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+                    
+                    <!-- Pending Leave Approvals -->
+                    {% if pending_leaves %}
+                        {% for l in pending_leaves[:2] %}
+                        <div class="task-item-card amber-border">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                                <strong style="color: #fbbf24; font-size: 0.88rem; display: flex; align-items: center; gap: 6px;">
+                                    <span>🏢</span> {{ l.leave_type }} Outpass Application
+                                </strong>
+                                <span class="badge badge-amber" style="font-size: 0.7rem;">Pending Review</span>
+                            </div>
+                            <div style="font-size: 0.86rem; color: #fff; font-weight: 600; margin-bottom: 4px;">
+                                {{ l.student_name }} <span style="color: var(--fac-text-faint); font-family: var(--font-mono); font-size: 0.8rem;">({{ l.register_number }})</span>
+                            </div>
+                            <div style="font-size: 0.78rem; color: var(--fac-text-muted); margin-bottom: 10px;">
+                                📅 <strong>{{ l.from_date }}</strong> to <strong>{{ l.to_date }}</strong> • <em>{{ l.reason }}</em>
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                <form method="POST" action="{{ url_for('faculty.faculty_leaves_decision', leave_id=l.id) }}" style="display: inline;">
+                                    <input type="hidden" name="decision" value="Approved">
+                                    <button type="submit" class="btn-primary" style="padding: 5px 12px; font-size: 0.78rem; background: #10b981; border-radius: 6px; border: none; cursor: pointer;">
+                                        ✓ Approve
+                                    </button>
+                                </form>
+                                <form method="POST" action="{{ url_for('faculty.faculty_leaves_decision', leave_id=l.id) }}" style="display: inline;">
+                                    <input type="hidden" name="decision" value="Rejected">
+                                    <button type="submit" class="btn-secondary" style="padding: 5px 12px; font-size: 0.78rem; border-color: #ef4444; color: #f87171; border-radius: 6px; cursor: pointer;">
+                                        ✕ Reject
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 12px; padding: 12px 14px; color: #34d399; font-size: 0.84rem; text-align: center;">
+                            ✓ All student leave outpass applications have been reviewed!
+                        </div>
+                    {% endif %}
+
+                    <!-- Low Attendance Alerts -->
+                    {% if low_att_records %}
+                    <div class="task-item-card rose-border">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                            <strong style="color: #f43f5e; font-size: 0.88rem; display: flex; align-items: center; gap: 6px;">
+                                <span>⚠️</span> Critical Attendance Deficits (&lt;75%)
+                            </strong>
+                            <span class="badge badge-rose" style="font-size: 0.7rem;">Watchlist</span>
+                        </div>
+                        
+                        <div style="display: flex; flex-direction: column; gap: 8px;">
+                            {% for r in low_att_records[:2] %}
+                            <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.3); padding: 8px 12px; border-radius: 8px;">
+                                <div>
+                                    <div style="color: #fff; font-weight: 700; font-size: 0.84rem;">{{ r.student_name }}</div>
+                                    <div style="font-size: 0.74rem; color: var(--fac-text-faint);">{{ r.subject_code }} • Reg: {{ r.register_number }}</div>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <strong style="color: #f43f5e; font-family: var(--font-mono); font-size: 0.88rem;">{{ r.attendance_pct }}%</strong>
+                                    <form method="POST" action="{{ url_for('faculty.faculty_attendance_send_warning', student_id=r.student_id) }}" style="display: inline;">
+                                        <input type="hidden" name="course_code" value="{{ r.subject_code }}">
+                                        <button type="submit" class="btn-secondary" style="padding: 3px 8px; font-size: 0.72rem; border-color: #f43f5e; color: #f43f5e; border-radius: 6px; cursor: pointer;" title="Send Warning Notice">
+                                            🔔 Warn
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                </div>
+            </section>
+
+        </div>
+
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- 6. FACULTY TEACHING OVERVIEW MATRIX -->
+    <!-- ========================================================================= -->
+    <section class="content-card">
+        <div class="card-header-row">
+            <div>
+                <h2 class="card-heading"><span>📚</span> Teaching Overview &amp; Course Modules</h2>
+                <p style="font-size: 0.82rem; color: var(--fac-text-muted); margin: 2px 0 0;">
+                    Assigned course sections, syllabus coverage, enrolled rosters, and quick action shortcuts
+                </p>
+            </div>
+            <span class="badge badge-green">{{ courses|length }} Active Modules</span>
+        </div>
+
+        <div class="table-responsive">
+            <table class="portal-table">
+                <thead>
+                    <tr>
+                        <th>Course Code</th>
+                        <th>Course Title &amp; Details</th>
+                        <th>Type</th>
+                        <th>Credits</th>
+                        <th>Assigned Room</th>
+                        <th>Schedule</th>
+                        <th>Attendance Rate</th>
+                        <th style="text-align: right;">Quick Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in teaching_overview %}
+                    {% set course = item.course %}
+                    <tr>
+                        <td>
+                            <span class="badge badge-indigo" style="font-family: var(--font-mono); font-size: 0.86rem; font-weight: 700;">
+                                {{ course.course_code }}
+                            </span>
+                        </td>
+                        <td>
+                            <strong style="color: #fff; font-size: 0.94rem;">{{ course.course_name }}</strong>
+                            <div style="font-size: 0.76rem; color: var(--fac-text-faint); margin-top: 2px;">
+                                Semester {{ course.semester }} • {{ item.student_count }} Students Enrolled
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge {% if 'Lab' in course.course_type %}badge-amber{% else %}badge-green{% endif %}">
+                                {{ course.course_type }}
+                            </span>
+                        </td>
+                        <td>
+                            <strong style="color: #38bdf8; font-family: var(--font-mono);">{{ course.credits }} Credits</strong>
+                        </td>
+                        <td>
+                            <span style="color: #cbd5e1; font-weight: 600;">🏛️ {{ course.room_number }}</span>
+                        </td>
+                        <td>
+                            <span style="color: var(--fac-text-muted); font-size: 0.82rem; font-family: var(--font-mono);">
+                                ⏰ {{ course.timing }}
+                            </span>
+                        </td>
+                        <td style="min-width: 140px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; font-size: 0.8rem;">
+                                <span style="color: {% if item.is_risk %}#f87171{% else %}#34d399{% endif %}; font-weight: 700;">
+                                    {{ item.avg_attendance }}%
+                                </span>
+                                <span style="font-size: 0.7rem; color: var(--fac-text-faint);">
+                                    {% if item.is_risk %}⚠️ Deficit{% else %}✓ Normal{% endif %}
+                                </span>
+                            </div>
+                            <div class="progress-bar-container">
+                                <div class="progress-bar-fill {% if item.is_risk %}fill-rose{% else %}fill-emerald{% endif %}" style="width: {{ item.avg_attendance }}%;"></div>
+                            </div>
+                        </td>
+                        <td style="text-align: right;">
+                            <div style="display: inline-flex; gap: 6px;">
+                                <a href="{{ url_for('faculty.faculty_attendance', course=course.course_code) }}" class="btn-primary" style="padding: 5px 10px; font-size: 0.76rem; background: linear-gradient(135deg, #10b981, #059669); text-decoration: none; border-radius: 6px;" title="Take Attendance Roll-Call">
+                                    <span>📊</span> Roll Call
+                                </a>
+                                <a href="{{ url_for('faculty.faculty_marks') }}" class="btn-secondary" style="padding: 5px 10px; font-size: 0.76rem; text-decoration: none; border-radius: 6px;" title="Open Gradebook">
+                                    <span>📝</span> Marks
+                                </a>
+                                <a href="{{ url_for('faculty.faculty_materials') }}" class="btn-secondary" style="padding: 5px 10px; font-size: 0.76rem; text-decoration: none; border-radius: 6px;" title="Upload Learning Materials">
+                                    <span>📖</span> Notes
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="8" style="text-align: center; padding: 28px; color: var(--fac-text-muted);">
+                            No teaching courses assigned yet. Contact Dean of Academics.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- 7. 2-COLUMN SECTION: STUDENTS REQUIRING ATTENTION + ASSIGNMENT REVIEW -->
+    <!-- ========================================================================= -->
+    <div class="dashboard-columns-grid">
+
+        <!-- Left: Students Requiring Attention -->
+        <section class="content-card" style="margin-bottom: 0;">
+            <div class="card-header-row">
+                <div>
+                    <h2 class="card-heading"><span>🛡️</span> Students Requiring Academic Attention</h2>
+                    <p style="font-size: 0.82rem; color: var(--fac-text-muted); margin: 2px 0 0;">
+                        Advisees flagged for low attendance compliance or academic support
+                    </p>
+                </div>
+                <a href="{{ url_for('faculty.faculty_mentoring') }}" class="btn-secondary" style="font-size: 0.8rem; padding: 6px 12px; text-decoration: none;">
+                    Mentoring Console →
+                </a>
+            </div>
+
+            {% if low_att_records %}
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                {% for s in low_att_records %}
+                <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255, 255, 255, 0.025); border: 1px solid rgba(255, 255, 255, 0.07); border-radius: 12px; padding: 12px 14px; flex-wrap: wrap; gap: 10px;">
+                    <div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <strong style="color: #fff; font-size: 0.9rem;">{{ s.student_name }}</strong>
+                            <span class="badge {% if s.attendance_pct < 70 %}badge-red{% else %}badge-amber{% endif %}" style="font-size: 0.7rem;">
+                                {% if s.attendance_pct < 70 %}CRITICAL{% else %}HIGH PRIORITY{% endif %}
+                            </span>
+                        </div>
+                        <div style="font-size: 0.78rem; color: var(--fac-text-muted); margin-top: 2px;">
+                            Reg: <span style="font-family: var(--font-mono); color: #cbd5e1;">{{ s.register_number }}</span> • Subject: <strong style="color: #38bdf8;">{{ s.subject_code }}</strong> ({{ s.attendance_pct }}% Attendance)
+                        </div>
+                    </div>
+                    
+                    <div style="display: flex; gap: 6px; align-items: center;">
+                        <form method="POST" action="{{ url_for('faculty.faculty_attendance_send_warning', student_id=s.student_id) }}" style="display: inline;">
+                            <input type="hidden" name="course_code" value="{{ s.subject_code }}">
+                            <button type="submit" class="btn-secondary" style="padding: 4px 10px; font-size: 0.76rem; border-color: #f43f5e; color: #f87171; border-radius: 6px; cursor: pointer;">
+                                🔔 Warn Notice
+                            </button>
+                        </form>
+                        <a href="{{ url_for('faculty.faculty_student_view', id=s.student_id) }}" class="btn-secondary" style="padding: 4px 10px; font-size: 0.76rem; text-decoration: none; border-radius: 6px;">
+                            👤 360 View
+                        </a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="erp-empty-state">
+                <div class="erp-empty-icon">✓</div>
+                <div class="erp-empty-title">No Students Currently Require Attention</div>
+                <p class="erp-empty-desc">
+                    All advisees and enrolled students in your classes maintain attendance and academic metrics above established thresholds.
+                </p>
+            </div>
+            {% endif %}
+        </section>
+
+        <!-- Right: Assignment Review Section -->
+        <section class="content-card" style="margin-bottom: 0;">
+            <div class="card-header-row">
+                <div>
+                    <h2 class="card-heading"><span>📝</span> Assignment Review &amp; Evaluation Queue</h2>
+                    <p style="font-size: 0.82rem; color: var(--fac-text-muted); margin: 2px 0 0;">
+                        Course submissions awaiting faculty review and grade entry
+                    </p>
+                </div>
+                <a href="{{ url_for('faculty.faculty_assignments') }}" class="btn-secondary" style="font-size: 0.8rem; padding: 6px 12px; text-decoration: none;">
+                    All Assignments →
+                </a>
+            </div>
+
+            {% if assignments_overview %}
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+                {% for a in assignments_overview %}
+                <div style="background: rgba(255, 255, 255, 0.025); border: 1px solid rgba(255, 255, 255, 0.07); border-radius: 14px; padding: 14px 16px;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; flex-wrap: wrap; gap: 8px;">
+                        <div>
+                            <strong style="color: #fff; font-size: 0.92rem;">{{ a.title }}</strong>
+                            <div style="font-size: 0.76rem; color: var(--fac-text-faint); margin-top: 2px;">
+                                Course: <span style="color: #38bdf8; font-family: var(--font-mono); font-weight: 700;">{{ a.course_code }}</span> • Due: {{ a.due_date }}
+                            </div>
+                        </div>
+                        <span class="badge {% if a.pending_reviews > 0 %}badge-amber{% else %}badge-green{% endif %}" style="font-size: 0.72rem;">
+                            {{ a.pending_reviews }} Pending Review
+                        </span>
+                    </div>
+
+                    <!-- Submission Progress -->
+                    <div style="margin: 10px 0 12px;">
+                        <div style="display: flex; justify-content: space-between; font-size: 0.78rem; color: var(--fac-text-muted); margin-bottom: 4px;">
+                            <span>Submissions Progress</span>
+                            <span style="color: #fff; font-family: var(--font-mono);">{{ a.total_submissions }} Submitted ({{ a.graded_count }} Evaluated)</span>
+                        </div>
+                        <div class="progress-bar-container">
+                            <div class="progress-bar-fill fill-cyan" style="width: {% if a.total_submissions > 0 %}{{ (a.graded_count / a.total_submissions * 100)|round }}{% else %}0{% endif %}%;"></div>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; justify-content: flex-end;">
+                        <a href="{{ url_for('faculty.faculty_assignment_submissions', assignment_id=a.id) }}" class="btn-primary" style="padding: 5px 14px; font-size: 0.78rem; background: linear-gradient(135deg, #10b981, #059669); text-decoration: none; border-radius: 6px;">
+                            📋 Review Submissions
+                        </a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="erp-empty-state">
+                <div class="erp-empty-icon">📁</div>
+                <div class="erp-empty-title">You're All Caught Up with Assignment Reviews</div>
+                <p class="erp-empty-desc">
+                    No student assignment submissions currently pending grading. You can create a new assignment in the Assignments module.
+                </p>
+            </div>
+            {% endif %}
+        </section>
+
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- 8. CAMPUS BROADCASTS & INSTITUTIONAL NOTICES -->
+    <!-- ========================================================================= -->
+    <section class="content-card">
+        <div class="card-header-row">
+            <div>
+                <h2 class="card-heading"><span>📢</span> Institutional Circulars &amp; Department Notices</h2>
+                <p style="font-size: 0.82rem; color: var(--fac-text-muted); margin: 2px 0 0;">
+                    Official administrative broadcasts dispatched to academic faculty
+                </p>
+            </div>
+            <a href="{{ url_for('faculty.faculty_announcements') }}" class="btn-secondary" style="font-size: 0.8rem; padding: 6px 12px; text-decoration: none;">
+                View All Notices →
+            </a>
+        </div>
+
+        {% if announcements %}
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px;">
+            {% for a in announcements %}
+            <div style="background: rgba(255, 255, 255, 0.025); border: 1px solid rgba(255, 255, 255, 0.07); border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; justify-content: space-between;">
+                <div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                        <span class="badge badge-indigo" style="font-size: 0.74rem;">{{ a.category }}</span>
+                        <span class="badge {% if a.priority == 'Urgent' %}badge-red{% else %}badge-green{% endif %}" style="font-size: 0.72rem;">
+                            {{ a.priority }}
+                        </span>
+                    </div>
+                    <h4 style="font-weight: 800; color: #fff; font-size: 0.98rem; margin: 0 0 6px;">
+                        {{ a.title }}
+                    </h4>
+                    <p style="font-size: 0.86rem; color: var(--fac-text-muted); margin: 0 0 10px; line-height: 1.5;">
+                        {{ a.description }}
+                    </p>
+                </div>
+                <div style="font-size: 0.76rem; color: var(--fac-text-faint); border-top: 1px solid rgba(255,255,255,0.05); padding-top: 8px;">
+                    🏛️ Published by {{ a.author_name|default('Administration') }} • {{ a.created_at[:10] }}
                 </div>
             </div>
             {% endfor %}
         </div>
         {% else %}
-        <div style="text-align: center; padding: 32px; color: var(--text-muted);">
-            <span>☕</span> No lectures scheduled for today. Have a productive research day!
+        <div class="erp-empty-state">
+            <div class="erp-empty-icon">📢</div>
+            <div class="erp-empty-title">No Recent Campus Circulars</div>
+            <p class="erp-empty-desc">
+                No active announcements found in your feed.
+            </p>
         </div>
         {% endif %}
     </section>
 
-    <!-- Pending Action Items -->
-    <section class="content-card" style="margin-bottom: 0;">
-        <div class="card-header-row">
-            <h2 class="card-heading"><span>⚡</span> Action Items &amp; Tasks</h2>
-            <span class="badge badge-amber">{{ pending_leaves|length }} Pending</span>
-        </div>
-
-        <div style="display: flex; flex-direction: column; gap: 12px;">
-            <!-- Leave Requests preview -->
-            {% if pending_leaves %}
-                {% for l in pending_leaves[:2] %}
-                <div style="background: rgba(251, 191, 36, 0.08); border: 1px solid rgba(251, 191, 36, 0.25); border-radius: 12px; padding: 12px 16px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                        <strong style="color: #fbbf24; font-size: 0.88rem;">🏢 {{ l.leave_type }} Outpass</strong>
-                        <span class="badge badge-amber">Needs Review</span>
-                    </div>
-                    <div style="font-size: 0.82rem; color: #e2e8f0;">
-                        {{ l.student_name }} ({{ l.register_number }}) • {{ l.from_date }} to {{ l.to_date }}
-                    </div>
-                    <div style="margin-top: 8px; display: flex; gap: 8px;">
-                        <form method="POST" action="{{ url_for('faculty_leaves_decision', leave_id=l.id) }}" style="display: inline;">
-                            <input type="hidden" name="decision" value="Approved">
-                            <button type="submit" class="btn-primary" style="padding: 4px 10px; font-size: 0.78rem; background: #10b981;">✓ Approve</button>
-                        </form>
-                        <form method="POST" action="{{ url_for('faculty_leaves_decision', leave_id=l.id) }}" style="display: inline;">
-                            <input type="hidden" name="decision" value="Rejected">
-                            <button type="submit" class="btn-secondary" style="padding: 4px 10px; font-size: 0.78rem; border-color: #ef4444; color: #f87171;">✕ Reject</button>
-                        </form>
-                    </div>
-                </div>
-                {% endfor %}
-            {% else %}
-                <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 12px; padding: 14px; color: #34d399; font-size: 0.85rem; text-align: center;">
-                    ✓ All student leave and outpass applications have been reviewed!
-                </div>
-            {% endif %}
-
-            <!-- Low attendance alert item -->
-            {% if low_att_students > 0 %}
-            <div style="background: rgba(244, 63, 94, 0.08); border: 1px solid rgba(244, 63, 94, 0.25); border-radius: 12px; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center;">
-                <div>
-                    <div style="font-weight: 700; color: #f43f5e; font-size: 0.88rem;">⚠️ Low Attendance Watchlist</div>
-                    <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 2px;">{{ low_att_students }} student(s) below mandatory 75%</div>
-                </div>
-                <a href="{{ url_for('faculty_students', status='risk') }}" class="btn-secondary" style="padding: 4px 10px; font-size: 0.78rem;">View List</a>
-            </div>
-            {% endif %}
-        </div>
-    </section>
-
 </div>
 
-<!-- Assigned Courses Schedule Table -->
-<section class="content-card">
-    <div class="card-header-row">
-        <h2 class="card-heading"><span>📚</span> My Assigned Courses &amp; Classrooms</h2>
-        <span class="badge badge-green">{{ courses|length }} Active Sections</span>
-    </div>
+<!-- Chart.js Script -->
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const ctx = document.getElementById('facultyCourseChart');
+    if (!ctx) return;
 
-    <div class="table-responsive">
-        <table class="portal-table">
-            <thead>
-                <tr>
-                    <th>Course Code</th>
-                    <th>Course Title</th>
-                    <th>Type</th>
-                    <th>Credits</th>
-                    <th>Classroom</th>
-                    <th>Slot &amp; Timing</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for course in courses %}
-                <tr>
-                    <td>
-                        <span class="badge badge-indigo" style="font-family: monospace;">{{ course.course_code }}</span>
-                    </td>
-                    <td>
-                        <strong style="color: #fff;">{{ course.course_name }}</strong>
-                        <div style="font-size: 0.78rem; color: var(--text-muted);">Semester {{ course.semester }} • {{ course.department }}</div>
-                    </td>
-                    <td>
-                        <span class="badge {% if 'Lab' in course.course_type %}badge-amber{% else %}badge-green{% endif %}">
-                            {{ course.course_type }}
-                        </span>
-                    </td>
-                    <td>
-                        <span style="font-weight: 700; color: #38bdf8;">{{ course.credits }} Credits</span>
-                    </td>
-                    <td>
-                        <span style="color: #cbd5e1;">🏛️ {{ course.room_number }}</span>
-                    </td>
-                    <td>
-                        <span style="color: var(--text-secondary); font-size: 0.85rem;">⏰ {{ course.timing }}</span>
-                    </td>
-                    <td>
-                        <div style="display: flex; gap: 6px;">
-                            <a href="{{ url_for('faculty_attendance', course=course.course_code) }}" class="btn-primary" style="padding: 4px 10px; font-size: 0.78rem; background: #10b981;" title="Mark Attendance">
-                                📊 Roll Call
-                            </a>
-                            <a href="{{ url_for('faculty_marks') }}" class="btn-secondary" style="padding: 4px 10px; font-size: 0.78rem;" title="Enter Marks">
-                                📝 Marks
-                            </a>
-                        </div>
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</section>
+    const labels = {{ chart_data.labels|tojson }};
+    const attData = {{ chart_data.attendance|tojson }};
+    const marksData = {{ chart_data.marks|tojson }};
 
-<!-- Institutional Broadcasts & Announcements -->
-<section class="content-card">
-    <div class="card-header-row">
-        <h2 class="card-heading"><span>📢</span> Institutional Announcements &amp; Circulars</h2>
-        <span class="badge badge-indigo">Campus Broadcasts</span>
-    </div>
-
-    {% if announcements %}
-    <div style="display: flex; flex-direction: column; gap: 12px;">
-        {% for a in announcements %}
-        <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 12px; padding: 14px 18px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                <div style="font-weight: 700; color: #fff; font-size: 0.95rem;">
-                    {{ a.title }}
-                </div>
-                <div style="display: flex; gap: 8px;">
-                    <span class="badge badge-indigo">{{ a.category }}</span>
-                    <span class="badge {% if a.priority == 'Urgent' %}badge-red{% else %}badge-green{% endif %}">{{ a.priority }}</span>
-                </div>
-            </div>
-            <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 0 0 6px; line-height: 1.5;">
-                {{ a.description }}
-            </p>
-            <div style="font-size: 0.75rem; color: var(--text-muted);">
-                Published by {{ a.author_name|default('Administration') }} • {{ a.created_at }}
-            </div>
-        </div>
-        {% endfor %}
-    </div>
-    {% else %}
-    <div style="text-align: center; padding: 24px; color: var(--text-muted);">
-        No recent campus circulars.
-    </div>
-    {% endif %}
-</section>
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Avg Attendance %',
+                    data: attData,
+                    backgroundColor: 'rgba(16, 185, 129, 0.65)',
+                    borderColor: '#10b981',
+                    borderWidth: 1.5,
+                    borderRadius: 6
+                },
+                {
+                    label: 'Avg Marks %',
+                    data: marksData,
+                    backgroundColor: 'rgba(56, 189, 248, 0.65)',
+                    borderColor: '#38bdf8',
+                    borderWidth: 1.5,
+                    borderRadius: 6
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: {
+                        color: '#94a3b8',
+                        font: { size: 11, weight: '600' },
+                        boxWidth: 12
+                    }
+                },
+                tooltip: {
+                    backgroundColor: '#0b0f19',
+                    borderColor: 'rgba(16, 185, 129, 0.3)',
+                    borderWidth: 1,
+                    titleColor: '#fff',
+                    bodyColor: '#e2e8f0',
+                    padding: 10
+                }
+            },
+            scales: {
+                x: {
+                    grid: { display: false },
+                    ticks: { color: '#94a3b8', font: { size: 11, weight: '700' } }
+                },
+                y: {
+                    min: 0,
+                    max: 100,
+                    grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                    ticks: { color: '#94a3b8', font: { size: 10 } }
+                }
+            }
+        }
+    });
+});
+</script>
 {% endblock %}

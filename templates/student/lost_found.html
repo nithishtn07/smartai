@@ -85,7 +85,7 @@
 
             <div class="form-group">
                 <label class="form-label">Contact Phone / Desk Location</label>
-                <input type="tel" name="contact_phone" class="form-input" value="{{ student.phone|default('+91 98765 43210') }}" required>
+                <input type="tel" name="contact_phone" class="form-input" value="{{ student.phone|default('') }}" placeholder="Your active contact number" required>
             </div>
 
             <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px;">

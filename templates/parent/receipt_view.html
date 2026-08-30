@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fee Payment Receipt #{{ receipt.receipt_no }} | CampusGuard AI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #06080e;
+            --card-bg: #0e1320;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent: #c084fc;
+            --emerald: #34d399;
+            --border: rgba(255, 255, 255, 0.08);
+        }
+
+        body {
+            margin: 0;
+            padding: 30px 16px;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
+        .receipt-container {
+            max-width: 680px;
+            width: 100%;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 36px;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        .receipt-header {
+            text-align: center;
+            border-bottom: 2px dashed rgba(255, 255, 255, 0.1);
+            padding-bottom: 24px;
+            margin-bottom: 24px;
+        }
+
+        .institution-title {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: #fff;
+            margin: 0 0 4px;
+        }
+
+        .institution-sub {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin: 0;
+        }
+
+        .receipt-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(52, 211, 153, 0.15);
+            color: var(--emerald);
+            border: 1px solid rgba(52, 211, 153, 0.3);
+            border-radius: 20px;
+            padding: 4px 14px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            margin-top: 14px;
+            text-transform: uppercase;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            font-size: 0.88rem;
+            margin-bottom: 24px;
+        }
+
+        .info-group {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 12px 14px;
+        }
+
+        .info-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .info-value {
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .info-value.mono {
+            font-family: 'JetBrains Mono', monospace;
+            color: #818cf8;
+        }
+
+        .breakdown-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.88rem;
+            margin-bottom: 24px;
+        }
+
+        .breakdown-table th {
+            text-align: left;
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-muted);
+            font-size: 0.8rem;
+        }
+
+        .breakdown-table td {
+            padding: 14px 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        }
+
+        .amount-highlight {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: var(--emerald);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .action-bar {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+            border-top: 1px solid var(--border);
+            padding-top: 20px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+            text-align: center;
+            text-decoration: none;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #7c3aed, #a855f7);
+            color: #fff;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+        }
+
+        @media print {
+            body {
+                background: #fff;
+                color: #000;
+                padding: 0;
+            }
+            .receipt-container {
+                border: none;
+                box-shadow: none;
+                max-width: 100%;
+                background: #fff;
+                color: #000;
+            }
+            .institution-title, .info-value, .info-value.mono {
+                color: #000 !important;
+            }
+            .action-bar {
+                display: none !important;
+            }
+            .info-group {
+                background: #f8fafc;
+                border-color: #cbd5e1;
+            }
+            .receipt-badge {
+                border: 1px solid #000;
+                color: #000;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="receipt-container">
+        
+        <div class="receipt-header">
+            <h1 class="institution-title">🏛️ CampusGuard Institute of Science &amp; Technology</h1>
+            <p class="institution-sub">Office of the University Bursar &amp; Academic Treasury • Institutional Payment Gateway</p>
+            <div class="receipt-badge">
+                <span>✓ Official E-Receipt</span> • <span>Settled Online</span>
+            </div>
+        </div>
+
+        <div class="info-grid">
+            <div class="info-group">
+                <div class="info-label">Receipt Number</div>
+                <div class="info-value mono">#{{ receipt.receipt_no }}</div>
+            </div>
+
+            <div class="info-group">
+                <div class="info-label">Transaction ID</div>
+                <div class="info-value mono">{{ receipt.transaction_id }}</div>
+            </div>
+
+            <div class="info-group">
+                <div class="info-label">Student Name / Reg No</div>
+                <div class="info-value">{{ receipt.student_name }} ({{ receipt.register_number }})</div>
+            </div>
+
+            <div class="info-group">
+                <div class="info-label">Program &amp; Department</div>
+                <div class="info-value">{{ receipt.program|default('B.Tech') }} {{ receipt.department }}</div>
+            </div>
+
+            <div class="info-group">
+                <div class="info-label">Payer / Guardian</div>
+                <div class="info-value">{{ receipt.parent_name }} ({{ receipt.parent_code }})</div>
+            </div>
+
+            <div class="info-group">
+                <div class="info-label">Payment Date &amp; Time</div>
+                <div class="info-value">{{ receipt.paid_at }}</div>
+            </div>
+
+            <div class="info-group">
+                <div class="info-label">Payment Method</div>
+                <div class="info-value">{{ receipt.payment_method }}</div>
+            </div>
+
+            <div class="info-group">
+                <div class="info-label">Gateway Payment Ref</div>
+                <div class="info-value mono">{{ receipt.gateway_payment_id|default('ONLINE-VERIFIED') }}</div>
+            </div>
+        </div>
+
+        <table class="breakdown-table">
+            <thead>
+                <tr>
+                    <th>Fee Description</th>
+                    <th>Payment Status</th>
+                    <th style="text-align: right;">Amount Paid</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>
+                        <strong style="color: #fff;">{{ receipt.fee_type }}</strong>
+                        <div style="font-size: 0.78rem; color: var(--text-muted);">Academic Term Fee Assessment</div>
+                    </td>
+                    <td>
+                        <span style="color: var(--emerald); font-weight: 700;">✓ PAID &amp; CREDITED</span>
+                    </td>
+                    <td style="text-align: right;" class="amount-highlight">
+                        ₹{{ "{:,.2f}".format(receipt.amount) }}
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 12px; padding: 12px; font-size: 0.8rem; color: #fbbf24; text-align: center; margin-bottom: 12px;">
+            ⚠️ <strong>DEMO TRANSACTION:</strong> Generated for Hackathon Demonstration &amp; Evaluation. No real monetary transaction occurred.
+        </div>
+
+        <div style="background: rgba(52, 211, 153, 0.05); border: 1px solid rgba(52, 211, 153, 0.2); border-radius: 12px; padding: 14px; font-size: 0.82rem; color: var(--text-secondary); text-align: center;">
+            This is an electronically generated valid institutional fee receipt acknowledged by CampusGuard AI ERP Treasury. No physical signature is required.
+        </div>
+
+        <div class="action-bar">
+            <button type="button" class="btn btn-primary" onclick="window.print()">
+                <span>🖨️</span> Print / Save as PDF
+            </button>
+            <a href="/parent/fees" class="btn btn-secondary">
+                <span>&larr;</span> Back to Fees &amp; Payments
+            </a>
+        </div>
+
+    </div>
+
+</body>
+</html>

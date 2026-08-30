@@ -1,63 +1,267 @@
 {% extends "parent/base_parent.html" %}
 
-{% block title %}Fees & Financial Ledger{% endblock %}
+{% block title %}Child Fees &amp; Demo Payment Portal{% endblock %}
+
+{% block extra_head %}
+<style>
+    .fee-kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+    }
+    .fee-kpi-card {
+        background: linear-gradient(135deg, rgba(14, 19, 32, 0.95) 0%, rgba(20, 27, 45, 0.88) 100%);
+        border: 1px solid var(--parent-border);
+        border-radius: 16px;
+        padding: 18px 20px;
+        backdrop-filter: var(--glass-blur);
+        position: relative;
+        overflow: hidden;
+        transition: transform var(--transition-fast), border-color var(--transition-fast);
+    }
+    .fee-kpi-card:hover {
+        transform: translateY(-2px);
+        border-color: rgba(192, 132, 252, 0.4);
+    }
+    .fee-kpi-label {
+        font-size: 0.76rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        margin-bottom: 6px;
+    }
+    .fee-kpi-value {
+        font-size: 1.75rem;
+        font-weight: 800;
+        font-family: var(--font-mono);
+        color: #fff;
+        line-height: 1.1;
+    }
+    .fee-kpi-sub {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+        margin-top: 6px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .child-selector-card {
+        background: rgba(147, 51, 234, 0.08);
+        border: 1px solid rgba(192, 132, 252, 0.25);
+        border-radius: 16px;
+        padding: 16px 20px;
+        margin-bottom: 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 14px;
+    }
+    .student-badge-info {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .student-avatar-circle {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        background: linear-gradient(135deg, var(--parent-primary), var(--parent-secondary));
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 1.1rem;
+        box-shadow: 0 0 15px var(--parent-glow);
+    }
+
+    .demo-badge-banner {
+        background: linear-gradient(135deg, rgba(234, 179, 8, 0.15) 0%, rgba(245, 158, 11, 0.1) 100%);
+        border: 1px solid rgba(245, 158, 11, 0.4);
+        border-radius: 12px;
+        padding: 12px 16px;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .pay-method-pill {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid var(--glass-border);
+        border-radius: 10px;
+        padding: 10px 14px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .pay-method-pill:hover {
+        background: rgba(147, 51, 234, 0.15);
+        border-color: var(--parent-primary);
+    }
+    .pay-method-pill.active {
+        background: rgba(147, 51, 234, 0.25);
+        border-color: var(--parent-primary);
+        box-shadow: 0 0 12px var(--parent-glow);
+    }
+
+    /* Processing Overlay */
+    .processing-overlay {
+        position: absolute;
+        inset: 0;
+        background: rgba(14, 19, 32, 0.96);
+        border-radius: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 10;
+        padding: 24px;
+        text-align: center;
+    }
+    .spinner-circle {
+        width: 54px;
+        height: 54px;
+        border: 4px solid rgba(192, 132, 252, 0.2);
+        border-top-color: #c084fc;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+        margin-bottom: 18px;
+    }
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+</style>
+{% endblock %}
 
 {% block parent_content %}
+
+<!-- Page Title & Header -->
 <div class="page-header-block">
     <div class="page-title-group">
-        <h1><span>💳</span> Fee Dues &amp; Payment Ledger</h1>
-        <p>Institutional tuition fees, residential hostel dues, examination charges, and verified payment transactions.</p>
+        <h1><span>💳</span> College Fee Center &amp; Demo Payment Portal</h1>
+        <p>View fee invoices for your linked child, track Outstanding Balance, and complete safe simulated demo payments (Razorpay sandbox emulation) with instant receipts.</p>
     </div>
     
     <div>
-        {% if total_pending > 0 %}
-            <span class="badge badge-yellow" style="font-size: 0.88rem; padding: 8px 16px;">⚠️ Outstanding Dues: ₹{{ total_pending }}</span>
+        {% if overdue_count > 0 %}
+            <span class="badge badge-red" style="font-size: 0.88rem; padding: 8px 16px;">
+                ⚠️ Overdue Dues: ₹{{ "{:,.2f}".format(overdue_amount) }} ({{ overdue_count }} Head{{ 's' if overdue_count > 1 else '' }})
+            </span>
+        {% elif total_pending > 0 %}
+            <span class="badge badge-yellow" style="font-size: 0.88rem; padding: 8px 16px;">
+                ⏱️ Outstanding Balance: ₹{{ "{:,.2f}".format(total_pending) }}
+            </span>
         {% else %}
-            <span class="badge badge-green" style="font-size: 0.88rem; padding: 8px 16px;">✓ All Fees Cleared</span>
+            <span class="badge badge-green" style="font-size: 0.88rem; padding: 8px 16px;">
+                ✓ All Institutional Dues Cleared
+            </span>
         {% endif %}
     </div>
 </div>
 
-<!-- Financial Summary Overview Cards -->
-<section class="content-card" style="background: linear-gradient(135deg, rgba(14, 19, 32, 0.95) 0%, rgba(20, 27, 45, 0.9) 100%); border-color: var(--parent-border);">
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
-        <div style="padding: 12px; border-right: 1px solid var(--glass-border);">
-            <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">Total Semester Dues</div>
-            <div style="font-size: 1.8rem; font-weight: 800; color: var(--text-primary); font-family: var(--font-mono); margin-top: 4px;">
-                ₹{{ total_fee }}
+<!-- Multi-Child Selector Switcher -->
+<div class="child-selector-card">
+    <div class="student-badge-info">
+        <div class="student-avatar-circle">{{ student.name[:2]|upper }}</div>
+        <div>
+            <div style="font-weight: 800; font-size: 1.1rem; color: #fff;">{{ student.name }}</div>
+            <div style="font-size: 0.8rem; color: var(--text-secondary);">
+                Reg No: <span style="color: var(--parent-primary); font-family: var(--font-mono); font-weight: 700;">{{ student.register_number }}</span> • 
+                Department: <strong style="color: #fff;">{{ student.department }}</strong> • 
+                Semester: <strong style="color: #fff;">{{ student.semester|default(5) }}</strong>
             </div>
-            <div style="font-size: 0.76rem; color: var(--text-secondary);">Academic Year 2026</div>
         </div>
+    </div>
 
-        <div style="padding: 12px; border-right: 1px solid var(--glass-border);">
-            <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">Total Amount Paid</div>
-            <div style="font-size: 1.8rem; font-weight: 800; color: #34d399; font-family: var(--font-mono); margin-top: 4px;">
-                ₹{{ total_paid }}
-            </div>
-            <div style="font-size: 0.76rem; color: #34d399;">✓ Verified Online / Counter</div>
+    {% if linked_students|length > 1 %}
+    <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="font-size: 0.82rem; color: var(--text-muted);">Switch Linked Ward:</span>
+        <select class="form-select" style="width: auto; padding: 6px 12px; font-size: 0.84rem;" onchange="window.location.href='/parent/fees?student_id=' + this.value;">
+            {% for s in linked_students %}
+            <option value="{{ s.id }}" {% if s.id == student.id %}selected{% endif %}>
+                {{ s.name }} ({{ s.register_number }})
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Demo Notice Banner -->
+<div class="demo-badge-banner">
+    <span style="font-size: 1.4rem;">🧪</span>
+    <div>
+        <div style="font-size: 0.85rem; font-weight: 800; color: #fbbf24; text-transform: uppercase;">
+            Safe Demo Payment Simulation (Hackathon Evaluation)
         </div>
+        <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 2px;">
+            Simulated checkout mode active. Real database ledger records, status updates, and official printable receipts will be generated without actual bank charges.
+        </div>
+    </div>
+</div>
 
-        <div style="padding: 12px;">
-            <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">Pending Balance Due</div>
-            <div style="font-size: 1.8rem; font-weight: 800; font-family: var(--font-mono); margin-top: 4px; {% if total_pending > 0 %}color: #fbbf24;{% else %}color: #34d399;{% endif %}">
-                ₹{{ total_pending }}
-            </div>
-            <div style="font-size: 0.76rem; {% if total_pending > 0 %}color: #fbbf24;{% else %}color: var(--text-muted);{% endif %}">
-                {% if total_pending > 0 %}Clearance Required before Exams{% else %}Zero balance{% endif %}
-            </div>
+<!-- Financial Overview KPI Cards -->
+<section class="fee-kpi-grid">
+    <!-- KPI 1: Total Billed -->
+    <div class="fee-kpi-card">
+        <div class="fee-kpi-label">Total Semester Dues</div>
+        <div class="fee-kpi-value" id="stat-total-billed">₹{{ "{:,.2f}".format(total_fee) }}</div>
+        <div class="fee-kpi-sub">
+            <span>🏛️</span> Academic Year 2026-2027
+        </div>
+    </div>
+
+    <!-- KPI 2: Total Paid -->
+    <div class="fee-kpi-card">
+        <div class="fee-kpi-label">Total Amount Paid</div>
+        <div class="fee-kpi-value" style="color: #34d399;" id="stat-total-paid">₹{{ "{:,.2f}".format(total_paid) }}</div>
+        <div class="fee-kpi-sub" style="color: #34d399;">
+            <span>✓</span> Verified Online / Ledger
+        </div>
+    </div>
+
+    <!-- KPI 3: Outstanding Balance -->
+    <div class="fee-kpi-card">
+        <div class="fee-kpi-label">Outstanding Balance</div>
+        <div class="fee-kpi-value" style="{% if total_pending > 0 %}color: #fbbf24;{% else %}color: #34d399;{% endif %}" id="stat-total-pending">
+            ₹{{ "{:,.2f}".format(total_pending) }}
+        </div>
+        <div class="fee-kpi-sub" style="{% if total_pending > 0 %}color: #fbbf24;{% else %}color: var(--text-muted);{% endif %}">
+            {% if total_pending > 0 %}Pending Clearance{% else %}Zero Outstanding Dues{% endif %}
+        </div>
+    </div>
+
+    <!-- KPI 4: Overdue Receivables -->
+    <div class="fee-kpi-card">
+        <div class="fee-kpi-label">Overdue Amount</div>
+        <div class="fee-kpi-value" style="{% if overdue_amount > 0 %}color: #f87171;{% else %}color: var(--text-muted);{% endif %}" id="stat-total-overdue">
+            ₹{{ "{:,.2f}".format(overdue_amount) }}
+        </div>
+        <div class="fee-kpi-sub" style="{% if overdue_amount > 0 %}color: #f87171; font-weight: 700;{% endif %}">
+            {% if overdue_count > 0 %}⚠️ {{ overdue_count }} head(s) overdue{% else %}✓ Zero overdue dues{% endif %}
         </div>
     </div>
 </section>
 
-<!-- Fee Heads Breakdown Table -->
-<section class="content-card">
+<!-- Detailed Fee Breakdown Ledger -->
+<section class="content-card" style="margin-bottom: 24px;">
     <div class="card-header-row">
-        <h2 class="card-heading"><span>📑</span> Semester 5 Fee Heads &amp; Dues Breakdown</h2>
-        <span class="badge badge-purple">Official Ledger</span>
+        <div>
+            <h2 class="card-heading"><span>📑</span> Semester Fee Heads &amp; Breakdown Structure</h2>
+            <p style="font-size: 0.82rem; color: var(--text-muted); margin-top: 2px;">Itemized fee schedule for {{ student.name }} ({{ student.register_number }}).</p>
+        </div>
+        <span class="badge badge-purple">{{ fee_items|length }} Invoices</span>
     </div>
 
     <div class="table-responsive">
-        <table class="portal-table">
+        <table class="portal-table" style="vertical-align: middle;">
             <thead>
                 <tr>
                     <th>Fee Category</th>
@@ -65,44 +269,60 @@
                     <th>Amount Paid</th>
                     <th>Pending Balance</th>
                     <th>Due Date</th>
-                    <th>Payment Status</th>
-                    <th>Action</th>
+                    <th>Status</th>
+                    <th style="text-align: right;">Action</th>
                 </tr>
             </thead>
             <tbody>
                 {% for fee in fee_items %}
-                <tr>
-                    <td><strong style="color: var(--text-primary);">{{ fee.fee_type }}</strong></td>
-                    <td style="font-family: var(--font-mono); font-weight: 600;">₹{{ fee.amount }}</td>
-                    <td style="font-family: var(--font-mono); color: #34d399; font-weight: 600;">₹{{ fee.paid_amount }}</td>
-                    <td style="font-family: var(--font-mono); font-weight: 700; {% if fee.amount - fee.paid_amount > 0 %}color: #fbbf24;{% else %}color: var(--text-muted);{% endif %}">
-                        ₹{{ fee.amount - fee.paid_amount }}
-                    </td>
-                    <td style="font-size: 0.84rem; color: var(--text-muted); font-family: var(--font-mono);">{{ fee.due_date }}</td>
+                {% set pending = fee.pending_amount %}
+                {% set is_ovd = fee.is_overdue %}
+                <tr id="fee-row-{{ fee.id }}" class="fee-row {% if is_ovd %}row-overdue{% endif %}">
                     <td>
-                        {% if fee.status == 'PAID' %}
-                            <span class="badge badge-green">PAID</span>
-                        {% elif fee.status == 'PARTIAL' %}
-                            <span class="badge badge-yellow">PARTIAL</span>
-                        {% else %}
-                            <span class="badge badge-red">PENDING</span>
+                        <strong style="color: var(--text-primary); font-size: 0.92rem;">{{ fee.fee_type }}</strong>
+                        <div style="font-size: 0.76rem; color: var(--text-muted);">Semester {{ fee.semester|default(5) }} • {{ fee.academic_year|default('2026-2027') }}</div>
+                    </td>
+                    <td style="font-family: var(--font-mono); font-weight: 600; color: #fff;">₹{{ "{:,.2f}".format(fee.amount) }}</td>
+                    <td style="font-family: var(--font-mono); color: #34d399; font-weight: 600;">₹{{ "{:,.2f}".format(fee.paid_amount) }}</td>
+                    <td style="font-family: var(--font-mono); font-weight: 700; {% if is_ovd %}color: #f87171;{% elif pending > 0 %}color: #fbbf24;{% else %}color: var(--text-muted);{% endif %}">
+                        ₹{{ "{:,.2f}".format(pending) }}
+                    </td>
+                    <td style="font-size: 0.84rem; color: var(--text-muted); font-family: var(--font-mono);">
+                        {{ fee.due_date }}
+                        {% if is_ovd %}
+                            <div style="color: #f87171; font-size: 0.72rem; font-weight: 700;">🔴 Overdue</div>
                         {% endif %}
                     </td>
                     <td>
-                        {% if fee.amount - fee.paid_amount > 0 %}
-                            <button type="button" class="btn-primary" style="font-size: 0.78rem; padding: 5px 12px;" onclick="openPaymentDetails('{{ fee.fee_type }}', '{{ fee.amount - fee.paid_amount }}', '{{ fee.due_date }}')">
-                                Pay Details
-                            </button>
+                        {% if fee.calculated_status == 'PAID' or fee.status in ['PAID', 'Paid'] %}
+                            <span class="badge badge-green">✓ PAID</span>
+                        {% elif fee.calculated_status == 'OVERDUE' %}
+                            <span class="badge badge-red">OVERDUE</span>
+                        {% elif fee.calculated_status == 'PARTIAL' or fee.status in ['PARTIAL', 'Partial'] %}
+                            <span class="badge badge-yellow">PARTIAL</span>
                         {% else %}
-                            <button type="button" class="btn-secondary" style="font-size: 0.78rem; padding: 5px 12px;" onclick="showReceiptModal('{{ fee.fee_type }}', '₹{{ fee.paid_amount }}', 'REC-0{{ fee.id }}84')">
-                                🧾 Receipt
-                            </button>
+                            <span class="badge badge-purple">PENDING</span>
+                        {% endif %}
+                    </td>
+                    <td style="text-align: right; white-space: nowrap;">
+                        {% if pending > 0 %}
+                            <a 
+                                href="/parent/fees/checkout/{{ fee.id }}" 
+                                class="btn-primary" 
+                                style="font-size: 0.82rem; padding: 7px 16px; background: linear-gradient(135deg, #10b981, #059669); font-weight: 700; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);"
+                            >
+                                💳 Pay Now (₹{{ "{:,.0f}".format(pending) }})
+                            </a>
+                        {% else %}
+                            <span class="badge badge-green" style="font-size: 0.8rem; padding: 6px 14px;">
+                                ✓ Cleared
+                            </span>
                         {% endif %}
                     </td>
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 24px;">No fee ledger entries available.</td>
+                    <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 28px;">No fee records available.</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -110,44 +330,63 @@
     </div>
 </section>
 
-<!-- Payment Transactions History Table -->
+<!-- Verified Payment History -->
 <section class="content-card">
     <div class="card-header-row">
-        <h2 class="card-heading"><span>📜</span> Verified Payment Transactions &amp; Receipts</h2>
-        <span class="badge badge-green">Secured Gateway</span>
+        <div>
+            <h2 class="card-heading"><span>📜</span> Verified Payment Receipts &amp; Audit Ledger</h2>
+            <p style="font-size: 0.82rem; color: var(--text-muted); margin-top: 2px;">Official verified payment receipts and transaction records for {{ student.name }}.</p>
+        </div>
+        <span class="badge badge-purple">{{ transactions|length }} Records</span>
     </div>
 
     <div class="table-responsive">
-        <table class="portal-table">
+        <table class="portal-table" style="vertical-align: middle;">
             <thead>
                 <tr>
-                    <th>Transaction ID</th>
+                    <th>Date &amp; Time</th>
+                    <th>Child</th>
                     <th>Fee Category</th>
                     <th>Amount Paid</th>
                     <th>Method</th>
-                    <th>Receipt Number</th>
-                    <th>Payment Timestamp</th>
-                    <th>Receipt</th>
+                    <th>Receipt No</th>
+                    <th>Status</th>
+                    <th style="text-align: right;">Official Receipt</th>
                 </tr>
             </thead>
             <tbody>
-                {% for txn in transactions %}
+                {% for tx in transactions %}
                 <tr>
-                    <td style="font-family: var(--font-mono); font-weight: 700; color: var(--parent-primary);">{{ txn.transaction_id }}</td>
-                    <td>{{ txn.fee_type }}</td>
-                    <td style="font-family: var(--font-mono); font-weight: 700; color: #34d399;">₹{{ txn.amount }}</td>
-                    <td><span class="badge badge-indigo">{{ txn.payment_method }}</span></td>
-                    <td style="font-family: var(--font-mono); color: #c084fc;">#{{ txn.receipt_no }}</td>
-                    <td style="font-size: 0.82rem; color: var(--text-muted); font-family: var(--font-mono);">{{ txn.paid_at }}</td>
+                    <td style="font-size: 0.82rem; color: var(--text-muted); font-family: var(--font-mono);">
+                        {{ tx.paid_at }}
+                    </td>
                     <td>
-                        <button type="button" class="btn-secondary" style="font-size: 0.76rem; padding: 4px 10px;" onclick="showReceiptModal('{{ txn.fee_type }}', '₹{{ txn.amount }}', '{{ txn.receipt_no }}', '{{ txn.transaction_id }}', '{{ txn.paid_at }}')">
-                            View Receipt
-                        </button>
+                        <strong style="color: #fff;">{{ student.name }}</strong>
+                    </td>
+                    <td>
+                        <span style="color: var(--text-primary); font-weight: 600;">{{ tx.fee_type }}</span>
+                    </td>
+                    <td style="font-family: var(--font-mono); color: #34d399; font-weight: 800;">
+                        ₹{{ "{:,.2f}".format(tx.amount) }}
+                    </td>
+                    <td>
+                        <span class="badge badge-indigo">{{ tx.payment_method }}</span>
+                    </td>
+                    <td style="font-family: var(--font-mono); color: #c084fc; font-weight: 700;">
+                        #{{ tx.receipt_no }}
+                    </td>
+                    <td>
+                        <span class="badge badge-green">✓ SUCCESS</span>
+                    </td>
+                    <td style="text-align: right;">
+                        <a href="{{ url_for('parent.parent_fees_receipt', receipt_no=tx.receipt_no) }}" class="btn-secondary" style="font-size: 0.78rem; padding: 5px 12px; text-decoration: none;">
+                            📄 View / Print
+                        </a>
                     </td>
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 24px;">No transaction records available.</td>
+                    <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 28px;">No payment history recorded yet.</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -155,95 +394,345 @@
     </div>
 </section>
 
-<!-- Receipt Modal -->
-<div class="modal-overlay" id="receipt-modal">
-    <div class="modal-card">
-        <div class="modal-header">
-            <h3 class="modal-title">🧾 Official E-Receipt</h3>
-            <button type="button" class="modal-close" onclick="closeModal('receipt-modal')">✕</button>
-        </div>
+<!-- ========================================================================= -->
+<!-- Demo Payment Modal -->
+<!-- ========================================================================= -->
+<div id="demo-payment-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 9999; align-items: center; justify-content: center; backdrop-filter: blur(6px); padding: 16px;">
+    <div style="background: #0e1320; border: 1px solid var(--parent-border); border-radius: 20px; max-width: 520px; width: 100%; padding: 26px; box-shadow: 0 25px 60px rgba(0,0,0,0.7); position: relative;">
         
-        <div style="background: rgba(10, 14, 26, 0.9); border: 1px solid var(--parent-border); border-radius: 12px; padding: 20px; font-size: 0.88rem; line-height: 1.6; margin-bottom: 20px;" id="receipt-modal-content">
-            <div style="text-align: center; border-bottom: 1px dashed var(--glass-border); padding-bottom: 12px; margin-bottom: 12px;">
-                <h4 style="font-size: 1.1rem; color: #fff; margin: 0;">CampusGuard AI Institute of Technology</h4>
-                <p style="color: var(--text-muted); font-size: 0.78rem; margin: 2px 0 0;">Official Fee Clearance &amp; Financial Acknowledgment</p>
+        <!-- Processing Overlay (Hidden by default) -->
+        <div id="demo-processing-overlay" class="processing-overlay" style="display: none;">
+            <div class="spinner-circle"></div>
+            <h3 id="processing-step-title" style="font-size: 1.15rem; font-weight: 800; color: #fff; margin: 0 0 6px;">Processing Demo Payment...</h3>
+            <p id="processing-step-desc" style="font-size: 0.82rem; color: var(--text-muted); margin: 0;">Connecting to simulated banking network...</p>
+        </div>
+
+        <!-- Modal Header -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 1.3rem;">🧪</span>
+                <h3 style="font-size: 1.2rem; font-weight: 800; color: #fff; margin: 0;">Demo Fee Checkout</h3>
             </div>
-            
-            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
-                <span style="color: var(--text-muted);">Student Name:</span>
-                <strong style="color: #fff;">{{ student.name }} ({{ student.register_number }})</strong>
+            <button type="button" onclick="closeModal('demo-payment-modal')" style="background: none; border: none; color: #fff; font-size: 1.3rem; cursor: pointer;">✕</button>
+        </div>
+
+        <!-- Demo Disclaimer Banner -->
+        <div style="background: rgba(245, 158, 11, 0.12); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 10px; padding: 10px 14px; margin-bottom: 16px; font-size: 0.78rem; color: #fbbf24; display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 1.1rem;">⚠️</span>
+            <div><strong>DEMO PAYMENT:</strong> No real money will be charged. Transactions update the central database and generate official receipts for hackathon evaluation.</div>
+        </div>
+
+        <!-- Fee Details Summary Box -->
+        <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--glass-border); border-radius: 12px; padding: 14px; margin-bottom: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <strong style="color: #fff; font-size: 1rem;" id="modal-fee-title">Tuition Fee</strong>
+                <span class="badge badge-purple" id="modal-fee-status">PENDING DUES</span>
             </div>
-            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
-                <span style="color: var(--text-muted);">Parent / Guardian:</span>
-                <span style="color: #fff;">{{ parent.name }} ({{ parent.parent_id }})</span>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.82rem;">
+                <div>
+                    <span style="color: var(--text-muted);">Student:</span>
+                    <strong style="color: #fff; display: block;">{{ student.name }} ({{ student.register_number }})</strong>
+                </div>
+                <div>
+                    <span style="color: var(--text-muted);">Payer (Parent):</span>
+                    <strong style="color: var(--parent-primary); display: block;">{{ parent.name }}</strong>
+                </div>
             </div>
-            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
-                <span style="color: var(--text-muted);">Fee Category:</span>
-                <span style="color: #c084fc; font-weight: 600;" id="modal-receipt-fee">Tuition Fee</span>
-            </div>
-            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
-                <span style="color: var(--text-muted);">Amount:</span>
-                <strong style="color: #34d399; font-family: var(--font-mono);" id="modal-receipt-amt">₹125000</strong>
-            </div>
-            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
-                <span style="color: var(--text-muted);">Receipt No:</span>
-                <span style="font-family: var(--font-mono); color: #818cf8;" id="modal-receipt-no">#REC-01</span>
-            </div>
-            <div style="display: flex; justify-content: space-between;">
-                <span style="color: var(--text-muted);">Status:</span>
-                <span class="badge badge-green">✓ Transaction Settled</span>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255, 255, 255, 0.06);">
+                <span style="color: var(--text-muted); font-size: 0.82rem;">Payable Balance:</span>
+                <strong style="color: #34d399; font-size: 1.25rem; font-family: var(--font-mono);" id="modal-fee-pending-display">₹0.00</strong>
             </div>
         </div>
 
-        <div style="display: flex; gap: 12px;">
-            <button type="button" class="btn-primary" style="flex: 1;" onclick="window.print()">
-                🖨️ Print / Save PDF
-            </button>
-            <button type="button" class="btn-secondary" onclick="closeModal('receipt-modal')">
-                Close
-            </button>
+        <form id="demo-pay-form" onsubmit="submitDemoPayment(event, false)">
+            <input type="hidden" id="demo-fee-id" value="">
+
+            <!-- Payment Amount Selection -->
+            <div style="margin-bottom: 14px;">
+                <label class="form-label" style="font-size: 0.8rem; margin-bottom: 6px;">Payment Amount Option</label>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px;">
+                    <label style="background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); border-radius: 8px; padding: 8px 12px; display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                        <input type="radio" name="demo_payment_type" value="full" checked onchange="toggleCustomAmount(false)">
+                        <span style="font-size: 0.8rem; font-weight: 600; color: #fff;">Pay Full Due</span>
+                    </label>
+                    <label style="background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); border-radius: 8px; padding: 8px 12px; display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                        <input type="radio" name="demo_payment_type" value="partial" onchange="toggleCustomAmount(true)">
+                        <span style="font-size: 0.8rem; font-weight: 600; color: #fff;">Custom Amount</span>
+                    </label>
+                </div>
+
+                <div id="custom-amount-container" style="display: none;">
+                    <input type="number" step="0.01" min="1" id="demo-custom-amount" class="form-input" style="font-size: 1rem; font-weight: 700; color: #34d399; font-family: var(--font-mono);" placeholder="Enter amount">
+                </div>
+            </div>
+
+            <!-- Simulated Payment Method Selection -->
+            <div style="margin-bottom: 20px;">
+                <label class="form-label" style="font-size: 0.8rem; margin-bottom: 6px;">Select Simulated Payment Method</label>
+                <select id="demo-payment-method" class="form-select" style="font-weight: 600;">
+                    <option value="Demo UPI (Google Pay / PhonePe)">📱 Demo UPI (Google Pay / PhonePe / Paytm)</option>
+                    <option value="Demo Debit Card (Visa / RuPay)">💳 Demo Debit Card (Visa / RuPay / MasterCard)</option>
+                    <option value="Demo Credit Card">💳 Demo Credit Card</option>
+                    <option value="Demo Net Banking (SBI / HDFC / ICICI)">🏦 Demo Net Banking (SBI / HDFC / ICICI / Axis)</option>
+                </select>
+            </div>
+
+            <!-- Action Buttons -->
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <button type="submit" class="btn-primary" id="demo-submit-btn" style="background: linear-gradient(135deg, #10b981, #059669); font-weight: 800; padding: 12px; font-size: 0.95rem; width: 100%;">
+                    <span>🚀</span> Confirm Demo Payment (<span id="btn-amount-preview">₹0.00</span>)
+                </button>
+
+                <div style="display: flex; gap: 10px;">
+                    <button type="button" class="btn-secondary" style="flex: 1; font-size: 0.78rem; color: #f87171; border-color: rgba(248, 113, 113, 0.3);" onclick="submitDemoPayment(event, true)">
+                        ⚠️ Simulate Payment Failure
+                    </button>
+                    <button type="button" class="btn-secondary" style="flex: 1; font-size: 0.78rem;" onclick="closeModal('demo-payment-modal')">
+                        ✕ Cancel Payment
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- Official Digital E-Receipt Modal -->
+<!-- ========================================================================= -->
+<div id="receipt-modal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 9999; align-items: center; justify-content: center; backdrop-filter: blur(6px); padding: 16px;">
+    <div style="background: #0e1320; border: 1px solid var(--parent-border); border-radius: 20px; max-width: 540px; width: 100%; padding: 0; overflow: hidden; box-shadow: 0 25px 60px rgba(0,0,0,0.8);">
+        
+        <div style="background: linear-gradient(135deg, rgba(147, 51, 234, 0.25), rgba(30, 41, 59, 0.5)); padding: 24px; text-align: center; border-bottom: 1px solid var(--glass-border); position: relative;">
+            <button type="button" onclick="closeModal('receipt-modal')" style="position: absolute; right: 16px; top: 16px; background: none; border: none; color: #fff; font-size: 1.2rem; cursor: pointer;">✕</button>
+            <div style="font-size: 2rem; margin-bottom: 4px;">🏛️</div>
+            <h3 style="font-size: 1.2rem; font-weight: 800; color: #fff; margin: 0;">CampusGuard Institute of Science &amp; Technology</h3>
+            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 2px;">Office of the University Bursar &amp; Academic Treasury</div>
+            <div class="badge badge-green" style="margin-top: 12px; font-size: 0.76rem; padding: 4px 14px;">
+                ✓ DEMO PAYMENT SETTLED &amp; CREDITED
+            </div>
+        </div>
+
+        <div style="padding: 24px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 1px dashed var(--glass-border); padding-bottom: 10px;">
+                <div>
+                    <div style="font-size: 0.72rem; color: var(--text-muted);">RECEIPT NUMBER</div>
+                    <strong style="color: #c084fc; font-family: var(--font-mono); font-size: 0.95rem;" id="modal-receipt-no">#REC-DEMO-2026-XXXX</strong>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-size: 0.72rem; color: var(--text-muted);">TRANSACTION ID</div>
+                    <strong style="color: #38bdf8; font-family: var(--font-mono); font-size: 0.95rem;" id="modal-receipt-txnid">DEMO-TXN-XXXX</strong>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 0.82rem; margin-bottom: 16px;">
+                <div>
+                    <span style="color: var(--text-muted);">Student Name:</span>
+                    <strong style="color: #fff; display: block;">{{ student.name }} ({{ student.register_number }})</strong>
+                </div>
+                <div>
+                    <span style="color: var(--text-muted);">Payer (Parent):</span>
+                    <strong style="color: #fff; display: block;">{{ parent.name }}</strong>
+                </div>
+                <div>
+                    <span style="color: var(--text-muted);">Fee Category:</span>
+                    <strong style="color: #fff; display: block;" id="modal-receipt-fee">Tuition Fee</strong>
+                </div>
+                <div>
+                    <span style="color: var(--text-muted);">Payment Method:</span>
+                    <strong style="color: #fff; display: block;" id="modal-receipt-method">Demo UPI</strong>
+                </div>
+                <div>
+                    <span style="color: var(--text-muted);">Settlement Time:</span>
+                    <span style="color: var(--text-secondary); font-family: var(--font-mono); display: block;" id="modal-receipt-date">2026-08-29</span>
+                </div>
+                <div>
+                    <span style="color: var(--text-muted);">Ledger Status:</span>
+                    <span style="color: #34d399; font-weight: 700; display: block;">PAID ✓</span>
+                </div>
+            </div>
+
+            <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--glass-border); border-radius: 12px; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;">
+                <div>
+                    <div style="font-size: 0.72rem; color: var(--text-muted);">AMOUNT SETTLED</div>
+                    <div style="font-size: 1.4rem; font-weight: 800; color: #34d399; font-family: var(--font-mono);" id="modal-receipt-amt">₹0.00</div>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-size: 0.72rem; color: var(--text-muted);">REMAINING BALANCE</div>
+                    <div style="font-size: 1.1rem; font-weight: 700; color: #fbbf24; font-family: var(--font-mono);" id="modal-receipt-rem">₹0.00</div>
+                </div>
+            </div>
+
+            <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 8px; padding: 8px 12px; font-size: 0.75rem; color: #fbbf24; text-align: center; margin-bottom: 16px;">
+                ⚠ DEMO TRANSACTION: Simulated for Hackathon Demo — No real money was transferred.
+            </div>
+
+            <div style="display: flex; gap: 10px;">
+                <button type="button" class="btn-secondary" style="flex: 1;" onclick="closeModal('receipt-modal'); window.location.reload();">
+                    Close &amp; Refresh
+                </button>
+                <a id="modal-full-receipt-link" href="#" class="btn-primary" style="flex: 1; text-align: center; text-decoration: none; padding: 10px;">
+                    <span>🖨️</span> View Full Receipt
+                </a>
+            </div>
         </div>
     </div>
 </div>
 
-<!-- Pay Details Modal -->
-<div class="modal-overlay" id="pay-info-modal">
-    <div class="modal-card">
-        <div class="modal-header">
-            <h3 class="modal-title">💳 Institutional Payment Information</h3>
-            <button type="button" class="modal-close" onclick="closeModal('pay-info-modal')">✕</button>
-        </div>
-        
-        <div style="font-size: 0.88rem; color: var(--text-secondary); line-height: 1.5; margin-bottom: 16px;">
-            To pay pending dues, parents can use institutional NetBanking / UPI or visit the Campus Finance Counter with the student register number:
-        </div>
-
-        <div style="background: rgba(10, 14, 26, 0.9); border: 1px solid var(--glass-border); border-radius: 12px; padding: 16px; font-size: 0.85rem; margin-bottom: 20px;">
-            <div style="margin-bottom: 6px;"><strong style="color: #fff;">Bank:</strong> State Bank Campus Branch</div>
-            <div style="margin-bottom: 6px;"><strong style="color: #fff;">A/C Name:</strong> CampusGuard AI Academic Fund</div>
-            <div style="margin-bottom: 6px;"><strong style="color: #fff;">Account No:</strong> 9876 5432 1098 7654</div>
-            <div style="margin-bottom: 6px;"><strong style="color: #fff;">IFSC Code:</strong> SBIN0004242</div>
-            <div><strong style="color: #fff;">UPI ID:</strong> campusguard.finance@sbi</div>
-        </div>
-
-        <button type="button" class="btn-secondary" style="width: 100%;" onclick="closeModal('pay-info-modal')">
-            Close
-        </button>
-    </div>
-</div>
-{% endblock %}
-
-{% block extra_scripts %}
+<!-- ========================================================================= -->
+<!-- Core JavaScript Controller -->
+<!-- ========================================================================= -->
 <script>
-    function showReceiptModal(fee, amt, recNo, txnId, date) {
-        document.getElementById('modal-receipt-fee').textContent = fee;
-        document.getElementById('modal-receipt-amt').textContent = amt;
-        document.getElementById('modal-receipt-no').textContent = '#' + recNo;
-        openModal('receipt-modal');
+    const ACTIVE_STUDENT_ID = {{ student.id }};
+    let currentFeeData = { fee_id: null, title: '', total: 0, paid: 0, pending: 0 };
+
+    // --- Global Robust Modal Controllers ---
+    function openModal(modalId) {
+        const el = document.getElementById(modalId);
+        if (el) {
+            el.style.display = 'flex';
+        }
     }
 
-    function openPaymentDetails(fee, pending, due) {
-        openModal('pay-info-modal');
+    function closeModal(modalId) {
+        const el = document.getElementById(modalId);
+        if (el) {
+            el.style.display = 'none';
+        }
+    }
+
+    // --- Open Demo Payment Modal ---
+    function openDemoPaymentModal(feeId, feeType, totalAmt, paidAmt, pendingAmt) {
+        currentFeeData = {
+            fee_id: feeId,
+            title: feeType,
+            total: parseFloat(totalAmt || 0),
+            paid: parseFloat(paidAmt || 0),
+            pending: parseFloat(pendingAmt || 0)
+        };
+
+        document.getElementById('demo-fee-id').value = feeId;
+        document.getElementById('modal-fee-title').textContent = feeType;
+        document.getElementById('modal-fee-status').textContent = 'PENDING DUES';
+        document.getElementById('modal-fee-pending-display').textContent = '₹' + currentFeeData.pending.toLocaleString('en-IN', { minimumFractionDigits: 2 });
+        document.getElementById('btn-amount-preview').textContent = '₹' + currentFeeData.pending.toLocaleString('en-IN', { minimumFractionDigits: 2 });
+
+        // Reset radio
+        const fullRadio = document.querySelector('input[name="demo_payment_type"][value="full"]');
+        if (fullRadio) fullRadio.checked = true;
+        toggleCustomAmount(false);
+
+        const customInput = document.getElementById('demo-custom-amount');
+        if (customInput) {
+            customInput.value = currentFeeData.pending;
+            customInput.max = currentFeeData.pending;
+        }
+
+        // Reset processing overlay
+        document.getElementById('demo-processing-overlay').style.display = 'none';
+
+        openModal('demo-payment-modal');
+    }
+
+    function toggleCustomAmount(isCustom) {
+        const container = document.getElementById('custom-amount-container');
+        const customInput = document.getElementById('demo-custom-amount');
+        if (isCustom) {
+            container.style.display = 'block';
+            customInput.focus();
+            updateButtonPreview();
+            customInput.oninput = updateButtonPreview;
+        } else {
+            container.style.display = 'none';
+            document.getElementById('btn-amount-preview').textContent = '₹' + currentFeeData.pending.toLocaleString('en-IN', { minimumFractionDigits: 2 });
+        }
+    }
+
+    function updateButtonPreview() {
+        const val = parseFloat(document.getElementById('demo-custom-amount').value || 0);
+        document.getElementById('btn-amount-preview').textContent = '₹' + val.toLocaleString('en-IN', { minimumFractionDigits: 2 });
+    }
+
+    // --- Submit Demo Payment with Processing Animation ---
+    async function submitDemoPayment(event, simulateFailure) {
+        if (event) event.preventDefault();
+
+        const paymentType = document.querySelector('input[name="demo_payment_type"]:checked').value;
+        let payAmount = currentFeeData.pending;
+
+        if (paymentType === 'partial') {
+            const customAmt = parseFloat(document.getElementById('demo-custom-amount').value);
+            if (isNaN(customAmt) || customAmt <= 0 || customAmt > currentFeeData.pending) {
+                alert('Please enter a valid amount between ₹1 and ₹' + currentFeeData.pending);
+                return;
+            }
+            payAmount = customAmt;
+        }
+
+        const paymentMethod = document.getElementById('demo-payment-method').value;
+
+        // Show Processing Overlay with Step Animations
+        const overlay = document.getElementById('demo-processing-overlay');
+        const titleEl = document.getElementById('processing-step-title');
+        const descEl = document.getElementById('processing-step-desc');
+        overlay.style.display = 'flex';
+
+        titleEl.textContent = 'Processing Demo Payment...';
+        descEl.textContent = 'Connecting to simulated banking network...';
+
+        await new Promise(r => setTimeout(r, 600));
+
+        titleEl.textContent = 'Verifying Transaction...';
+        descEl.textContent = 'Updating campus financial ledger in real-time...';
+
+        await new Promise(r => setTimeout(r, 500));
+
+        try {
+            const res = await fetch('/api/parent/fees/demo-pay', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    student_id: ACTIVE_STUDENT_ID,
+                    fee_id: currentFeeData.fee_id,
+                    amount: payAmount,
+                    payment_method: paymentMethod,
+                    simulate_failure: simulateFailure
+                })
+            });
+
+            const data = await res.json();
+
+            if (!data.success) {
+                overlay.style.display = 'none';
+                alert(data.error || 'Payment failed. Please try again.');
+                return;
+            }
+
+            // Success step
+            titleEl.textContent = 'Payment Successful ✓';
+            descEl.textContent = 'Receipt generated. Loading receipt...';
+
+            await new Promise(r => setTimeout(r, 400));
+
+            closeModal('demo-payment-modal');
+
+            // Populate Digital Receipt Modal
+            document.getElementById('modal-receipt-no').textContent = '#' + data.receipt_no;
+            document.getElementById('modal-receipt-txnid').textContent = data.transaction_id;
+            document.getElementById('modal-receipt-fee').textContent = data.fee_type;
+            document.getElementById('modal-receipt-method').textContent = data.payment_method;
+            document.getElementById('modal-receipt-date').textContent = data.paid_at;
+            document.getElementById('modal-receipt-amt').textContent = '₹' + data.amount_paid.toLocaleString('en-IN', { minimumFractionDigits: 2 });
+            document.getElementById('modal-receipt-rem').textContent = '₹' + data.remaining_balance.toLocaleString('en-IN', { minimumFractionDigits: 2 });
+            document.getElementById('modal-full-receipt-link').href = data.receipt_url;
+
+            openModal('receipt-modal');
+
+        } catch (err) {
+            console.error('Demo payment error:', err);
+            overlay.style.display = 'none';
+            alert('Failed to connect to server. Please try again.');
+        }
     }
 </script>
+
 {% endblock %}

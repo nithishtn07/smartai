@@ -57,13 +57,41 @@ def generate_student_briefing(student, conn) -> dict:
         )
     """, (student_id,)).fetchone()['cnt']
 
-    # 5. Active SOS
-    active_sos = conn.execute("""
-        SELECT * FROM incidents WHERE student_id = ? AND incident_type = 'EMERGENCY_SOS' AND status = 'ACTIVE'
+    # 5. Active SOS (Single Source of Truth)
+    active_sos_row = conn.execute("""
+        SELECT * FROM emergencies 
+        WHERE user_id = ? AND user_role = 'student' AND status IN ('TRIGGERED', 'ACKNOWLEDGED', 'ASSIGNED', 'RESPONDER_ASSIGNED', 'EN_ROUTE', 'ON_SCENE', 'ACTIVE', 'RESPONDING')
         ORDER BY created_at DESC LIMIT 1
     """, (student_id,)).fetchone()
+    if not active_sos_row:
+        active_sos_row = conn.execute("""
+            SELECT * FROM incidents WHERE student_id = ? AND incident_type = 'EMERGENCY_SOS' AND status = 'ACTIVE'
+            ORDER BY created_at DESC LIMIT 1
+        """, (student_id,)).fetchone()
+    active_sos = dict(active_sos_row) if active_sos_row else None
 
-    # 6. Synthesized briefing cards
+    # 6. Upcoming Exams
+    next_exam = conn.execute("SELECT * FROM examinations ORDER BY exam_date ASC, exam_time ASC LIMIT 1").fetchone()
+    exam_days_left = None
+    if next_exam and next_exam['exam_date']:
+        try:
+            e_dt = datetime.datetime.strptime(next_exam['exam_date'], '%Y-%m-%d').date()
+            exam_days_left = (e_dt - datetime.date.today()).days
+        except Exception:
+            pass
+
+    # 7. Pending Assignments
+    pending_assignments = conn.execute("""
+        SELECT * FROM assignments WHERE status != 'Evaluated' ORDER BY due_date ASC LIMIT 2
+    """).fetchall()
+
+    # 8. Pending Fees
+    fees = conn.execute("SELECT * FROM fees WHERE student_id = ?", (student_id,)).fetchall()
+    total_fee = sum(f['amount'] for f in fees) if fees else 0
+    total_paid = sum(f['paid_amount'] for f in fees) if fees else 0
+    pending_fee = max(0, total_fee - total_paid)
+
+    # 9. Synthesized briefing cards
     briefing_items = []
 
     # Next Class Card
@@ -71,11 +99,20 @@ def generate_student_briefing(student, conn) -> dict:
         'icon': '📚',
         'title': 'Next Class',
         'text': next_class_str,
-        'badge': 'Scheduled'
+        'badge': 'Scheduled',
+        'badge_class': 'badge-cyan'
     })
 
     # Attendance Risk or Good Standing Card
-    if att_analysis['risk_courses']:
+    if not att_rows:
+        briefing_items.append({
+            'icon': '📊',
+            'title': 'Attendance Standing',
+            'text': "No attendance records logged yet for this semester.",
+            'badge': 'No Records',
+            'badge_class': 'badge-cyan'
+        })
+    elif att_analysis['risk_courses']:
         rc = att_analysis['risk_courses'][0]
         briefing_items.append({
             'icon': '⚠️',
@@ -88,38 +125,62 @@ def generate_student_briefing(student, conn) -> dict:
         briefing_items.append({
             'icon': '📊',
             'title': 'Attendance Standing',
-            'text': f"Overall attendance is strong at {att_analysis['overall_pct']}%.",
+            'text': f"Overall attendance is maintained at {att_analysis['overall_pct']}%.",
             'badge': 'Compliant',
             'badge_class': 'badge-green'
         })
 
-    # Grievance / Alerts Status
-    if pending_complaints > 0:
+    # Assignment Card
+    if pending_assignments:
+        pa = pending_assignments[0]
         briefing_items.append({
             'icon': '📝',
-            'title': 'Grievances',
-            'text': f"{pending_complaints} complaint{'s' if pending_complaints > 1 else ''} currently being reviewed by administrative departments.",
-            'badge': 'In Progress',
-            'badge_class': 'badge-cyan'
+            'title': 'Assignment Deadline',
+            'text': f"{pa['title']} ({pa['course_code']}) is due on {pa['due_date']}.",
+            'badge': 'Due Soon',
+            'badge_class': 'badge-purple'
         })
-    
+
+    # Upcoming Exam Card
+    if next_exam:
+        countdown_str = f"in {exam_days_left} days" if exam_days_left is not None and exam_days_left >= 0 else next_exam['exam_date']
+        briefing_items.append({
+            'icon': '🎯',
+            'title': 'Upcoming Exam',
+            'text': f"{next_exam['course_name']} ({next_exam['course_code']}) scheduled for {next_exam['exam_date']} ({countdown_str}).",
+            'badge': 'Exam Prep',
+            'badge_class': 'badge-indigo'
+        })
+
+    # Fee Card (if pending)
+    if pending_fee > 0:
+        briefing_items.append({
+            'icon': '💳',
+            'title': 'Fee Balance',
+            'text': f"Outstanding balance of ₹{pending_fee:,.2f} pending semester clearance.",
+            'badge': 'Payment Due',
+            'badge_class': 'badge-yellow'
+        })
+
     # Campus Safety Status
     if active_sos:
+        beacon_id = active_sos.get('emergency_id') or active_sos.get('incident_id') or 'EMG-ACTIVE'
         briefing_items.append({
             'icon': '🚨',
             'title': 'Emergency SOS Active',
-            'text': f"Distress beacon {active_sos['incident_id']} is actively receiving security response.",
+            'text': f"Distress beacon {beacon_id} is actively receiving security response.",
             'badge': 'SOS Active',
             'badge_class': 'badge-red'
         })
-    else:
-        briefing_items.append({
-            'icon': '🛡️',
-            'title': 'Campus Safety Status',
-            'text': f"{unread_alerts} unread alert{'s' if unread_alerts != 1 else ''}. Perimeter CCTV monitoring active.",
-            'badge': 'Secure',
-            'badge_class': 'badge-green'
-        })
+
+    # AI Recommendation
+    recommendation = "Review lecture notes for upcoming classes and maintain active participation."
+    if att_analysis['risk_courses']:
+        recommendation = f"Focus on attending your upcoming {att_analysis['risk_courses'][0]['name']} classes to bring attendance above 75%."
+    elif next_exam and exam_days_left is not None and exam_days_left <= 7:
+        recommendation = f"Dedicate 1.5 hours today to revise {next_exam['course_name']} for your upcoming examination."
+    elif pending_assignments:
+        recommendation = f"Complete your {pending_assignments[0]['title']} assignment ahead of the {pending_assignments[0]['due_date']} deadline."
 
     return {
         'greeting': greeting,
@@ -129,5 +190,6 @@ def generate_student_briefing(student, conn) -> dict:
         'unread_alerts': unread_alerts,
         'active_sos': active_sos,
         'briefing_items': briefing_items,
-        'recommendations': att_analysis['recommendations']
+        'recommendations': [recommendation],
+        'primary_recommendation': recommendation
     }

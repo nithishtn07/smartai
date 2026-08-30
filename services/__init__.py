@@ -40,3 +40,9 @@ from .ai_insight_engine import (
     generate_student_insights_summary,
     generate_admin_campus_risk_overview
 )
+from .academic_service import (
+    calculate_grade_point,
+    calculate_student_cgpa,
+    sync_student_cgpa,
+    get_student_academic_profile
+)

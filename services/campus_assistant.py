@@ -7,9 +7,53 @@ and incident patterns.
 =============================================================================
 """
 
+import os
+import json
+import urllib.request
+import urllib.error
 import datetime
 from .ai_service import sanitize_input
 from .safety_intelligence import calculate_location_risk_scores, analyze_temporal_patterns, detect_emerging_risks
+
+
+def _query_llm_with_context(prompt: str, context_text: str = "") -> str:
+    """
+    Optional LLM generation using Google Gemini API if GEMINI_API_KEY is present in environment.
+    Falls back gracefully if key is not configured or network request fails.
+    """
+    api_key = os.environ.get('GEMINI_API_KEY') or os.environ.get('GOOGLE_API_KEY')
+    if not api_key:
+        return ""
+    
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key={api_key}"
+    system_instruction = (
+        "You are CampusGuard AI, an intelligent, empathetic campus ERP and safety assistant. "
+        "Provide direct, concise, and helpful answers formatted with bullet points and bold headers."
+    )
+    full_prompt = f"{system_instruction}\n\nCampus Context:\n{context_text}\n\nUser Question:\n{prompt}"
+    
+    payload = {
+        "contents": [{
+            "parts": [{"text": full_prompt}]
+        }]
+    }
+    
+    try:
+        req = urllib.request.Request(
+            url,
+            data=json.dumps(payload).encode('utf-8'),
+            headers={'Content-Type': 'application/json'}
+        )
+        with urllib.request.urlopen(req, timeout=5.0) as resp:
+            data = json.loads(resp.read().decode('utf-8'))
+            candidates = data.get('candidates', [])
+            if candidates and 'content' in candidates[0]:
+                parts = candidates[0]['content'].get('parts', [])
+                if parts and 'text' in parts[0]:
+                    return parts[0]['text'].strip()
+    except Exception as e:
+        print(f"[Gemini Assistant Error] {e}")
+    return ""
 
 def answer_campus_query(student_id: int, query: str, conn) -> str:
     """
@@ -57,170 +101,11 @@ def answer_campus_query(student_id: int, query: str, conn) -> str:
         return "📊 **Campus Trend Analysis:** Incident trends are currently stable across all major zones with no acute surges detected."
 
     # -----------------------------------------------------------------------
-    # B. Student Personalized Queries (Attendance, Classes, Fees, SOS)
+    # B. Student Personalized Queries (Delegated to Smart Student AI Engine)
     # -----------------------------------------------------------------------
-    # 1. Attendance Queries
-    if 'attendance' in q or 'lowest' in q or 'absent' in q or 'bunk' in q:
-        records = conn.execute("SELECT * FROM attendance WHERE student_id = ?", (student_id,)).fetchall()
-        if not records:
-            return "You do not have any registered attendance records in the database."
-
-        if 'lowest' in q:
-            lowest = min(records, key=lambda x: x['attendance_pct'])
-            return (
-                f"⚠️ **Lowest Attendance Subject:**\n\n"
-                f"• **{lowest['subject_name']} ({lowest['subject_code']})** is currently at **{lowest['attendance_pct']}%** "
-                f"({lowest['classes_attended']}/{lowest['classes_held']} classes attended).\n"
-                f"Regular attendance in upcoming classes is recommended to stay above 75%."
-            )
-        
-        total_held = sum(r['classes_held'] for r in records)
-        total_attended = sum(r['classes_attended'] for r in records)
-        overall_pct = round((total_attended / total_held * 100), 1) if total_held > 0 else 0.0
-
-        lines = [f"📊 **Your Overall Academic Attendance is {overall_pct}%**\n"]
-        for r in records:
-            status_emoji = "🟢" if r['attendance_pct'] >= 85 else ("🟡" if r['attendance_pct'] >= 75 else "🔴")
-            lines.append(f"• {status_emoji} {r['subject_name']}: **{r['attendance_pct']}%** ({r['classes_attended']}/{r['classes_held']})")
-        
-        lines.append("\nMinimum institutional compliance is **75.0%**.")
-        return "\n".join(lines)
-
-    # 2. Timetable, Next Class & Tomorrow's Schedule
-    if any(k in q for k in ['tomorrow', 'next class', 'class', 'timetable', 'where', 'lecture', 'room']):
-        student = conn.execute("SELECT department, year FROM students WHERE id = ?", (student_id,)).fetchone()
-        dept = student['department'] if student else 'Computer Science'
-        year = student['year'] if student else 3
-
-        if 'tomorrow' in q:
-            tomorrow_date = datetime.datetime.now() + datetime.timedelta(days=1)
-            tomorrow_name = tomorrow_date.strftime('%A')
-            classes = conn.execute("""
-                SELECT * FROM timetable WHERE department = ? AND year = ? AND day_of_week = ?
-                ORDER BY start_time ASC
-            """, (dept, year, tomorrow_name)).fetchall()
-
-            if not classes:
-                return f"📅 **Tomorrow ({tomorrow_name}):** You have no scheduled lectures. Use this day for project research and assignment preparation."
-            
-            lines = [f"📅 **Your Class Schedule for Tomorrow ({tomorrow_name}):**\n"]
-            for c in classes:
-                lines.append(f"• **{c['start_time']} - {c['end_time']}**: {c['subject_name']} ({c['subject_code']}) in 📍 **{c['room_number']}** ({c['faculty_name']})")
-            return "\n".join(lines)
-
-        # Next class today
-        today_name = datetime.datetime.now().strftime('%A')
-        classes = conn.execute("""
-            SELECT * FROM timetable WHERE department = ? AND year = ? AND day_of_week = ?
-            ORDER BY start_time ASC
-        """, (dept, year, today_name)).fetchall()
-
-        if not classes:
-            classes = conn.execute("""
-                SELECT * FROM timetable WHERE department = ? AND year = ? AND day_of_week = 'Monday'
-                ORDER BY start_time ASC
-            """, (dept, year)).fetchall()
-            today_name = "Monday (Preview)"
-
-        if classes:
-            c = classes[0]
-            return (
-                f"⏰ **Next Lecture on {today_name}:**\n\n"
-                f"• **Subject:** {c['subject_name']} ({c['subject_code']})\n"
-                f"• **Time:** {c['start_time']} - {c['end_time']}\n"
-                f"• **Lecture Hall:** 📍 **{c['room_number']}**\n"
-                f"• **Faculty:** {c['faculty_name']}"
-            )
-
-    # 3. Complaints & Grievance Queries
-    if any(k in q for k in ['complaint', 'grievance', 'ticket', 'status']):
-        if 'how' in q or 'submit' in q:
-            return (
-                "📝 **How to Submit a Complaint:**\n\n"
-                "1. Navigate to **Grievance Tickets** from the left sidebar.\n"
-                "2. Provide a title, specific campus location, and description.\n"
-                "3. CampusGuard AI will automatically triage the issue, determine its urgency, and assign it to the responsible department (*Security, Facilities, IT, or Academic Affairs*)."
-            )
-
-        complaints = conn.execute("""
-            SELECT * FROM complaints WHERE student_id = ? ORDER BY created_at DESC LIMIT 5
-        """, (student_id,)).fetchall()
-
-        if not complaints:
-            return "You have no active or pending complaints filed in the system."
-
-        pending = [c for c in complaints if c['status'] not in ['Resolved', 'Rejected']]
-        lines = [f"📝 **Your Grievance Tickets ({len(pending)} Awaiting Resolution):**\n"]
-        for c in complaints:
-            lines.append(f"• **{c['complaint_id']}**: {c['title']} — Status: **{c['status']}** (Dept: {c['ai_dept'] or c['category']})")
-        return "\n".join(lines)
-
-    # 4. Campus Safety, How to Report, Emergency Instructions
-    if any(k in q for k in ['emergency', 'sos', 'safety', 'report', 'police', 'doctor', 'help', 'safe walk', 'walk']):
-        if 'report' in q or 'how' in q:
-            return (
-                "🛡️ **Reporting a Safety Issue:**\n\n"
-                "• Visit the **Campus Safety Center** from the sidebar.\n"
-                "• Submit an incident report (Harassment, Hazard, Theft, Unsafe Area).\n"
-                "• Reports are prioritized by AI and routed directly to Campus Security Command."
-            )
-        
-        if 'emergency' in q or 'sos' in q or 'what should i do' in q:
-            return (
-                "🚨 **Emergency Protocol & Immediate Actions:**\n\n"
-                "1. **Press Emergency SOS:** Tap the red SOS button at the top right of your screen to broadcast an instant GPS distress beacon to the campus Quick Response Team.\n"
-                "2. **Direct Helplines:**\n"
-                "   • Campus Security Command: 📞 **+91 91234 56780**\n"
-                "   • Medical Pavilion & Ambulance: 📞 **+91 91234 56781**\n"
-                "   • Women's Safety Liaison: 📞 **+91 91234 56782**\n"
-                "3. Move to the nearest illuminated corridor or designated safe beacon pole."
-            )
-
-    # 5. Alerts & Broadcasts
-    if any(k in q for k in ['alert', 'alerts', 'announcement', 'broadcast']):
-        alerts = conn.execute("SELECT * FROM alerts ORDER BY created_at DESC LIMIT 3").fetchall()
-        if not alerts:
-            return "There are currently no active campus alerts or emergency announcements."
-        
-        lines = ["🔔 **Latest Campus Safety & Academic Alerts:**\n"]
-        for a in alerts:
-            lines.append(f"• **[{a['category'].upper()}]** {a['title']}: {a['description']}")
-        return "\n".join(lines)
-
-    # 6. CGPA, Marks, Academic Standing
-    if any(k in q for k in ['cgpa', 'sgpa', 'marks', 'grade', 'gpa']):
-        student = conn.execute("SELECT * FROM students WHERE id = ?", (student_id,)).fetchone()
-        return (
-            f"📈 **Academic Performance:**\n\n"
-            f"• **Current CGPA:** **{student['cgpa']} / 10.0**\n"
-            f"• **Semester SGPA:** **{student['sgpa']}**\n"
-            f"• **Earned Credits:** **{student['earned_credits']} / {student['total_credits']}**\n"
-            f"View detailed course marks in the **Academics & Marks** section."
-        )
-
-    # 7. Fees & Finance
-    if any(k in q for k in ['fee', 'fees', 'due', 'payment', 'paid']):
-        fees = conn.execute("SELECT * FROM fees WHERE student_id = ?", (student_id,)).fetchall()
-        total_pending = sum(f['amount'] - f['paid_amount'] for f in fees)
-        lines = [f"💳 **Financial Fee Status:**\n• **Outstanding Balance:** **₹{total_pending}**\n"]
-        for f in fees:
-            p = f['amount'] - f['paid_amount']
-            lines.append(f"• {f['fee_type']}: **₹{f['paid_amount']}/₹{f['amount']}** ({'PAID' if p == 0 else 'Due ₹' + str(p)})")
-        return "\n".join(lines)
-
-    # Default fallback prompt
-    return (
-        "🤖 **CampusGuard AI Assistant is ready!**\n\n"
-        "I can assist you with:\n"
-        "• _'What is my current attendance?'_\n"
-        "• _'Which subject has my lowest attendance?'_\n"
-        "• _'When is my next class?'_\n"
-        "• _'What classes do I have tomorrow?'_\n"
-        "• _'What complaints are still pending?'_\n"
-        "• _'What are the highest-risk campus locations?'_\n"
-        "• _'What are the peak risk hours?'_\n"
-        "• _'What should I do during an emergency?'_"
-    )
+    from .student_ai_assistant import answer_student_assistant_query
+    res = answer_student_assistant_query(student_id, query, conn=conn)
+    return res['reply']
 
 
 def answer_admin_query(query: str, conn) -> str:
@@ -334,6 +219,11 @@ def answer_admin_query(query: str, conn) -> str:
             f"Review full submissions in the **Hostel Leaves** console."
         )
 
+    # Optional dynamic LLM reasoning for executive insights
+    llm_resp = _query_llm_with_context(query, "Institutional Role: Campus Administrator / Executive Intelligence Officer")
+    if llm_resp:
+        return llm_resp
+
     # Default executive response
     return (
         "🏛️ **CampusGuard AI Executive Assistant Active**\n\n"
@@ -345,4 +235,248 @@ def answer_admin_query(query: str, conn) -> str:
         "• _'How many SOS incidents occurred this month?'_\n"
         "• _'Show summary of pending leave requests.'_"
     )
+
+
+def answer_faculty_query(faculty, query: str, conn) -> str:
+    """
+    Provides authorized, privacy-safe, and real database-backed responses
+    tailored specifically to the logged-in faculty member's assigned courses,
+    department students, daily schedule, and pending tasks.
+    """
+    q = sanitize_input(query).lower()
+    fac_name = faculty['name'] if (faculty and 'name' in tuple(faculty.keys())) else 'Faculty'
+    fac_dept = faculty['department'] if (faculty and 'department' in tuple(faculty.keys())) else 'Computer Science & Engineering'
+    today_dow = datetime.datetime.now().strftime('%A')
+
+    # Get faculty's assigned courses
+    courses = conn.execute("""
+        SELECT * FROM courses WHERE faculty_name LIKE ?
+    """, (f"%{fac_name}%",)).fetchall()
+    if not courses:
+        courses = conn.execute("SELECT * FROM courses WHERE department = ?", (fac_dept,)).fetchall()
+    if not courses:
+        courses = conn.execute("SELECT * FROM courses").fetchall()
+    
+    course_codes = [c['course_code'] for c in courses]
+    placeholders = ','.join('?' for _ in course_codes) if course_codes else "''"
+
+    # 1. Subject-specific attendance query (e.g. "Show DBMS attendance", "CS301 attendance")
+    matched_subject = None
+    for c in courses:
+        code = c['course_code'].lower()
+        name_words = [w.lower() for w in c['course_name'].split() if len(w) > 3]
+        if code in q or any(w in q for w in name_words) or ('dbms' in q and 'cs301' in code):
+            matched_subject = c
+            break
+
+    if matched_subject and any(k in q for k in ['attendance', 'present', 'absent', 'roster', 'classes', 'roll']):
+        c_code = matched_subject['course_code']
+        c_name = matched_subject['course_name']
+        records = conn.execute("""
+            SELECT a.*, s.name as student_name, s.register_number
+            FROM attendance a
+            JOIN students s ON a.student_id = s.id
+            WHERE a.subject_code = ?
+            ORDER BY a.attendance_pct ASC
+        """, (c_code,)).fetchall()
+
+        if records:
+            avg_pct = round(sum(r['attendance_pct'] for r in records) / len(records), 1)
+            lines = [f"📊 **Attendance Overview for {c_name} (`{c_code}`):**\n"]
+            lines.append(f"• **Class Average Attendance:** **{avg_pct}%**")
+            lines.append(f"• **Enrolled Records:** **{len(records)} students**\n")
+            lines.append("**Student Breakdown:**")
+            for r in records[:8]:
+                status_icon = "🟢" if r['attendance_pct'] >= 75.0 else "🔴"
+                lines.append(f"• {status_icon} **{r['student_name']}** ({r['register_number']}): **{r['attendance_pct']:.1f}%** ({r['classes_attended']}/{r['classes_held']} classes attended)")
+            if len(records) > 8:
+                lines.append(f"• ... and **{len(records)-8} additional students**.")
+            return "\n".join(lines)
+        else:
+            return f"ℹ️ **No attendance recorded** yet for **{c_name}** (`{c_code}`). Navigate to **Class Attendance** to conduct the first roll-call."
+
+    # 2. Unsubmitted / Missing assignments query
+    if any(k in q for k in ['who hasn', 'not submitted', 'missing submission', 'unsubmitted', 'hasn\'t submitted']):
+        assigns = conn.execute("SELECT * FROM assignments ORDER BY due_date DESC LIMIT 5").fetchall()
+        if assigns:
+            lines = [f"📋 **Assignment Submission Compliance:**\n"]
+            all_students = conn.execute("SELECT * FROM students WHERE status = 'ACTIVE' ORDER BY name ASC").fetchall()
+            for a in assigns[:3]:
+                submitted_stu_ids = {row['student_id'] for row in conn.execute("SELECT student_id FROM student_submissions WHERE assignment_id = ?", (a['id'],)).fetchall()}
+                unsubmitted = [s for s in all_students if s['id'] not in submitted_stu_ids]
+                lines.append(f"• **{a['title']}** (`{a['course_code']}`) — Due: {a['due_date']}")
+                if unsubmitted:
+                    names = ', '.join(f"**{s['name']}** ({s['register_number']})" for s in unsubmitted[:4])
+                    more_txt = f" and {len(unsubmitted)-4} more" if len(unsubmitted) > 4 else ""
+                    lines.append(f"  ↳ ⚠️ **{len(unsubmitted)} Pending Submission(s):** {names}{more_txt}")
+                else:
+                    lines.append(f"  ↳ ✓ **100% Submissions received!**")
+            return "\n".join(lines)
+        return "✓ No active assignments pending submission found in the system."
+
+    # 3. Attendance below threshold / low attendance
+    if any(k in q for k in ['below', 'threshold', 'low attendance', 'attendance deficit', 'shortage', '75']):
+        if course_codes:
+            rows = conn.execute(f"""
+                SELECT a.*, s.name as student_name, s.register_number, s.department
+                FROM attendance a
+                JOIN students s ON a.student_id = s.id
+                WHERE a.subject_code IN ({placeholders}) AND a.attendance_pct < 75.0
+                ORDER BY a.attendance_pct ASC
+            """, course_codes).fetchall()
+        else:
+            rows = conn.execute("""
+                SELECT a.*, s.name as student_name, s.register_number, s.department
+                FROM attendance a
+                JOIN students s ON a.student_id = s.id
+                WHERE a.attendance_pct < 75.0
+                ORDER BY a.attendance_pct ASC
+            """).fetchall()
+
+        if rows:
+            lines = [f"⚠️ **Attendance Deficit Alert ({len(rows)} Student Instances Below 75%):**\n"]
+            for r in rows[:6]:
+                lines.append(f"• **{r['student_name']}** ({r['register_number']}) — **{r['subject_code']}**: **{r['attendance_pct']:.1f}%** ({r['classes_attended']}/{r['classes_held']} classes)")
+            if len(rows) > 6:
+                lines.append(f"• ... and **{len(rows)-6} more students**.")
+            lines.append(f"\n💡 *Recommendation:* Send automated SMS/App warnings via the **Class Attendance** module.")
+            return "\n".join(lines)
+        return "✓ **All clear!** None of your advisees or enrolled students are currently below the 75% institutional attendance threshold."
+
+    # 4. Assignments pending / grading
+    if any(k in q for k in ['assignment', 'pending assignment', 'grading', 'submissions', 'evaluate']):
+        has_subs = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='student_submissions'").fetchone()
+        if has_subs:
+            subs = conn.execute("""
+                SELECT ss.*, a.title as assignment_title, a.course_code, s.name as student_name, s.register_number
+                FROM student_submissions ss
+                JOIN assignments a ON ss.assignment_id = a.id
+                JOIN students s ON ss.student_id = s.id
+                WHERE ss.status = 'Submitted'
+                ORDER BY ss.submitted_at DESC
+            """).fetchall()
+
+            if subs:
+                lines = [f"📋 **Pending Assignment Evaluations ({len(subs)} Submissions):**\n"]
+                for s in subs[:5]:
+                    lines.append(f"• **{s['student_name']}** ({s['register_number']}) — _{s['assignment_title']}_ [{s['course_code']}]")
+                if len(subs) > 5:
+                    lines.append(f"• ... and **{len(subs)-5} additional submissions** awaiting evaluation.")
+                lines.append("\n💡 *Action:* Navigate to **Assignments** to enter grades and feedback.")
+                return "\n".join(lines)
+        return "✓ **All caught up!** You have no pending assignment submissions waiting for grading."
+
+    # 3. Today's classes / schedule
+    if any(k in q for k in ['today', 'class', 'classes', 'schedule', 'timetable', 'periods', 'lecture', 'lecture schedule']):
+        schedule = conn.execute("""
+            SELECT * FROM timetable 
+            WHERE faculty_name LIKE ? AND day_of_week = ?
+            ORDER BY start_time ASC
+        """, (f"%{fac_name}%", today_dow)).fetchall()
+
+        if schedule:
+            lines = [f"📅 **Your Teaching Schedule for Today ({today_dow}):**\n"]
+            for slot in schedule:
+                lines.append(f"• ⏰ **{slot['start_time']} – {slot['end_time']}**: **{slot['subject_name']}** (`{slot['subject_code']}`) in Room **{slot['room_number']}** ({slot['department']} Year {slot['year']})")
+            lines.append(f"\n💡 Total: **{len(schedule)} period(s)** scheduled for today.")
+            return "\n".join(lines)
+        return f"☕ **No lectures scheduled for today ({today_dow}).** Use this time for research, office hours, or grading."
+
+    # 4. Poor performance / marks / academic risk
+    if any(k in q for k in ['marks', 'poor', 'exam', 'failing', 'grade', 'academic risk', 'cat1', 'cat2', 'fat']):
+        if course_codes:
+            marks = conn.execute(f"""
+                SELECT m.*, s.name as student_name, s.register_number
+                FROM marks m
+                JOIN students s ON m.student_id = s.id
+                WHERE m.course_code IN ({placeholders}) AND (m.grade IN ('D', 'F') OR m.fat < 45)
+                ORDER BY m.fat ASC
+            """, course_codes).fetchall()
+        else:
+            marks = conn.execute("""
+                SELECT m.*, s.name as student_name, s.register_number
+                FROM marks m
+                JOIN students s ON m.student_id = s.id
+                WHERE (m.grade IN ('D', 'F') OR m.fat < 45)
+                ORDER BY m.fat ASC
+            """).fetchall()
+
+        if marks:
+            lines = [f"🎯 **Students Requiring Academic Attention ({len(marks)} Records):**\n"]
+            for m in marks[:5]:
+                lines.append(f"• **{m['student_name']}** ({m['register_number']}) — Course **{m['course_code']}**: Grade **{m['grade']}** (FAT: {m['fat']}/100, CAT1: {m['cat1']}, CAT2: {m['cat2']})")
+            lines.append("\n💡 *Advisory:* Schedule 1-on-1 mentoring sessions to offer remedial course support.")
+            return "\n".join(lines)
+        return "✓ **Strong academic performance!** All enrolled students currently maintain satisfactory grades in your courses."
+
+    # 5. Summarize performance / class summary
+    if any(k in q for k in ['summarize', 'summary', 'performance', 'overview', 'stats']):
+        total_stu = conn.execute("SELECT COUNT(*) as cnt FROM students WHERE department = ?", (fac_dept,)).fetchone()['cnt']
+        if total_stu == 0:
+            total_stu = conn.execute("SELECT COUNT(*) as cnt FROM students").fetchone()['cnt']
+
+        if course_codes:
+            att_row = conn.execute(f"SELECT AVG(attendance_pct) as a FROM attendance WHERE subject_code IN ({placeholders})", course_codes).fetchone()
+            avg_att = round(att_row['a'], 1) if att_row and att_row['a'] else 0.0
+        else:
+            avg_att = 0.0
+
+        pending_leaves = conn.execute("SELECT COUNT(*) as cnt FROM hostel_leaves WHERE status = 'Pending'").fetchone()['cnt']
+
+        return (
+            f"📊 **Faculty Academic Portfolio Summary for {fac_name}:**\n\n"
+            f"• **Department:** {fac_dept}\n"
+            f"• **Assigned Teaching Modules:** **{len(courses)} Courses** ({', '.join(course_codes)})\n"
+            f"• **Total Department Advisees:** **{total_stu} Students**\n"
+            f"• **Average Course Attendance:** **{avg_att}%** (Institutional Target: 75%)\n"
+            f"• **Pending Outpass Approvals:** **{pending_leaves} Requests**\n"
+            f"• **Compliance Status:** 🟢 High Compliance & Operational Readiness"
+        )
+
+    # 6. Daily focus / priorities / what should I do today
+    if any(k in q for k in ['focus', 'priority', 'priorities', 'what should i do', 'agenda', 'action']):
+        schedule = conn.execute("""
+            SELECT * FROM timetable WHERE faculty_name LIKE ? AND day_of_week = ? ORDER BY start_time ASC
+        """, (f"%{fac_name}%", today_dow)).fetchall()
+        
+        pending_leaves = conn.execute("SELECT COUNT(*) as cnt FROM hostel_leaves WHERE status = 'Pending'").fetchone()['cnt']
+        
+        has_subs = conn.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='student_submissions'").fetchone()
+        pending_subs = conn.execute("SELECT COUNT(*) as cnt FROM student_submissions WHERE status = 'Submitted'").fetchone()['cnt'] if has_subs else 0
+
+        lines = [f"⚡ **Key Focus Priorities for {today_dow}:**\n"]
+        if schedule:
+            lines.append(f"1. 🏛️ **Deliver Lectures:** {len(schedule)} period(s) today starting at **{schedule[0]['start_time']}** ({schedule[0]['subject_name']}, Room {schedule[0]['room_number']}).")
+        else:
+            lines.append(f"1. ☕ **No lectures scheduled today.** Great time for curriculum research.")
+
+        if pending_leaves > 0:
+            lines.append(f"2. 🚪 **Hostel Outpasses:** {pending_leaves} pending student outpass requests require your sign-off.")
+        else:
+            lines.append(f"2. 🚪 **Hostel Outpasses:** All clear! No pending leave applications.")
+
+        if pending_subs > 0:
+            lines.append(f"3. 📝 **Grading:** {pending_subs} assignment submission(s) are awaiting evaluation in your queue.")
+
+        return "\n".join(lines)
+
+    # Optional dynamic LLM reasoning with scoped context
+    llm_context = f"Faculty: {fac_name}, Department: {fac_dept}, Assigned Courses: {', '.join(course_codes)}"
+    llm_resp = _query_llm_with_context(query, llm_context)
+    if llm_resp:
+        return llm_resp
+
+    # Default guidance response
+    return (
+        f"👨‍🏫 **CampusGuard AI Faculty Assistant Ready**\n\n"
+        f"I am synced with your assigned courses ({', '.join(course_codes) if course_codes else fac_dept}) and departmental database.\n\n"
+        f"You can ask me:\n"
+        f"• _'Which students have attendance below the threshold?'_\n"
+        f"• _'Which assignments are pending review?'_\n"
+        f"• _'Show my classes today.'_\n"
+        f"• _'Which students performed poorly in the last exam?'_\n"
+        f"• _'Summarize my class performance.'_\n"
+        f"• _'What should I focus on today?'_"
+    )
+
 

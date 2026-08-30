@@ -8,25 +8,45 @@ import app
 
 class TestInterPortalCommunication(unittest.TestCase):
 
+    @classmethod
+    def setUpClass(cls):
+        app.init_db()
+
     def setUp(self):
         self.app = app.app
         self.app.config['TESTING'] = True
         self.app.config['SECRET_KEY'] = 'test-secret-key-campusguard'
         self.client = self.app.test_client()
 
-        # Initialize test database
-        app.init_db()
-
         conn = app.get_db_connection()
-        # Ensure student is Nithish Nagaraj
-        conn.execute("UPDATE students SET name = 'Nithish Nagaraj' WHERE register_number = 'STU001'")
-        
-        # Get DB IDs
         self.student = conn.execute("SELECT * FROM students WHERE register_number = 'STU001'").fetchone()
-        self.parent = conn.execute("SELECT * FROM parents WHERE email = 'parent@example.com'").fetchone()
+        if not self.student:
+            conn.execute("""
+                INSERT INTO students (register_number, name, email, department, semester, year, phone, status)
+                VALUES ('STU001', 'Nithish Nagaraj', 'student@example.com', 'Computer Science & Engineering', 5, 3, '9876543210', 'ACTIVE')
+            """)
+            conn.commit()
+            self.student = conn.execute("SELECT * FROM students WHERE register_number = 'STU001'").fetchone()
+        else:
+            conn.execute("UPDATE students SET name = 'Nithish Nagaraj', status = 'ACTIVE' WHERE id = ?", (self.student['id'],))
+            conn.commit()
+
+        self.parent = conn.execute("SELECT * FROM parents WHERE student_id = ?", (self.student['id'],)).fetchone()
+        if not self.parent:
+            conn.execute("""
+                INSERT INTO parents (parent_id, student_id, name, email, phone, password_hash)
+                VALUES ('PAR001', ?, 'Nagaraj T', 'parent@example.com', '9876543211', 'hash')
+            """, (self.student['id'],))
+            conn.commit()
+            self.parent = conn.execute("SELECT * FROM parents WHERE student_id = ?", (self.student['id'],)).fetchone()
+        
+        # Ensure parent_student mapping and attendance records
+        conn.execute("INSERT OR IGNORE INTO parent_student (parent_id, student_id, relationship, is_primary) VALUES (?, ?, 'Father', 1)", (self.parent['id'], self.student['id']))
+        conn.execute("INSERT OR IGNORE INTO attendance (student_id, subject_code, subject_name, classes_held, classes_attended, classes_missed, attendance_pct) VALUES (?, 'CS301', 'Database Management Systems', 40, 37, 3, 92.5)", (self.student['id'],))
+        conn.commit()
+
         self.faculty = conn.execute("SELECT * FROM faculties WHERE email = 'faculty@example.com'").fetchone()
         self.admin = conn.execute("SELECT * FROM admins WHERE username = 'admin'").fetchone()
-        conn.commit()
         conn.close()
 
     def tearDown(self):
@@ -212,7 +232,7 @@ class TestInterPortalCommunication(unittest.TestCase):
             sess['user_role'] = 'faculty'
 
         resp3 = self.client.post('/faculty/messages', data={
-            'recipient_target': 'student_1',
+            'recipient_target': f"student_{self.student['id']}",
             'subject': 'Project Consultation Slot',
             'content': 'Please meet me in cabin CS-201 at 3 PM tomorrow.'
         }, follow_redirects=True)

@@ -135,6 +135,10 @@
                     <div style="font-size: 0.75rem; color: #38bdf8; margin-top: 2px;">FAT: {{ s.fat }}/100</div>
                 </div>
             </div>
+            {% else %}
+            <div style="text-align: center; padding: 24px; color: var(--text-muted);">
+                No top achiever records available.
+            </div>
             {% endfor %}
         </div>
     </section>

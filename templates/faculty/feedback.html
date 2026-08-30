@@ -20,23 +20,46 @@
     </div>
 </div>
 
+<!-- Stat Counters -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
+    <div style="background: rgba(14, 19, 32, 0.85); border: 1px solid var(--glass-border); border-radius: 14px; padding: 18px;">
+        <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase;">Total Raised Tickets</div>
+        <div style="font-size: 1.8rem; font-weight: 800; color: #fff; margin-top: 4px;">{{ total_tickets|default(tickets|length) }}</div>
+    </div>
+    <div style="background: rgba(14, 19, 32, 0.85); border: 1px solid var(--glass-border); border-radius: 14px; padding: 18px;">
+        <div style="font-size: 0.8rem; color: #fbbf24; text-transform: uppercase;">Pending Review</div>
+        <div style="font-size: 1.8rem; font-weight: 800; color: #fbbf24; margin-top: 4px;">{{ pending_tickets|default(0) }}</div>
+    </div>
+    <div style="background: rgba(14, 19, 32, 0.85); border: 1px solid var(--glass-border); border-radius: 14px; padding: 18px;">
+        <div style="font-size: 0.8rem; color: #38bdf8; text-transform: uppercase;">In Progress / Assigned</div>
+        <div style="font-size: 1.8rem; font-weight: 800; color: #38bdf8; margin-top: 4px;">{{ in_progress_tickets|default(0) }}</div>
+    </div>
+    <div style="background: rgba(14, 19, 32, 0.85); border: 1px solid var(--glass-border); border-radius: 14px; padding: 18px;">
+        <div style="font-size: 0.8rem; color: #34d399; text-transform: uppercase;">Resolved &amp; Closed</div>
+        <div style="font-size: 1.8rem; font-weight: 800; color: #34d399; margin-top: 4px;">{{ resolved_tickets|default(0) }}</div>
+    </div>
+</div>
+
 <!-- Requests History Feed -->
 <section class="content-card">
     <div class="card-header-row">
-        <h2 class="card-heading"><span>📜</span> My Submitted Request History &amp; Status</h2>
-        <span class="badge badge-purple">{{ requests_list|length }} Tickets</span>
+        <h2 class="card-heading"><span>📜</span> My Support Tickets &amp; Administrative Grievances</h2>
+        <span class="badge badge-purple">{{ tickets|length }} Tickets</span>
     </div>
 
     <div style="display: flex; flex-direction: column; gap: 14px;">
-        {% for req in requests_list %}
+        {% for req in tickets %}
         <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 12px; padding: 18px;">
             <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
                 <div>
                     <span class="badge badge-indigo" style="margin-right: 6px;">{{ req.category }}</span>
                     <span class="badge {% if req.priority == 'Urgent' or req.priority == 'High' %}badge-red{% else %}badge-green{% endif %}">{{ req.priority }} Priority</span>
-                    <span class="badge {% if req.status == 'Resolved' %}badge-green{% elif req.status == 'In Progress' %}badge-cyan{% elif req.status == 'Under Review' %}badge-amber{% elif req.status == 'Rejected' %}badge-red{% else %}badge-yellow{% endif %}" style="margin-left: 6px;">
+                    <span class="badge {% if req.status == 'Resolved' %}badge-green{% elif req.status == 'In Progress' or req.status == 'Assigned' %}badge-cyan{% elif req.status == 'Under Review' %}badge-amber{% elif req.status == 'Rejected' %}badge-red{% else %}badge-yellow{% endif %}" style="margin-left: 6px;">
                         {{ req.status }}
                     </span>
+                    {% if req.location %}
+                    <span class="badge" style="background: rgba(255,255,255,0.06); color: #cbd5e1; margin-left: 4px;">📍 {{ req.location }}</span>
+                    {% endif %}
                 </div>
                 <div style="font-size: 0.78rem; color: var(--text-muted); font-family: monospace;">
                     {{ req.created_at }}
@@ -51,16 +74,16 @@
                 {{ req.description }}
             </p>
 
-            {% if req.admin_response %}
+            {% if req.resolution_notes or req.admin_response %}
             <div style="background: rgba(16, 185, 129, 0.08); border-left: 3px solid #10b981; border-radius: 6px; padding: 10px 14px; margin-top: 10px;">
                 <div style="font-size: 0.78rem; font-weight: 700; color: #34d399; margin-bottom: 2px;">🏛️ Central Administration Response:</div>
-                <div style="font-size: 0.85rem; color: #e2e8f0;">{{ req.admin_response }}</div>
+                <div style="font-size: 0.85rem; color: #e2e8f0;">{{ req.resolution_notes|default(req.admin_response) }}</div>
             </div>
             {% endif %}
         </div>
         {% else %}
         <div style="text-align: center; padding: 32px; color: var(--text-muted);">
-            No support tickets submitted. Click 'Submit Request Ticket' above to log an administrative request.
+            No support tickets submitted. Click 'Submit Request Ticket' above to log an infrastructure or administrative request.
         </div>
         {% endfor %}
     </div>
@@ -79,12 +102,14 @@
                 <div class="form-group">
                     <label class="form-label" style="display: block; color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 4px;">Category</label>
                     <select name="category" class="form-select" required style="width: 100%; padding: 8px 12px; border-radius: 8px; background: #1e293b; border: 1px solid rgba(255,255,255,0.1); color: #fff;">
+                        <option value="Classroom Equipment">Classroom Equipment</option>
+                        <option value="Projector / AV Issue">Projector / AV Issue</option>
+                        <option value="Lab Hardware / Software">Lab Hardware / Software</option>
+                        <option value="Infrastructure Problem">Infrastructure Problem</option>
+                        <option value="Timetable Conflict">Timetable Conflict</option>
+                        <option value="Maintenance Issue">Maintenance Issue</option>
+                        <option value="Student Welfare Concern">Student Welfare Concern</option>
                         <option value="Academic Request">Academic Request</option>
-                        <option value="Technical Issue">Technical / Lab Software Issue</option>
-                        <option value="Classroom Issue">Classroom / AV Equipment</option>
-                        <option value="Student Concern">Student Welfare Concern</option>
-                        <option value="Administrative Request">Administrative Request</option>
-                        <option value="General Feedback">General Feedback</option>
                     </select>
                 </div>
 
@@ -93,19 +118,25 @@
                     <select name="priority" class="form-select" style="width: 100%; padding: 8px 12px; border-radius: 8px; background: #1e293b; border: 1px solid rgba(255,255,255,0.1); color: #fff;">
                         <option value="Normal">Normal</option>
                         <option value="High">High</option>
-                        <option value="Urgent">Urgent</option>
+                        <option value="Urgent">Urgent (Immediate Action)</option>
                     </select>
                 </div>
             </div>
 
-            <div class="form-group" style="margin-bottom: 12px;">
-                <label class="form-label" style="display: block; color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 4px;">Request Title</label>
-                <input type="text" name="title" placeholder="e.g. Request for Lab 1 Workstation RAM Upgrade" required style="width: 100%; padding: 8px 12px; border-radius: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                <div class="form-group">
+                    <label class="form-label" style="display: block; color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 4px;">Issue Title *</label>
+                    <input type="text" name="title" placeholder="e.g. Projector Lamp Blinking in CS-201" required style="width: 100%; padding: 8px 12px; border-radius: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff;">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" style="display: block; color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 4px;">Location / Room *</label>
+                    <input type="text" name="location" placeholder="e.g. Academic Block A, Room CS-201" required style="width: 100%; padding: 8px 12px; border-radius: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff;">
+                </div>
             </div>
 
             <div class="form-group" style="margin-bottom: 16px;">
-                <label class="form-label" style="display: block; color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 4px;">Detailed Description</label>
-                <textarea name="description" class="form-textarea" rows="4" placeholder="Describe the issue, requirements, room location, or student concern..." required style="width: 100%; padding: 8px 12px; border-radius: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff;"></textarea>
+                <label class="form-label" style="display: block; color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 4px;">Detailed Description *</label>
+                <textarea name="description" class="form-textarea" rows="4" placeholder="Describe the issue, specific workstation/equipment number, error observed, or immediate requirement..." required style="width: 100%; padding: 8px 12px; border-radius: 8px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: #fff;"></textarea>
             </div>
 
             <button type="submit" class="btn-primary" style="width: 100%; justify-content: center; background: linear-gradient(135deg, #10b981, #059669); padding: 10px; font-size: 0.95rem;">

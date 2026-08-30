@@ -12,9 +12,18 @@ class TestCampusGuardAuth(unittest.TestCase):
         app.config['SECRET_KEY'] = 'test-secret-key-123'
         self.client = app.test_client()
         init_db()
+        from werkzeug.security import generate_password_hash
         conn = sqlite3.connect(DATABASE_FILE)
         conn.execute("DELETE FROM login_attempts")
-        conn.execute("UPDATE students SET name = 'Nithish Nagaraj', email = 'student@example.com' WHERE register_number = 'STU001'")
+        stu = conn.execute("SELECT id FROM students WHERE register_number = 'STU001'").fetchone()
+        pw_hash = generate_password_hash('Student@123')
+        if stu:
+            conn.execute("UPDATE students SET name = 'Nithish Nagaraj', email = 'student@example.com', password_hash = ? WHERE register_number = 'STU001'", (pw_hash,))
+        else:
+            conn.execute("""
+                INSERT INTO students (name, register_number, email, password_hash, department, year, semester, section, status)
+                VALUES ('Nithish Nagaraj', 'STU001', 'student@example.com', ?, 'Computer Science & Engineering', 3, 5, 'A', 'ACTIVE')
+            """, (pw_hash,))
         conn.commit()
         conn.close()
 

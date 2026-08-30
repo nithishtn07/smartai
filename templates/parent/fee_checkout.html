@@ -1,0 +1,283 @@
+{% extends "parent/base_parent.html" %}
+
+{% block title %}Payment Gateway Checkout — {{ fee.fee_type }}{% endblock %}
+
+{% block extra_head %}
+<style>
+    .checkout-wrapper {
+        max-width: 780px;
+        margin: 0 auto;
+        padding: 20px 0 60px;
+    }
+    .checkout-card {
+        background: linear-gradient(135deg, rgba(14, 19, 32, 0.95) 0%, rgba(20, 27, 45, 0.9) 100%);
+        border: 1px solid var(--parent-border);
+        border-radius: 20px;
+        padding: 32px;
+        box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
+        backdrop-filter: var(--glass-blur);
+    }
+    .gateway-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid var(--glass-border);
+        padding-bottom: 20px;
+        margin-bottom: 24px;
+    }
+    .demo-callout {
+        background: rgba(245, 158, 11, 0.1);
+        border: 1px solid rgba(245, 158, 11, 0.3);
+        border-radius: 12px;
+        padding: 12px 16px;
+        margin-bottom: 24px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 0.84rem;
+        color: #fbbf24;
+    }
+    .info-summary-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 14px;
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid var(--glass-border);
+        border-radius: 14px;
+        padding: 18px;
+        margin-bottom: 24px;
+    }
+    .info-summary-item {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+    .info-summary-item .label {
+        font-size: 0.72rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        font-weight: 700;
+    }
+    .info-summary-item .value {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: #fff;
+    }
+
+    .method-selector {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 12px;
+        margin-bottom: 24px;
+    }
+    .method-card {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid var(--glass-border);
+        border-radius: 12px;
+        padding: 14px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 8px;
+    }
+    .method-card:hover {
+        border-color: var(--parent-primary);
+        background: rgba(147, 51, 234, 0.1);
+    }
+    .method-card input[type="radio"] {
+        display: none;
+    }
+    .method-card.selected {
+        border-color: #a855f7;
+        background: rgba(168, 85, 247, 0.15);
+        box-shadow: 0 0 15px rgba(168, 85, 247, 0.25);
+    }
+</style>
+{% endblock %}
+
+{% block parent_content %}
+<div class="checkout-wrapper">
+
+    <div style="margin-bottom: 16px;">
+        <a href="/parent/fees" class="btn-secondary" style="font-size: 0.82rem; padding: 6px 14px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+            <span>&larr;</span> Back to Fees Dashboard
+        </a>
+    </div>
+
+    <div class="checkout-card">
+        
+        <!-- Header -->
+        <div class="gateway-header">
+            <div>
+                <div style="font-size: 0.76rem; color: var(--parent-primary); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">
+                    CampusGuard AI Treasury Gateway
+                </div>
+                <h1 style="font-size: 1.4rem; font-weight: 800; color: #fff; margin: 4px 0 0;">
+                    💳 Secure Fee Payment Checkout
+                </h1>
+            </div>
+            <span class="badge badge-green" style="font-size: 0.8rem; padding: 6px 14px;">
+                🔒 256-Bit SSL Encrypted
+            </span>
+        </div>
+
+        <!-- Demo Banner -->
+        <div class="demo-callout">
+            <span style="font-size: 1.4rem;">🧪</span>
+            <div>
+                <strong>DEMO PAYMENT PORTAL (Hackathon Evaluation):</strong>
+                <div style="margin-top: 2px; color: var(--text-secondary);">
+                    No actual bank card or bank credentials will be debited. Settle this invoice to verify automatic database status updates and immediate e-receipt generation.
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Info Grid -->
+        <div class="info-summary-grid">
+            <div class="info-summary-item">
+                <span class="label">Student Name</span>
+                <span class="value">{{ student.name }}</span>
+            </div>
+            <div class="info-summary-item">
+                <span class="label">Register Number</span>
+                <span class="value" style="font-family: var(--font-mono); color: var(--parent-primary);">{{ student.register_number }}</span>
+            </div>
+            <div class="info-summary-item">
+                <span class="label">Department / Term</span>
+                <span class="value">{{ student.department }} • Sem {{ student.semester|default(5) }}</span>
+            </div>
+            <div class="info-summary-item">
+                <span class="label">Fee Category</span>
+                <span class="value" style="color: #c084fc;">{{ fee.fee_type }}</span>
+            </div>
+            <div class="info-summary-item">
+                <span class="label">Total Invoiced</span>
+                <span class="value" style="font-family: var(--font-mono);">₹{{ "{:,.2f}".format(fee.amount) }}</span>
+            </div>
+            <div class="info-summary-item">
+                <span class="label">Outstanding Due</span>
+                <span class="value" style="font-family: var(--font-mono); color: #fbbf24; font-size: 1.15rem;">₹{{ "{:,.2f}".format(pending_amount) }}</span>
+            </div>
+        </div>
+
+        <!-- Checkout Form -->
+        <form method="POST" action="/parent/fees/pay" id="main-checkout-form">
+            <input type="hidden" name="fee_id" value="{{ fee.id }}">
+            <input type="hidden" name="student_id" value="{{ student.id }}">
+
+            <!-- Amount Selection -->
+            <div style="margin-bottom: 20px;">
+                <label class="form-label" style="font-size: 0.85rem; font-weight: 700; color: #fff; margin-bottom: 8px;">
+                    Payment Settlement Option
+                </label>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 10px;">
+                    <label style="background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); border-radius: 10px; padding: 12px; display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="radio" name="payment_mode" value="full" checked onchange="toggleCustom(false)">
+                        <div>
+                            <div style="font-weight: 700; color: #fff; font-size: 0.9rem;">Pay Full Balance</div>
+                            <div style="font-size: 0.76rem; color: #34d399; font-family: var(--font-mono);">₹{{ "{:,.2f}".format(pending_amount) }}</div>
+                        </div>
+                    </label>
+                    <label style="background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); border-radius: 10px; padding: 12px; display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="radio" name="payment_mode" value="custom" onchange="toggleCustom(true)">
+                        <div>
+                            <div style="font-weight: 700; color: #fff; font-size: 0.9rem;">Custom Installment</div>
+                            <div style="font-size: 0.76rem; color: var(--text-muted);">Enter partial amount</div>
+                        </div>
+                    </label>
+                </div>
+
+                <div id="custom-amt-box" style="display: none; margin-top: 10px;">
+                    <input 
+                        type="number" 
+                        name="custom_amount" 
+                        id="custom_amount_input" 
+                        class="form-input" 
+                        step="0.01" 
+                        min="1" 
+                        max="{{ pending_amount }}" 
+                        value="{{ pending_amount }}"
+                        style="font-family: var(--font-mono); font-size: 1.1rem; font-weight: 700; color: #34d399;"
+                        placeholder="Enter amount to pay"
+                        oninput="updateButtonAmount(this.value)"
+                    >
+                </div>
+            </div>
+
+            <!-- Payment Method Selection -->
+            <div style="margin-bottom: 24px;">
+                <label class="form-label" style="font-size: 0.85rem; font-weight: 700; color: #fff; margin-bottom: 8px;">
+                    Select Simulated Payment Method
+                </label>
+                <div class="method-selector">
+                    <label class="method-card selected" onclick="selectMethod(this)">
+                        <input type="radio" name="payment_method" value="Demo UPI (Google Pay / PhonePe)" checked>
+                        <span style="font-size: 1.6rem;">📱</span>
+                        <strong style="color: #fff; font-size: 0.85rem;">Demo UPI</strong>
+                        <span style="font-size: 0.7rem; color: var(--text-muted);">GPay / PhonePe / Paytm</span>
+                    </label>
+
+                    <label class="method-card" onclick="selectMethod(this)">
+                        <input type="radio" name="payment_method" value="Demo Debit Card">
+                        <span style="font-size: 1.6rem;">💳</span>
+                        <strong style="color: #fff; font-size: 0.85rem;">Demo Debit Card</strong>
+                        <span style="font-size: 0.7rem; color: var(--text-muted);">Visa / MasterCard / RuPay</span>
+                    </label>
+
+                    <label class="method-card" onclick="selectMethod(this)">
+                        <input type="radio" name="payment_method" value="Demo Net Banking">
+                        <span style="font-size: 1.6rem;">🏦</span>
+                        <strong style="color: #fff; font-size: 0.85rem;">Net Banking</strong>
+                        <span style="font-size: 0.7rem; color: var(--text-muted);">SBI / HDFC / ICICI</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+                <button type="submit" class="btn-primary" id="pay-button" style="background: linear-gradient(135deg, #10b981, #059669); font-size: 1.05rem; font-weight: 800; padding: 14px; box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4); width: 100%; justify-content: center;">
+                    <span>🚀</span> Complete Payment (₹{{ "{:,.2f}".format(pending_amount) }})
+                </button>
+
+                <a href="/parent/fees" class="btn-secondary" style="text-align: center; text-decoration: none; padding: 10px; font-size: 0.84rem;">
+                    ✕ Cancel Payment &amp; Return
+                </a>
+            </div>
+        </form>
+
+    </div>
+</div>
+
+<script>
+    const PENDING_MAX = {{ pending_amount }};
+
+    function selectMethod(el) {
+        document.querySelectorAll('.method-card').forEach(c => c.classList.remove('selected'));
+        el.classList.add('selected');
+        el.querySelector('input[type="radio"]').checked = true;
+    }
+
+    function toggleCustom(isCustom) {
+        const box = document.getElementById('custom-amt-box');
+        const btn = document.getElementById('pay-button');
+        if (isCustom) {
+            box.style.display = 'block';
+            const input = document.getElementById('custom_amount_input');
+            input.focus();
+            updateButtonAmount(input.value);
+        } else {
+            box.style.display = 'none';
+            btn.innerHTML = `<span>🚀</span> Complete Payment (₹${PENDING_MAX.toLocaleString('en-IN', {minimumFractionDigits: 2})})`;
+        }
+    }
+
+    function updateButtonAmount(val) {
+        const amt = parseFloat(val || 0);
+        const btn = document.getElementById('pay-button');
+        btn.innerHTML = `<span>🚀</span> Complete Payment (₹${amt.toLocaleString('en-IN', {minimumFractionDigits: 2})})`;
+    }
+</script>
+{% endblock %}

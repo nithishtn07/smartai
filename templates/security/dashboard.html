@@ -563,6 +563,10 @@
                                 </form>
                             </td>
                         </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 32px;">No active emergency incidents currently in dispatch queue.</td>
+                        </tr>
                         {% endfor %}
                     </tbody>
                 </table>
@@ -607,9 +611,12 @@
             document.getElementById('drawer-insights-text').innerText = selected.insights;
         }
 
-        // Default to highest risk zone on load
+        // Default to first available or highest risk zone on load
         document.addEventListener('DOMContentLoaded', () => {
-            selectZone('parking');
+            const firstZoneKey = Object.keys(zoneData)[0];
+            if (firstZoneKey && zoneData[firstZoneKey]) {
+                selectZone(zoneData[firstZoneKey].zone_id);
+            }
         });
     </script>
 </body>

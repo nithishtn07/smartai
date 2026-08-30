@@ -41,8 +41,8 @@
                 <tr>
                     <td style="font-family: var(--font-mono); font-weight: 700; color: #34d399;">#OUT-0{{ leave.id }}</td>
                     <td>
-                        <div style="font-weight: 700; color: var(--text-primary);">{{ leave.student_name|default('Nithish Nagaraj') }}</div>
-                        <div style="font-size: 0.78rem; color: #38bdf8; font-family: var(--font-mono);">{{ leave.register_number|default('STU001') }}</div>
+                        <div style="font-weight: 700; color: var(--text-primary);">{{ leave.student_name }}</div>
+                        <div style="font-size: 0.78rem; color: #38bdf8; font-family: var(--font-mono);">{{ leave.register_number }}</div>
                     </td>
                     <td><span class="badge badge-indigo">{{ leave.leave_type }}</span></td>
                     <td style="font-family: var(--font-mono); font-size: 0.84rem;">{{ leave.from_date }} to {{ leave.to_date }}</td>

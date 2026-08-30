@@ -5,6 +5,7 @@ CampusGuard AI — Role-Based Authorization Decorators
 from functools import wraps
 from flask import session, redirect, url_for, flash, g, request, jsonify
 from database.db import get_db_connection
+from services.academic_service import calculate_student_cgpa
 
 
 def student_required(f):
@@ -12,6 +13,7 @@ def student_required(f):
     Decorator protecting student routes:
     - Enforces valid student session.
     - Loads student row from central database.
+    - Dynamically evaluates real CGPA from database academic records.
     - Redirects to /student/login if unauthenticated.
     """
     @wraps(f)
@@ -23,19 +25,27 @@ def student_required(f):
             return redirect(url_for('auth.student_login'))
         
         conn = get_db_connection()
-        student = conn.execute(
+        student_row = conn.execute(
             "SELECT * FROM students WHERE id = ?",
             (session['student_id'],)
         ).fetchone()
-        conn.close()
 
-        if not student:
+        if not student_row:
+            conn.close()
             session.clear()
             if request.path.startswith('/api/'):
                 return jsonify({'error': 'Unauthorized', 'message': 'Session expired'}), 401
             flash("Session expired. Please log in again.", "info")
             return redirect(url_for('auth.student_login'))
         
+        student = dict(student_row)
+        cgpa, earned_credits, _, _ = calculate_student_cgpa(conn, student['id'])
+        student['cgpa'] = cgpa
+        student['sgpa'] = cgpa
+        if cgpa is not None:
+            student['earned_credits'] = earned_credits
+        conn.close()
+
         g.student = student
         return f(student=student, *args, **kwargs)
     return decorated_function
@@ -45,8 +55,9 @@ def parent_required(f):
     """
     Decorator protecting parent routes:
     - Enforces valid parent session.
-    - Loads parent row and linked student row from central database.
-    - Strictly scopes student access to parent.student_id.
+    - Loads parent row and all authorized linked student rows from central database.
+    - Dynamically evaluates real CGPA for linked students from database academic records.
+    - Strictly scopes active student access to verified parent-student relationships.
     - Redirects to /parent/login if unauthenticated.
     """
     @wraps(f)
@@ -71,22 +82,54 @@ def parent_required(f):
             flash("Session expired. Please sign in again.", "info")
             return redirect(url_for('auth.parent_login'))
 
-        student = conn.execute(
-            "SELECT * FROM students WHERE id = ?",
-            (parent['student_id'],)
-        ).fetchone()
-        conn.close()
+        # Fetch all authorized linked students for this parent
+        linked_rows = conn.execute("""
+            SELECT DISTINCT s.*, COALESCE(ps.relationship, p.relationship, 'Guardian') as relationship,
+                   COALESCE(ps.is_primary, 1) as is_primary
+            FROM students s
+            LEFT JOIN parent_student ps ON (s.id = ps.student_id AND ps.parent_id = ?)
+            LEFT JOIN parents p ON p.id = ?
+            WHERE (ps.parent_id = ? OR p.student_id = s.id) AND s.status != 'DELETED'
+            ORDER BY is_primary DESC, s.id ASC
+        """, (parent['id'], parent['id'], parent['id'])).fetchall()
 
-        if not student:
+        if not linked_rows:
+            conn.close()
             session.clear()
             if request.path.startswith('/api/'):
                 return jsonify({'error': 'Forbidden', 'message': 'No linked student found'}), 403
             flash("No linked student record found for this account. Please contact campus admin.", "error")
             return redirect(url_for('auth.parent_login'))
+
+        linked_students = []
+        for row in linked_rows:
+            s_dict = dict(row)
+            cgpa, earned_credits, _, _ = calculate_student_cgpa(conn, s_dict['id'])
+            s_dict['cgpa'] = cgpa
+            s_dict['sgpa'] = cgpa
+            if cgpa is not None:
+                s_dict['earned_credits'] = earned_credits
+            linked_students.append(s_dict)
+
+        # Resolve active selected student
+        active_student_id = session.get('parent_active_student_id')
+        active_student = None
+        if active_student_id:
+            for s in linked_students:
+                if s['id'] == active_student_id:
+                    active_student = s
+                    break
         
+        if not active_student:
+            active_student = linked_students[0]
+            session['parent_active_student_id'] = active_student['id']
+
+        conn.close()
+
         g.parent = parent
-        g.student = student
-        return f(parent=parent, student=student, *args, **kwargs)
+        g.student = active_student
+        g.linked_students = linked_students
+        return f(parent=parent, student=active_student, *args, **kwargs)
     return decorated_function
 
 

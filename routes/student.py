@@ -25,44 +25,14 @@ from services.notification_service import (
 from services.emergency_service import (
     transition_emergency_status,
     assign_responder,
-    create_emergency
+    create_emergency,
+    get_student_latest_emergency,
+    generate_emergency_id
 )
 
+from services.ai_insight_engine import analyze_resume_skills
+
 student_bp = Blueprint('student', __name__)
-
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-def analyze_resume_skills(skills_text, target_role):
-    text = skills_text.lower()
-    score = 75
-    grade = 'Strong Candidate'
-    rec_skills = []
-    
-    if 'python' in text or 'java' in text: score += 8
-    if 'sql' in text or 'database' in text: score += 7
-    if 'docker' in text or 'kubernetes' in text or 'cloud' in text: score += 8
-    else: rec_skills.append('Docker & Containerization')
-    
-    if 'data' in target_role.lower():
-        if 'pandas' not in text: rec_skills.append('Pandas / PyTorch')
-        if 'ml' not in text: rec_skills.append('Scikit-Learn ML Pipelines')
-    else:
-        if 'ci/cd' not in text: rec_skills.append('GitHub Actions CI/CD')
-        if 'system design' not in text: rec_skills.append('System Design & Microservices')
-
-    score = min(score, 94)
-    feedback = f"Your resume shows strong foundational competence for {target_role}. Adding verified cloud and containerization skills will boost your ATS interview shortlist rate by 38%."
-    action_item = "Include measurable impact metrics (e.g. 'Optimized latency by 35%') in project bullet points."
-    
-    return {
-        'score': score,
-        'grade': grade,
-        'feedback': feedback,
-        'recommended_skills': rec_skills[:4],
-        'action_item': action_item
-    }
 
 
 # ---------------------------------------------------------------------------
@@ -99,13 +69,19 @@ def student_dashboard(student):
             )
         """, (student['id'],)).fetchone()['cnt']
 
-        active_sos = conn.execute("""
-            SELECT * FROM incidents WHERE student_id = ? AND incident_type = 'EMERGENCY_SOS' AND status = 'ACTIVE'
-            ORDER BY created_at DESC LIMIT 1
-        """, (student['id'],)).fetchone()
+        emg_status = get_student_latest_emergency(student['id'], conn)
+        active_sos = emg_status if emg_status.get('is_active') else None
+        latest_sos = emg_status if emg_status.get('has_emergency') else None
 
         fees = conn.execute("SELECT * FROM fees WHERE student_id = ?", (student['id'],)).fetchall()
-        pending_fees_total = sum(f['amount'] - f['paid_amount'] for f in fees)
+        total_fees = sum(f['amount'] for f in fees) if fees else 0
+        total_paid = sum(f['paid_amount'] for f in fees) if fees else 0
+        pending_fees_total = total_fees - total_paid
+
+        upcoming_exams_count = conn.execute("SELECT COUNT(*) as cnt FROM examinations").fetchone()['cnt']
+        next_exam = conn.execute("SELECT * FROM examinations ORDER BY exam_date ASC LIMIT 1").fetchone()
+        placements_count = conn.execute("SELECT COUNT(*) as cnt FROM placements").fetchone()['cnt']
+        pending_assignments_count = conn.execute("SELECT COUNT(*) as cnt FROM assignments WHERE status != 'Evaluated'").fetchone()['cnt']
 
         return render_template(
             'student/dashboard.html',
@@ -117,7 +93,14 @@ def student_dashboard(student):
             pending_complaints_count=pending_complaints_count,
             unread_alerts_count=unread_alerts_count,
             active_sos=active_sos,
-            pending_fees_total=pending_fees_total
+            latest_sos=latest_sos,
+            pending_fees_total=pending_fees_total,
+            total_fees=total_fees,
+            total_paid=total_paid,
+            upcoming_exams_count=upcoming_exams_count,
+            next_exam=next_exam,
+            placements_count=placements_count,
+            pending_assignments_count=pending_assignments_count
         )
     finally:
         conn.close()
@@ -172,7 +155,13 @@ def student_academics(student):
 @student_required
 def student_marks(student):
     conn = get_db_connection()
-    marks = conn.execute("SELECT * FROM marks WHERE student_id = ?", (student['id'],)).fetchall()
+    marks = conn.execute("""
+        SELECT m.*, COALESCE(c.credits, 4) as credits
+        FROM marks m
+        LEFT JOIN courses c ON m.course_code = c.course_code
+        WHERE m.student_id = ?
+        ORDER BY m.course_code ASC
+    """, (student['id'],)).fetchall()
     conn.close()
     return render_template('student/marks.html', student=student, marks=marks, active_page='marks')
 
@@ -280,28 +269,28 @@ def student_examinations(student):
 
 
 # ---------------------------------------------------------------------------
-# 8. Fees Ledger & Online Payments
+# 8. Fees Ledger & Online Payments (Safe Demo Payment Flow)
 # ---------------------------------------------------------------------------
 @student_bp.route('/student/fees')
 @student_required
 def student_fees(student):
-    conn = get_db_connection()
-    fees = conn.execute("SELECT * FROM fees WHERE student_id = ?", (student['id'],)).fetchall()
-    transactions = conn.execute("SELECT * FROM payment_transactions WHERE student_id = ? ORDER BY paid_at DESC", (student['id'],)).fetchall()
-    conn.close()
-
-    total_fees = sum(f['amount'] for f in fees)
-    total_paid = sum(f['paid_amount'] for f in fees)
-    total_pending = total_fees - total_paid
+    from services.payment_service import get_student_fee_summary
+    fee_summary = get_student_fee_summary(student['id'])
 
     return render_template(
         'student/fees.html',
         student=student,
-        fees=fees,
-        transactions=transactions,
-        total_fees=total_fees,
-        total_paid=total_paid,
-        total_pending=total_pending,
+        fees=fee_summary['fees'],
+        fee_items=fee_summary['fee_items'],
+        transactions=fee_summary['transactions'],
+        total_fee=fee_summary['total_billed'],
+        total_fees=fee_summary['total_billed'],
+        total_paid=fee_summary['total_paid'],
+        total_pending=fee_summary['total_pending'],
+        overdue_amount=fee_summary['overdue_amount'],
+        overdue_count=fee_summary['overdue_count'],
+        next_due_date=fee_summary['next_due_date'],
+        next_due_days=fee_summary['next_due_days'],
         active_page='fees'
     )
 
@@ -310,34 +299,96 @@ def student_fees(student):
 @student_required
 def student_fees_pay(student):
     fee_id = request.form.get('fee_id')
-    amount = float(request.form.get('amount', 0))
-    payment_method = request.form.get('payment_method', 'UPI / NetBanking')
+    amount_str = request.form.get('amount')
+    payment_method = request.form.get('payment_method', 'UPI (Google Pay / PhonePe)')
+
+    if not fee_id:
+        flash("Please select a valid fee item to pay.", "error")
+        return redirect(url_for('student.student_fees'))
+
+    try:
+        amount = float(amount_str)
+        if amount <= 0:
+            flash("Payment amount must be greater than zero.", "error")
+            return redirect(url_for('student.student_fees'))
+    except (ValueError, TypeError):
+        flash("Invalid payment amount entered.", "error")
+        return redirect(url_for('student.student_fees'))
 
     conn = get_db_connection()
-    fee = conn.execute("SELECT * FROM fees WHERE id = ? AND student_id = ?", (fee_id, student['id'])).fetchone()
-    if fee:
-        new_paid = fee['paid_amount'] + amount
-        new_status = 'PAID' if new_paid >= fee['amount'] else 'PARTIAL'
+    try:
+        fee = conn.execute("SELECT * FROM fees WHERE id = ? AND student_id = ?", (fee_id, student['id'])).fetchone()
+        if not fee:
+            flash("Fee record not found or access unauthorized.", "error")
+            return redirect(url_for('student.student_fees'))
+
+        remaining_balance = max(0.0, float(fee['amount']) - float(fee['paid_amount']))
+        if remaining_balance <= 0 or fee['status'] in ('PAID', 'Paid'):
+            flash("This fee has already been fully paid and cleared. Duplicate payment prevented.", "info")
+            return redirect(url_for('student.student_fees'))
+
+        # Clamp payable amount to remaining balance to prevent overpayment
+        pay_amount = min(amount, remaining_balance)
+        new_paid = float(fee['paid_amount']) + pay_amount
+        new_status = 'PAID' if new_paid >= float(fee['amount']) else 'PARTIAL'
+
         conn.execute("UPDATE fees SET paid_amount = ?, status = ? WHERE id = ?", (new_paid, new_status, fee_id))
 
-        txn_id = f"TXN{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}"
+        txn_id = f"TXN-STU-{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}-{uuid.uuid4().hex[:4].upper()}"
         receipt_no = f"REC-{uuid.uuid4().hex[:6].upper()}"
         paid_at = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
         conn.execute("""
-            INSERT INTO payment_transactions (transaction_id, student_id, fee_type, amount, payment_method, receipt_no, paid_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        """, (txn_id, student['id'], fee['fee_type'], amount, payment_method, receipt_no, paid_at))
+            INSERT INTO payment_transactions (transaction_id, student_id, fee_type, amount, payment_method, receipt_no, paid_at, status, fee_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 'SUCCESS', ?)
+        """, (txn_id, student['id'], fee['fee_type'], pay_amount, payment_method, receipt_no, paid_at, fee_id))
         conn.commit()
 
-        # Send notification to parent
-        parent = conn.execute("SELECT id FROM parents WHERE student_id = ?", (student['id'],)).fetchone()
-        if parent:
-            notify_parent(parent['id'], f"Fee Payment Received: {fee['fee_type']}", f"An amount of INR {amount:,.2f} has been processed successfully (Receipt: {receipt_no}).", category='Fees')
+        # Send real-time notifications to student & linked parent
+        notify_student(
+            student['id'],
+            f"✅ Payment Successful: {fee['fee_type']}",
+            f"Demo Payment of INR {pay_amount:,.2f} recorded successfully (Receipt #{receipt_no}). Remaining balance: INR {max(0.0, fee['amount'] - new_paid):,.2f}.",
+            category='Fees'
+        )
 
-        flash(f"Payment of ₹{amount:,.2f} has been processed successfully! Receipt No: {receipt_no}", "success")
-    conn.close()
-    return redirect(url_for('student.student_fees'))
+        parent = conn.execute("SELECT id, name FROM parents WHERE student_id = ?", (student['id'],)).fetchone()
+        if parent:
+            notify_parent(
+                parent['id'],
+                f"✅ Fee Payment Received for {student['name']}",
+                f"An amount of INR {pay_amount:,.2f} towards {fee['fee_type']} was processed (Receipt #{receipt_no}).",
+                category='Fees'
+            )
+
+        log_activity(
+            student['name'], 'student', 'DEMO_FEE_PAYMENT',
+            f"Paid INR {pay_amount} towards {fee['fee_type']} via {payment_method} (Receipt #{receipt_no})",
+            record_id=str(fee_id)
+        )
+
+        flash(f"✅ Demo Payment of ₹{pay_amount:,.2f} completed successfully! Official Receipt #{receipt_no} generated.", "success")
+        return redirect(url_for('student.student_fees_receipt', receipt_no=receipt_no))
+    finally:
+        conn.close()
+
+
+@student_bp.route('/student/fees/receipt/<receipt_no>')
+@student_required
+def student_fees_receipt(student, receipt_no):
+    from services.payment_service import get_payment_receipt
+    receipt = get_payment_receipt(receipt_no, student_id=student['id'])
+    if not receipt:
+        flash("Official payment receipt not found or access unauthorized.", "error")
+        return redirect(url_for('student.student_fees'))
+
+    return render_template(
+        'parent/receipt_view.html',
+        student=student,
+        receipt=receipt,
+        back_url=url_for('student.student_fees'),
+        active_page='fees'
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -346,7 +397,77 @@ def student_fees_pay(student):
 @student_bp.route('/student/calendar')
 @student_required
 def student_calendar(student):
-    return render_template('student/calendar.html', student=student, active_page='calendar')
+    conn = get_db_connection()
+    try:
+        cal_events = conn.execute("SELECT * FROM academic_calendar ORDER BY start_date ASC").fetchall()
+        exams = conn.execute("SELECT * FROM examinations ORDER BY exam_date ASC").fetchall()
+        assignments = conn.execute("SELECT * FROM assignments ORDER BY due_date ASC").fetchall()
+
+        events = []
+        for c in cal_events:
+            c_dict = dict(c)
+            dt_str = c_dict.get('start_date', '')
+            month = 'SEM'
+            day = '01'
+            try:
+                dt = datetime.datetime.strptime(dt_str, '%Y-%m-%d')
+                month = dt.strftime('%b')
+                day = dt.strftime('%d')
+            except Exception:
+                pass
+            events.append({
+                'title': c_dict.get('title', c_dict.get('event_name', 'Academic Milestone')),
+                'description': c_dict.get('description', ''),
+                'category': c_dict.get('event_type', 'Academic'),
+                'month': month,
+                'day': day,
+                'time': 'Full Day',
+                'venue': 'Campus'
+            })
+
+        for ex in exams:
+            dt_str = ex['exam_date']
+            month = 'EXAM'
+            day = '01'
+            try:
+                dt = datetime.datetime.strptime(dt_str, '%Y-%m-%d')
+                month = dt.strftime('%b')
+                day = dt.strftime('%d')
+            except Exception:
+                pass
+            events.append({
+                'title': f"{ex['exam_type']} - {ex['course_code']}",
+                'description': f"{ex['course_name']} ({ex['room_number']})",
+                'category': 'Exam',
+                'month': month,
+                'day': day,
+                'time': ex['exam_time'],
+                'venue': f"{ex['venue']} - {ex['room_number']}"
+            })
+
+        for a in assignments:
+            dt_str = a['due_date']
+            month = 'DUE'
+            day = '01'
+            try:
+                dt = datetime.datetime.strptime(dt_str, '%Y-%m-%d')
+                month = dt.strftime('%b')
+                day = dt.strftime('%d')
+            except Exception:
+                pass
+            events.append({
+                'title': f"Due: {a['title']}",
+                'description': f"{a['course_code']} ({a['course_name']}) - Max: {a['max_marks']} Marks",
+                'category': 'Assignment',
+                'month': month,
+                'day': day,
+                'time': '11:59 PM',
+                'venue': 'Online Portal'
+            })
+
+        return render_template('student/calendar.html', student=student, events=events, active_page='calendar')
+    finally:
+        conn.close()
 
 
 # ---------------------------------------------------------------------------
@@ -393,7 +514,26 @@ def student_hostel_leave(student):
 @student_bp.route('/student/transport')
 @student_required
 def student_transport(student):
-    return render_template('student/transport.html', student=student, active_page='transport')
+    conn = get_db_connection()
+    try:
+        allocation = conn.execute("""
+            SELECT st.*, tr.route_number, tr.route_name, tr.bus_number, tr.driver_name, tr.driver_phone, tr.pickup_time, tr.pickup_location, tr.eta_campus, tr.stops_json
+            FROM student_transport st
+            JOIN transport_routes tr ON st.route_id = tr.id
+            WHERE st.student_id = ?
+        """, (student['id'],)).fetchone()
+
+        all_routes = conn.execute("SELECT * FROM transport_routes WHERE status = 'ACTIVE'").fetchall()
+
+        return render_template(
+            'student/transport.html',
+            student=student,
+            allocation=allocation,
+            routes=all_routes,
+            active_page='transport'
+        )
+    finally:
+        conn.close()
 
 
 # ---------------------------------------------------------------------------
@@ -729,7 +869,7 @@ def student_emergency(student):
         category = request.form.get('category', 'Personal Safety')
         severity = request.form.get('severity', 'HIGH').upper()
 
-        inc_id = f"EMG-{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}"
+        inc_id = generate_emergency_id()
         now_str = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
         conn.execute("""
@@ -765,25 +905,10 @@ def student_emergency(student):
         flash(f"EMERGENCY SOS ACTIVE: {inc_id} — Distress Beacon transmitted to Campus Security Command.", "danger")
         return redirect(url_for('student.student_emergency'))
 
-    active_emg = conn.execute("""
-        SELECT * FROM emergencies 
-        WHERE user_id = ? AND user_role = 'student' AND status NOT IN ('RESOLVED', 'CLOSED', 'CANCELLED', 'STAND_DOWN')
-        ORDER BY created_at DESC LIMIT 1
-    """, (student['id'],)).fetchone()
-
-    active_sos = None
-    if active_emg:
-        active_sos = dict(active_emg)
-        active_sos['incident_id'] = active_emg['emergency_id']
-        active_sos['location'] = active_emg['campus_zone']
-        active_sos['assigned_to'] = active_emg['assigned_responder']
-    else:
-        legacy_inc = conn.execute("""
-            SELECT * FROM incidents WHERE student_id = ? AND incident_type = 'EMERGENCY_SOS' AND status = 'ACTIVE'
-            ORDER BY created_at DESC LIMIT 1
-        """, (student['id'],)).fetchone()
-        if legacy_inc:
-            active_sos = dict(legacy_inc)
+    emg_status = get_student_latest_emergency(student['id'], conn)
+    active_sos = emg_status if emg_status.get('is_active') else None
+    latest_resolved_sos = emg_status if (emg_status.get('has_emergency') and not emg_status.get('is_active') and emg_status.get('status') in ['RESOLVED', 'CLOSED']) else None
+    latest_standdown_sos = emg_status if (emg_status.get('has_emergency') and not emg_status.get('is_active') and emg_status.get('status') in ['STAND_DOWN', 'CANCELLED']) else None
 
     incident_history = conn.execute("""
         SELECT * FROM emergencies 
@@ -802,6 +927,9 @@ def student_emergency(student):
         'student/emergency.html',
         student=student,
         active_sos=active_sos,
+        latest_resolved_sos=latest_resolved_sos,
+        latest_standdown_sos=latest_standdown_sos,
+        latest_sos=emg_status,
         incident_history=incident_history,
         emergency_contacts=contacts,
         active_page='emergency'
@@ -815,7 +943,7 @@ def student_emergency_cancel(student, incident_id):
     try:
         transition_emergency_status(
             incident_id, 'STAND_DOWN', student['name'], 'student',
-            notes="Student stood down emergency (marked safe).",
+            notes="Student stood down emergency (marked safe / false alarm).",
             conn=conn
         )
         conn.execute("""
@@ -826,62 +954,187 @@ def student_emergency_cancel(student, incident_id):
     finally:
         conn.close()
 
-    flash(f"Emergency distress beacon {incident_id} stood down. Marked safe.", "success")
+    if request.is_json or request.headers.get('Accept') == 'application/json':
+        return jsonify({
+            'status': 'success',
+            'is_safe': True,
+            'incident_id': incident_id,
+            'message': f"Emergency distress beacon {incident_id} stood down. Marked safe."
+        })
+
+    flash(f"Emergency distress beacon {incident_id} stood down. Marked safe. You are confirmed SAFE.", "success")
     return redirect(url_for('student.student_emergency'))
 
 
+@student_bp.route('/student/emergency/history')
+@student_required
+def student_emergency_history(student):
+    conn = get_db_connection()
+    try:
+        # Fetch from emergencies
+        emg_records = conn.execute("""
+            SELECT * FROM emergencies 
+            WHERE user_id = ? AND user_role = 'student'
+            ORDER BY created_at DESC, id DESC
+        """, (student['id'],)).fetchall()
+
+        history_list = []
+        seen_ids = set()
+        for r in emg_records:
+            d = dict(r)
+            d['incident_id'] = d.get('emergency_id')
+            d['location'] = d.get('campus_zone') or 'Campus Safe Zone'
+            history_list.append(d)
+            seen_ids.add(d.get('emergency_id'))
+
+        # Also pull legacy incidents if any not in emergencies
+        inc_records = conn.execute("""
+            SELECT * FROM incidents 
+            WHERE student_id = ? AND incident_type = 'EMERGENCY_SOS'
+            ORDER BY created_at DESC, id DESC
+        """, (student['id'],)).fetchall()
+
+        for r in inc_records:
+            d = dict(r)
+            if d.get('incident_id') not in seen_ids:
+                d['emergency_id'] = d.get('incident_id')
+                d['category'] = 'Personal Safety'
+                d['severity'] = 'HIGH'
+                d['campus_zone'] = d.get('location') or 'Campus Safe Zone'
+                history_list.append(d)
+                seen_ids.add(d.get('incident_id'))
+
+        # Metrics computation
+        total_count = len(history_list)
+        resolved_count = sum(1 for h in history_list if h.get('status') in ['RESOLVED', 'CLOSED'])
+        stand_down_count = sum(1 for h in history_list if h.get('status') in ['STAND_DOWN', 'CANCELLED', 'SAFE'])
+        active_count = sum(1 for h in history_list if h.get('status') in ['TRIGGERED', 'ACTIVE', 'ACKNOWLEDGED', 'ASSIGNED', 'RESPONDER_ASSIGNED', 'EN_ROUTE', 'ON_SCENE'])
+
+        # Filter parameters
+        status_filter = request.args.get('status', 'all').upper()
+        category_filter = request.args.get('category', 'all')
+
+        filtered_list = history_list
+        if status_filter != 'ALL':
+            if status_filter == 'RESOLVED':
+                filtered_list = [h for h in filtered_list if h.get('status') in ['RESOLVED', 'CLOSED']]
+            elif status_filter == 'STAND_DOWN':
+                filtered_list = [h for h in filtered_list if h.get('status') in ['STAND_DOWN', 'CANCELLED', 'SAFE']]
+            elif status_filter == 'ACTIVE':
+                filtered_list = [h for h in filtered_list if h.get('status') in ['TRIGGERED', 'ACTIVE', 'ACKNOWLEDGED', 'ASSIGNED', 'RESPONDER_ASSIGNED', 'EN_ROUTE', 'ON_SCENE']]
+            else:
+                filtered_list = [h for h in filtered_list if h.get('status') == status_filter]
+
+        if category_filter != 'all':
+            filtered_list = [h for h in filtered_list if h.get('category', '').lower() == category_filter.lower()]
+
+        metrics = {
+            'total': total_count,
+            'resolved': resolved_count,
+            'stand_down': stand_down_count,
+            'active': active_count
+        }
+
+        if request.is_json or request.headers.get('Accept') == 'application/json':
+            return jsonify({
+                'status': 'success',
+                'metrics': metrics,
+                'history': filtered_list
+            })
+
+        return render_template(
+            'student/emergency_history.html',
+            student=student,
+            history_records=filtered_list,
+            metrics=metrics,
+            current_status_filter=status_filter.lower(),
+            current_category_filter=category_filter,
+            active_page='emergency_history'
+        )
+    finally:
+        conn.close()
+
+
 # ---------------------------------------------------------------------------
-# 22. Alerts
+# 22. Notifications & Alerts Center
 # ---------------------------------------------------------------------------
 @student_bp.route('/student/alerts')
+@student_bp.route('/student/notifications')
 @student_required
 def student_alerts(student):
     conn = get_db_connection()
-    alerts_list = conn.execute("""
-        SELECT a.*, 
-               CASE WHEN sar.id IS NOT NULL THEN 1 ELSE 0 END as is_read
-        FROM alerts a
-        LEFT JOIN student_alert_reads sar ON a.id = sar.alert_id AND sar.student_id = ?
-        ORDER BY a.created_at DESC
-    """, (student['id'],)).fetchall()
-    conn.close()
+    try:
+        category_filter = request.args.get('category', 'all').strip()
+        status_filter = request.args.get('status', 'all').strip()
 
-    unread_count = sum(1 for a in alerts_list if not a['is_read'])
+        query = "SELECT * FROM notifications WHERE recipient_role = 'student' AND recipient_id = ?"
+        params = [student['id']]
 
-    return render_template(
-        'student/alerts.html',
-        student=student,
-        alerts=alerts_list,
-        unread_count=unread_count,
-        active_page='alerts'
-    )
+        if category_filter.lower() != 'all':
+            query += " AND LOWER(category) = LOWER(?)"
+            params.append(category_filter)
+
+        if status_filter == 'unread':
+            query += " AND is_read = 0"
+
+        query += " ORDER BY created_at DESC, id DESC"
+        notifications_list = conn.execute(query, params).fetchall()
+
+        all_notifs = conn.execute("SELECT * FROM notifications WHERE recipient_role = 'student' AND recipient_id = ?", (student['id'],)).fetchall()
+        unread_count = sum(1 for n in all_notifs if not n['is_read'])
+
+        category_counts = {
+            'all': len(all_notifs),
+            'unread': unread_count,
+            'academic': sum(1 for n in all_notifs if (n['category'] or '').lower() == 'academic'),
+            'attendance': sum(1 for n in all_notifs if (n['category'] or '').lower() == 'attendance'),
+            'fees': sum(1 for n in all_notifs if (n['category'] or '').lower() in ['fees', 'fee', 'finance']),
+            'timetable': sum(1 for n in all_notifs if (n['category'] or '').lower() == 'timetable'),
+            'announcements': sum(1 for n in all_notifs if (n['category'] or '').lower() in ['announcements', 'announcement', 'general']),
+            'system': sum(1 for n in all_notifs if (n['category'] or '').lower() in ['system', 'safety'])
+        }
+
+        return render_template(
+            'student/alerts.html',
+            student=student,
+            alerts=notifications_list,
+            notifications=notifications_list,
+            unread_count=unread_count,
+            category_counts=category_counts,
+            category_filter=category_filter,
+            status_filter=status_filter,
+            active_page='alerts'
+        )
+    finally:
+        conn.close()
 
 
 @student_bp.route('/student/alerts/read/<int:alert_id>', methods=['POST'])
+@student_bp.route('/student/notifications/read/<int:alert_id>', methods=['POST'])
 @student_required
 def student_alerts_read_single(student, alert_id):
     conn = get_db_connection()
-    conn.execute("""
-        INSERT OR IGNORE INTO student_alert_reads (student_id, alert_id)
-        VALUES (?, ?)
-    """, (student['id'], alert_id))
-    conn.commit()
-    conn.close()
-    return jsonify({'status': 'ok'})
+    try:
+        conn.execute("UPDATE notifications SET is_read = 1 WHERE id = ? AND recipient_role = 'student' AND recipient_id = ?", (alert_id, student['id']))
+        conn.commit()
+        return jsonify({'status': 'ok', 'message': 'Notification marked as read.'})
+    finally:
+        conn.close()
 
 
 @student_bp.route('/student/alerts/read-all', methods=['POST'])
+@student_bp.route('/student/notifications/read-all', methods=['POST'])
+@student_bp.route('/student/notifications/mark-all-read', methods=['POST'])
 @student_required
 def student_alerts_read_all(student):
     conn = get_db_connection()
-    conn.execute("""
-        INSERT OR IGNORE INTO student_alert_reads (student_id, alert_id)
-        SELECT ?, id FROM alerts
-    """, (student['id'],))
-    conn.commit()
-    conn.close()
-    flash("All alerts marked as read.", "success")
-    return redirect(url_for('student.student_alerts'))
+    try:
+        conn.execute("UPDATE notifications SET is_read = 1 WHERE recipient_role = 'student' AND recipient_id = ?", (student['id'],))
+        conn.commit()
+        flash("All notifications marked as read.", "success")
+        return redirect(url_for('student.student_alerts'))
+    finally:
+        conn.close()
 
 
 # ---------------------------------------------------------------------------
@@ -899,13 +1152,70 @@ def student_assistant(student):
 def student_chat_api(student):
     data = request.get_json() or {}
     query = (data.get('query') or data.get('message') or '').strip()
+
     if not query:
-        return jsonify({'reply': 'How may I assist you with your campus academics or safety today?', 'status': 'success'})
+        return jsonify({
+            'reply': f"Hello {student['name']}! How may I assist you with your campus academics, attendance, fees, or safety today?",
+            'intent': 'GREETING',
+            'status': 'success',
+            'suggestions': ['📊 My Performance', '🟢 My Attendance', '📅 My Timetable', '💰 My Fees', '🚨 Safety Help']
+        })
+
+    # Retrieve short-term conversation memory from session
+    history = session.get('student_chat_history', [])
+    if not isinstance(history, list):
+        history = []
 
     conn = get_db_connection()
     try:
-        reply = answer_campus_query(student['id'], query, conn)
-        return jsonify({'reply': reply, 'status': 'success'})
+        from services.unified_ai_assistant import process_unified_ai_query
+        result = process_unified_ai_query(
+            role='student',
+            user_id=student['id'],
+            query=query,
+            session_history=history[-6:],
+            conn=conn
+        )
+
+        # Update session memory (keep last 8 turns)
+        history.append({'role': 'user', 'content': query})
+        history.append({'role': 'assistant', 'content': result.get('reply', '')})
+        session['student_chat_history'] = history[-8:]
+
+        return jsonify(result)
+    finally:
+        conn.close()
+
+
+@student_bp.route('/api/student/ai-feedback', methods=['POST'])
+@student_required
+def student_ai_feedback(student):
+    data = request.get_json() or {}
+    query = data.get('query', '')
+    rating = data.get('rating', 'up')  # 'up' or 'down'
+    comment = data.get('comment', '')
+
+    conn = get_db_connection()
+    try:
+        conn.execute("""
+            INSERT INTO activity_logs (user_type, user_id, action, details)
+            VALUES ('student', ?, 'AI_ASSISTANT_FEEDBACK', ?)
+        """, (student['id'], f"Rating: {rating} | Query: {query[:100]} | Comment: {comment[:200]}"))
+        conn.commit()
+        return jsonify({'status': 'success', 'message': 'Feedback recorded. Thank you!'})
+    except Exception:
+        return jsonify({'status': 'success', 'message': 'Feedback received.'})
+    finally:
+        conn.close()
+
+
+@student_bp.route('/api/student/daily-briefing', methods=['GET'])
+@student_required
+def student_daily_briefing_api(student):
+    conn = get_db_connection()
+    try:
+        briefing = generate_student_briefing(student, conn)
+        return jsonify({'status': 'success', 'briefing': briefing})
     finally:
         conn.close()
 
@@ -972,10 +1282,17 @@ def student_messages(student):
     conn = get_db_connection()
     try:
         if request.method == 'POST':
-            receiver_role = request.form.get('receiver_role', 'Faculty')
-            receiver_name = request.form.get('receiver_name', 'Dr. Ramesh Rao (Faculty Advisor)')
+            receiver_role = request.form.get('recipient_role') or request.form.get('receiver_role', 'Faculty')
+            receiver_name = request.form.get('receiver_name')
             subject = request.form.get('subject', '').strip()
             content = request.form.get('content', '').strip()
+
+            if not receiver_name:
+                if receiver_role.lower() == 'parent':
+                    parent_row = conn.execute("SELECT id, name FROM parents WHERE student_id = ?", (student['id'],)).fetchone()
+                    receiver_name = parent_row['name'] if parent_row else (student['parent_name'] or 'Parent / Guardian')
+                else:
+                    receiver_name = 'Faculty Advisor'
 
             if not subject or not content:
                 flash("Subject and content are required.", "error")
@@ -991,6 +1308,15 @@ def student_messages(student):
                 student['id'], student['id'], student['name'],
                 receiver_role, receiver_name, subject, content
             ))
+
+            if receiver_role.lower() == 'parent':
+                parent_row = conn.execute("SELECT id, name FROM parents WHERE student_id = ?", (student['id'],)).fetchone()
+                parent_id = parent_row['id'] if parent_row else 1
+                conn.execute("""
+                    INSERT INTO parent_messages (parent_id, student_id, sender_role, sender_name, receiver_name, subject, content)
+                    VALUES (?, ?, 'Student', ?, ?, ?, ?)
+                """, (parent_id, student['id'], student['name'], receiver_name, subject, content))
+
             conn.commit()
             flash("Message sent successfully to " + receiver_name, "success")
             return redirect(url_for('student.student_messages'))
@@ -1010,3 +1336,5 @@ def student_messages(student):
         )
     finally:
         conn.close()
+
+

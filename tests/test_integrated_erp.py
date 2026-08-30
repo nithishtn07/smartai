@@ -41,9 +41,9 @@ class TestIntegratedEnterpriseERP(unittest.TestCase):
         init_db()
 
         conn = get_db_connection()
-        # Clean up any leftover test artifacts
-        conn.execute("DELETE FROM students WHERE register_number IN ('STU_E2E_01', 'STU_E2E_02')")
+        # Clean up any leftover test artifacts (delete child records before parent records)
         conn.execute("DELETE FROM parents WHERE email = 'parent_e2e@example.com'")
+        conn.execute("DELETE FROM students WHERE register_number IN ('STU_E2E_01', 'STU_E2E_02')")
         conn.execute("DELETE FROM faculties WHERE email = 'faculty_e2e@example.com'")
         conn.execute("DELETE FROM incidents WHERE incident_id LIKE 'SOS-E2E-%'")
         conn.execute("DELETE FROM complaints WHERE title LIKE 'E2E Test Grievance%'")
@@ -304,7 +304,11 @@ class TestIntegratedEnterpriseERP(unittest.TestCase):
         self.assertTrue(data['authenticated'])
         self.assertEqual(data['role'], 'student')
 
-        # 2. API Students List
+        # 2. API Students List (Admin scoped)
+        with self.client.session_transaction() as sess:
+            sess['admin_id'] = self.admin['id']
+            sess['user_role'] = 'admin'
+
         resp_stu = self.client.get('/api/students')
         self.assertEqual(resp_stu.status_code, 200)
         stu_data = resp_stu.get_json()
@@ -312,6 +316,10 @@ class TestIntegratedEnterpriseERP(unittest.TestCase):
         self.assertGreater(stu_data['count'], 0)
 
         # 3. API Attendance Summary
+        with self.client.session_transaction() as sess:
+            sess['student_id'] = self.student['id']
+            sess['user_role'] = 'student'
+
         resp_att = self.client.get(f"/api/attendance/summary/{self.student['id']}")
         self.assertEqual(resp_att.status_code, 200)
         att_data = resp_att.get_json()
@@ -324,7 +332,11 @@ class TestIntegratedEnterpriseERP(unittest.TestCase):
         self.assertEqual(ai_data['status'], 'success')
         self.assertIn('composite_risk_score', ai_data['insights'])
 
-        # 5. API Campus Risk Overview
+        # 5. API Campus Risk Overview (Admin/Faculty scoped)
+        with self.client.session_transaction() as sess:
+            sess['admin_id'] = self.admin['id']
+            sess['user_role'] = 'admin'
+
         resp_risk = self.client.get('/api/ai/campus-risk')
         self.assertEqual(resp_risk.status_code, 200)
         risk_data = resp_risk.get_json()

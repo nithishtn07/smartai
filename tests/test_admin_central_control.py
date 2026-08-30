@@ -44,7 +44,15 @@ class TestAdminCentralControl(unittest.TestCase):
         conn.execute("DELETE FROM fees WHERE fee_type = 'Research Lab Fee'")
         conn.execute("DELETE FROM hostel_leaves WHERE leave_type = 'Weekend Home Visit'")
         conn.execute("DELETE FROM incidents WHERE incident_id LIKE 'SOS-TEST-%'")
-        conn.execute("UPDATE students SET name = 'Nithish Nagaraj' WHERE register_number = 'STU001'")
+        stu = conn.execute("SELECT * FROM students WHERE register_number = 'STU001'").fetchone()
+        if not stu:
+            conn.execute("""
+                INSERT INTO students (name, register_number, email, password_hash, department, year, semester, section, status)
+                VALUES ('Nithish Nagaraj', 'STU001', 'student@example.com', 'hash', 'Computer Science & Engineering', 3, 5, 'A', 'ACTIVE')
+            """)
+        else:
+            conn.execute("UPDATE students SET name = 'Nithish Nagaraj' WHERE register_number = 'STU001'")
+        
         self.admin = conn.execute("SELECT * FROM admins WHERE username = 'admin'").fetchone()
         self.student = conn.execute("SELECT * FROM students WHERE register_number = 'STU001'").fetchone()
         self.parent = conn.execute("SELECT * FROM parents WHERE email = 'parent@example.com'").fetchone()

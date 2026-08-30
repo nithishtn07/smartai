@@ -56,6 +56,10 @@
                 {% endif %}
             </div>
         </div>
+        {% else %}
+        <div class="content-card" style="text-align: center; color: var(--text-muted); padding: 32px; grid-column: 1 / -1;">
+            No assignments listed for this semester.
+        </div>
         {% endfor %}
     </div>
 </div>
@@ -65,7 +69,7 @@
     <div class="content-card">
         <div class="card-header-row">
             <h2 class="card-heading"><span>📚</span> Digital Lecture Repository &amp; Question Papers</h2>
-            <span class="badge badge-cyan">Semester 5 Approved</span>
+            <span class="badge badge-cyan">Semester Approved</span>
         </div>
 
         <div class="table-responsive">
@@ -91,6 +95,10 @@
                                 📥 Download
                             </a>
                         </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 24px;">No digital study materials uploaded yet.</td>
                     </tr>
                     {% endfor %}
                 </tbody>

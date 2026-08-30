@@ -6,7 +6,7 @@
 <div class="page-header-block">
     <div class="page-title-group">
         <h1><span>📚</span> Academics &amp; Registered Courses</h1>
-        <p>{{ student.program|default('B.Tech') }} in {{ student.department }} • Semester {{ student.semester|default(5) }} Curriculum</p>
+        <p>{{ student.program|default('B.Tech') }} in {{ student.department }} • Semester {{ student.semester|default(1) }} Curriculum</p>
     </div>
 
     <div style="display: flex; gap: 10px;">
@@ -23,15 +23,15 @@
 <section class="attendance-summary-banner" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
     <div class="stat-box">
         <div class="stat-box-label">Cumulative CGPA</div>
-        <div class="stat-box-num" style="color: #34d399;">{{ student.cgpa|default('8.75') }} / 10.0</div>
+        <div class="stat-box-num" style="color: #34d399;">{{ student.cgpa if student.cgpa is not none else 'N/A' }} / 10.0</div>
     </div>
     <div class="stat-box">
         <div class="stat-box-label">Semester SGPA</div>
-        <div class="stat-box-num" style="color: #c084fc;">{{ student.sgpa|default('8.90') }}</div>
+        <div class="stat-box-num" style="color: #c084fc;">{{ student.sgpa if student.sgpa is not none else 'N/A' }}</div>
     </div>
     <div class="stat-box">
         <div class="stat-box-label">Earned Credits</div>
-        <div class="stat-box-num" style="color: #38bdf8;">{{ student.earned_credits|default('112') }} / {{ student.total_credits|default('160') }}</div>
+        <div class="stat-box-num" style="color: #38bdf8;">{{ student.earned_credits|default(0) }} / {{ student.total_credits|default(160) }}</div>
     </div>
     <div class="stat-box">
         <div class="stat-box-label">Active Courses</div>
@@ -42,8 +42,8 @@
 <!-- Course Catalog Table -->
 <section class="content-card">
     <div class="card-header-row">
-        <h2 class="card-heading"><span>📖</span> Semester 5 Registered Courses</h2>
-        <span class="badge badge-cyan">24 Total Credits</span>
+        <h2 class="card-heading"><span>📖</span> Semester {{ student.semester|default(1) }} Registered Courses</h2>
+        <span class="badge badge-cyan">{{ courses|sum(attribute='credits') }} Total Credits</span>
     </div>
 
     <div class="table-responsive">
@@ -80,6 +80,10 @@
                     <td style="font-size: 0.84rem; color: var(--text-secondary); font-family: var(--font-mono);">
                         {{ c.timing }}
                     </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 32px;">No registered courses available.</td>
                 </tr>
                 {% endfor %}
             </tbody>

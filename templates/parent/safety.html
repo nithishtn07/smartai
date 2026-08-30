@@ -21,8 +21,8 @@
 </div>
 
 <!-- Real-Time Ward Safety Status Card -->
-{% if active_sos %}
-<section class="content-card" style="border: 2px solid #ef4444; background: linear-gradient(135deg, rgba(239, 68, 68, 0.22) 0%, rgba(153, 27, 27, 0.3) 100%); box-shadow: 0 0 40px var(--sos-glow);">
+<!-- 1. Active Distress Card -->
+<section id="parent-active-sos-card" class="content-card" style="display: {% if active_sos %}block{% else %}none{% endif %}; border: 2px solid #ef4444; background: linear-gradient(135deg, rgba(239, 68, 68, 0.22) 0%, rgba(153, 27, 27, 0.3) 100%); box-shadow: 0 0 40px var(--sos-glow);">
     <div style="display: flex; align-items: flex-start; gap: 20px; flex-wrap: wrap;">
         <div style="width: 64px; height: 64px; border-radius: 16px; background: rgba(239, 68, 68, 0.3); border: 2px solid #ef4444; display: flex; align-items: center; justify-content: center; font-size: 2.4rem;">
             🚨
@@ -30,15 +30,15 @@
         <div style="flex: 1; min-width: 280px;">
             <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
                 <span class="badge badge-red" style="font-size: 0.82rem;">CRITICAL SOS BEACON</span>
-                <span style="color: var(--text-primary); font-weight: 700; font-family: var(--font-mono);">ID: {{ active_sos.incident_id }}</span>
+                <span style="color: var(--text-primary); font-weight: 700; font-family: var(--font-mono);">ID: <span id="parent-sos-id">{{ active_sos.incident_id if active_sos else '' }}</span></span>
             </div>
             <h2 style="font-size: 1.35rem; font-weight: 800; color: #fff; margin-bottom: 8px;">
                 Emergency Distress Beacon Broadcasted by {{ student.name }}
             </h2>
             <div style="background: rgba(10, 14, 26, 0.8); border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 12px; padding: 14px 18px; margin-bottom: 14px; font-size: 0.88rem;">
-                <div style="margin-bottom: 4px;"><strong style="color: #fca5a5;">Broadcast Location:</strong> <span style="color: #fff;">{{ active_sos.location }}</span></div>
-                <div style="margin-bottom: 4px;"><strong style="color: #fca5a5;">Timestamp:</strong> <span style="color: #fff; font-family: var(--font-mono);">{{ active_sos.created_at }}</span></div>
-                <div><strong style="color: #fca5a5;">QRT Status:</strong> <span style="color: #34d399; font-weight: 700;">Active Dispatch • Security Units Responding</span></div>
+                <div style="margin-bottom: 4px;"><strong style="color: #fca5a5;">Broadcast Location:</strong> <span id="parent-sos-location" style="color: #fff;">{{ active_sos.location if active_sos else '' }}</span></div>
+                <div style="margin-bottom: 4px;"><strong style="color: #fca5a5;">Timestamp:</strong> <span id="parent-sos-time" style="color: #fff; font-family: var(--font-mono);">{{ active_sos.created_at if active_sos else '' }}</span></div>
+                <div><strong style="color: #fca5a5;">QRT Status:</strong> <span id="parent-sos-status" style="color: #34d399; font-weight: 700;">Active Dispatch • Security Units Responding</span></div>
             </div>
             <div style="display: flex; gap: 12px; flex-wrap: wrap;">
                 <a href="tel:+919123456780" class="btn-danger">
@@ -51,8 +51,35 @@
         </div>
     </div>
 </section>
-{% else %}
-<section class="content-card" style="background: linear-gradient(135deg, rgba(14, 19, 32, 0.95) 0%, rgba(20, 27, 45, 0.9) 100%); border-color: var(--parent-border);">
+
+<!-- 2. Resolved Emergency Card -->
+<section id="parent-resolved-sos-card" class="content-card" style="display: {% if latest_resolved_sos and not active_sos %}block{% else %}none{% endif %}; border: 2px solid #10b981; background: linear-gradient(135deg, rgba(16, 185, 129, 0.16) 0%, rgba(14, 19, 32, 0.96) 100%);">
+    <div style="display: flex; align-items: flex-start; gap: 20px; flex-wrap: wrap;">
+        <div style="width: 64px; height: 64px; border-radius: 16px; background: rgba(16, 185, 129, 0.25); border: 2px solid #10b981; display: flex; align-items: center; justify-content: center; font-size: 2.4rem;">
+            ✓
+        </div>
+        <div style="flex: 1; min-width: 280px;">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 6px;">
+                <span class="badge badge-emerald" style="font-size: 0.82rem;">✓ RESOLUTION CONFIRMED</span>
+                <span style="color: var(--text-primary); font-weight: 700; font-family: var(--font-mono);">ID: <span id="parent-resolved-id">{{ latest_resolved_sos.incident_id if latest_resolved_sos else '' }}</span></span>
+            </div>
+            <h2 style="font-size: 1.35rem; font-weight: 800; color: #fff; margin-bottom: 8px;">
+                Emergency Incident Successfully Resolved for {{ student.name }}
+            </h2>
+            <div style="background: rgba(10, 14, 26, 0.8); border: 1px solid rgba(16, 185, 129, 0.4); border-radius: 12px; padding: 14px 18px; margin-bottom: 14px; font-size: 0.88rem;">
+                <div style="margin-bottom: 4px;"><strong style="color: #6ee7b7;">Location:</strong> <span id="parent-resolved-location" style="color: #fff;">{{ latest_resolved_sos.location if latest_resolved_sos else '' }}</span></div>
+                <div style="margin-bottom: 4px;"><strong style="color: #6ee7b7;">Resolved At:</strong> <span id="parent-resolved-time" style="color: #fff; font-family: var(--font-mono);">{{ latest_resolved_sos.resolved_at if latest_resolved_sos else 'Recently' }}</span></div>
+                <div><strong style="color: #6ee7b7;">Assigned Unit:</strong> <span id="parent-resolved-unit" style="color: #38bdf8; font-weight: 700;">{{ latest_resolved_sos.assigned_responder if latest_resolved_sos else 'Campus QRT Unit' }}</span></div>
+            </div>
+            <p style="color: #d1fae5; font-size: 0.88rem; margin: 0;">
+                Campus Security Command has verified ward safety on scene and closed this incident.
+            </p>
+        </div>
+    </div>
+</section>
+
+<!-- 3. Normal Safe Card -->
+<section id="parent-normal-safe-card" class="content-card" style="display: {% if not active_sos and not latest_resolved_sos %}block{% else %}none{% endif %}; background: linear-gradient(135deg, rgba(14, 19, 32, 0.95) 0%, rgba(20, 27, 45, 0.9) 100%); border-color: var(--parent-border);">
     <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 20px;">
         <div style="display: flex; align-items: center; gap: 18px;">
             <div style="width: 54px; height: 54px; border-radius: 14px; background: rgba(52, 211, 153, 0.15); border: 1px solid rgba(52, 211, 153, 0.4); display: flex; align-items: center; justify-content: center; font-size: 2rem;">
@@ -79,7 +106,6 @@
         </div>
     </div>
 </section>
-{% endif %}
 
 <!-- Campus Emergency Contacts Directory Grid -->
 <section class="content-card">
@@ -104,6 +130,10 @@
             <a href="tel:{{ contact.phone_number }}" class="btn-secondary" style="padding: 6px 12px; font-size: 0.78rem;" title="Call Helpline">
                 Call
             </a>
+        </div>
+        {% else %}
+        <div style="text-align: center; color: var(--text-muted); padding: 24px; grid-column: 1 / -1;">
+            No emergency contacts listed.
         </div>
         {% endfor %}
     </div>
@@ -143,6 +173,10 @@
                     </td>
                     <td style="color: #38bdf8;">{{ inc.assigned_to|default('Campus Security') }}</td>
                     <td style="font-size: 0.82rem; color: var(--text-muted); font-family: var(--font-mono);">{{ inc.created_at[:10] }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 24px;">No safety advisories or incidents recorded.</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -185,4 +219,14 @@
         </form>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        if (typeof initParentSafetyListener === 'function') {
+            initParentSafetyListener();
+        }
+    });
+</script>
 {% endblock %}

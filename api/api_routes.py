@@ -104,6 +104,10 @@ def api_auth_logout():
 # ---------------------------------------------------------------------------
 @api_bp.route('/api/students', methods=['GET'])
 def api_students_list():
+    user_role = session.get('user_role')
+    if not user_role or user_role not in ('admin', 'faculty'):
+        return jsonify({'status': 'error', 'message': 'Admin or Faculty authorization required'}), 403
+
     dept = request.args.get('department')
     search = request.args.get('search')
     conn = get_db_connection()
@@ -126,8 +130,21 @@ def api_students_list():
 
 @api_bp.route('/api/students/<int:id>', methods=['GET'])
 def api_student_detail(id):
+    user_role = session.get('user_role')
+    if not user_role:
+        return jsonify({'status': 'error', 'message': 'Authentication required'}), 401
+    
+    # IDOR protection: Students can only view themselves; Parents can only view their linked child
+    if user_role == 'student' and session.get('student_id') != id:
+        return jsonify({'status': 'error', 'message': 'Access forbidden: you may only view your own record'}), 403
+
     conn = get_db_connection()
     try:
+        if user_role == 'parent':
+            linked = conn.execute("SELECT student_id FROM parents WHERE id = ?", (session.get('parent_id'),)).fetchone()
+            if not linked or linked['student_id'] != id:
+                return jsonify({'status': 'error', 'message': 'Access forbidden: student not linked to this parent account'}), 403
+
         student = conn.execute("SELECT id, name, register_number, email, department, year, semester, section, cgpa, sgpa, phone, parent_name, parent_phone, address, status FROM students WHERE id = ?", (id,)).fetchone()
         if not student:
             return jsonify({'status': 'error', 'message': 'Student not found'}), 404
@@ -141,6 +158,10 @@ def api_student_detail(id):
 # ---------------------------------------------------------------------------
 @api_bp.route('/api/attendance/summary/<int:student_id>', methods=['GET'])
 def api_attendance_summary(student_id):
+    user_role = session.get('user_role')
+    if user_role == 'student' and session.get('student_id') != student_id:
+        return jsonify({'status': 'error', 'message': 'Access forbidden'}), 403
+
     conn = get_db_connection()
     try:
         records = conn.execute("SELECT * FROM attendance WHERE student_id = ?", (student_id,)).fetchall()
@@ -157,6 +178,10 @@ def api_attendance_summary(student_id):
 
 @api_bp.route('/api/attendance/mark', methods=['POST'])
 def api_attendance_mark():
+    user_role = session.get('user_role')
+    if user_role and user_role not in ('faculty', 'admin'):
+        return jsonify({'status': 'error', 'message': 'Faculty or Admin authorization required to mark attendance'}), 403
+
     data = request.get_json() or {}
     student_id = data.get('student_id')
     course_code = data.get('course_code')
@@ -318,8 +343,15 @@ def api_ai_campus_risk():
 def api_notifications_unread_count():
     conn = get_db_connection()
     try:
-        user_role = session.get('user_role', 'student')
-        user_id = session.get(f'{user_role}_id', 1)
+        user_role = session.get('user_role')
+        if not user_role:
+            if 'student_id' in session: user_role = 'student'
+            elif 'parent_id' in session: user_role = 'parent'
+            elif 'faculty_id' in session: user_role = 'faculty'
+            elif 'admin_id' in session: user_role = 'admin'
+            else: user_role = 'student'
+
+        user_id = session.get(f'{user_role}_id') or session.get('user_id', 1)
 
         count = conn.execute("""
             SELECT COUNT(*) as cnt FROM notifications 
@@ -335,13 +367,20 @@ def api_notifications_unread_count():
 def api_notifications_recent():
     conn = get_db_connection()
     try:
-        user_role = session.get('user_role', 'student')
-        user_id = session.get(f'{user_role}_id', 1)
+        user_role = session.get('user_role')
+        if not user_role:
+            if 'student_id' in session: user_role = 'student'
+            elif 'parent_id' in session: user_role = 'parent'
+            elif 'faculty_id' in session: user_role = 'faculty'
+            elif 'admin_id' in session: user_role = 'admin'
+            else: user_role = 'student'
+
+        user_id = session.get(f'{user_role}_id') or session.get('user_id', 1)
 
         notifs = conn.execute("""
             SELECT * FROM notifications 
             WHERE recipient_role = ? AND recipient_id = ?
-            ORDER BY created_at DESC LIMIT 5
+            ORDER BY created_at DESC, id DESC LIMIT 8
         """, (user_role, user_id)).fetchall()
 
         return jsonify({'notifications': [dict(n) for n in notifs]})
@@ -353,9 +392,22 @@ def api_notifications_recent():
 def api_notifications_mark_read(notif_id):
     conn = get_db_connection()
     try:
-        conn.execute("UPDATE notifications SET is_read = 1 WHERE id = ?", (notif_id,))
+        user_role = session.get('user_role')
+        if not user_role:
+            if 'student_id' in session: user_role = 'student'
+            elif 'parent_id' in session: user_role = 'parent'
+            elif 'faculty_id' in session: user_role = 'faculty'
+            elif 'admin_id' in session: user_role = 'admin'
+            else: user_role = 'student'
+
+        user_id = session.get(f'{user_role}_id') or session.get('user_id', 1)
+
+        conn.execute("""
+            UPDATE notifications SET is_read = 1 
+            WHERE id = ? AND recipient_role = ? AND recipient_id = ?
+        """, (notif_id, user_role, user_id))
         conn.commit()
-        return jsonify({'status': 'ok'})
+        return jsonify({'status': 'ok', 'message': 'Marked as read'})
     finally:
         conn.close()
 
@@ -364,11 +416,18 @@ def api_notifications_mark_read(notif_id):
 def api_notifications_mark_all_read():
     conn = get_db_connection()
     try:
-        user_role = session.get('user_role', 'student')
-        user_id = session.get(f'{user_role}_id', 1)
+        user_role = session.get('user_role')
+        if not user_role:
+            if 'student_id' in session: user_role = 'student'
+            elif 'parent_id' in session: user_role = 'parent'
+            elif 'faculty_id' in session: user_role = 'faculty'
+            elif 'admin_id' in session: user_role = 'admin'
+            else: user_role = 'student'
+
+        user_id = session.get(f'{user_role}_id') or session.get('user_id', 1)
         conn.execute("UPDATE notifications SET is_read = 1 WHERE recipient_role = ? AND recipient_id = ?", (user_role, user_id))
         conn.commit()
-        return jsonify({'status': 'ok'})
+        return jsonify({'status': 'ok', 'message': 'All notifications marked as read'})
     finally:
         conn.close()
 
@@ -406,7 +465,9 @@ def api_admin_stats():
         total_faculty = conn.execute("SELECT COUNT(*) as cnt FROM faculties").fetchone()['cnt']
         total_parents = conn.execute("SELECT COUNT(*) as cnt FROM parents").fetchone()['cnt']
         total_courses = conn.execute("SELECT COUNT(*) as cnt FROM courses").fetchone()['cnt']
-        active_sos = conn.execute("SELECT COUNT(*) as cnt FROM incidents WHERE incident_type = 'EMERGENCY_SOS' AND status = 'ACTIVE'").fetchone()['cnt']
+        active_sos_emg = conn.execute("SELECT COUNT(*) as cnt FROM emergencies WHERE status IN ('TRIGGERED', 'ACKNOWLEDGED', 'ASSIGNED', 'RESPONDER_ASSIGNED', 'EN_ROUTE', 'ON_SCENE', 'ACTIVE', 'RESPONDING')").fetchone()['cnt']
+        active_sos_inc = conn.execute("SELECT COUNT(*) as cnt FROM incidents WHERE incident_type = 'EMERGENCY_SOS' AND status = 'ACTIVE'").fetchone()['cnt']
+        active_sos = max(active_sos_emg, active_sos_inc)
 
         return jsonify({
             'status': 'success',
@@ -420,3 +481,94 @@ def api_admin_stats():
         })
     finally:
         conn.close()
+
+
+# ---------------------------------------------------------------------------
+# 10. Swagger Documentation & Enterprise REST API v1
+# ---------------------------------------------------------------------------
+from flask import render_template
+from .swagger_spec import get_openapi_spec
+from services.predictive_ml_engine import evaluate_student_predictive_risk, evaluate_cohort_predictive_risk
+from services.qr_attendance_service import verify_student_qr_scan, generate_qr_attendance_token
+from services.rag_knowledge_engine import search_campus_knowledge
+from services.cctv_vision_service import get_all_campus_cctv_telemetry
+from utils.rate_limiter import rate_limit
+
+
+@api_bp.route('/api/docs')
+def api_docs_page():
+    """Renders interactive Swagger UI documentation explorer."""
+    return render_template('api_docs.html')
+
+
+@api_bp.route('/api/swagger.json')
+def api_swagger_json():
+    """Returns OpenAPI 3.0.0 JSON specification."""
+    return jsonify(get_openapi_spec())
+
+
+@api_bp.route('/api/v1/predictive-risk', methods=['GET'])
+@rate_limit(max_requests=30, window_seconds=60)
+def api_predictive_risk():
+    """Computes academic & retention risk index for authenticated student or cohort."""
+    student_id = session.get('student_id') or request.args.get('student_id', type=int)
+    conn = get_db_connection()
+    try:
+        if student_id:
+            result = evaluate_student_predictive_risk(student_id, conn)
+            return jsonify({'status': 'success', 'data': result})
+        
+        # Admin / Faculty cohort query
+        dept = request.args.get('department')
+        year = request.args.get('year', type=int)
+        cohort_results = evaluate_cohort_predictive_risk(conn, department=dept, year=year)
+        return jsonify({'status': 'success', 'cohort_count': len(cohort_results), 'data': cohort_results})
+    finally:
+        conn.close()
+
+
+@api_bp.route('/api/v1/qr-attendance', methods=['POST'])
+@rate_limit(max_requests=20, window_seconds=60)
+def api_qr_attendance_verify():
+    """Validates student scan of dynamic 15-second rotating QR attendance token."""
+    data = request.get_json() or {}
+    token = data.get('token', '').strip()
+    student_id = session.get('student_id') or data.get('student_id', 1)
+    lat = data.get('latitude', type=float)
+    lon = data.get('longitude', type=float)
+
+    if not token:
+        return jsonify({'status': 'error', 'message': 'Attendance token is required'}), 400
+
+    result = verify_student_qr_scan(token, student_id=student_id, student_lat=lat, student_lon=lon)
+    status_code = 200 if result.get('success') else 400
+    return jsonify(result), status_code
+
+
+@api_bp.route('/api/v1/knowledge-search', methods=['GET'])
+@rate_limit(max_requests=30, window_seconds=60)
+def api_knowledge_search():
+    """Performs semantic RAG search across institutional policies."""
+    query = request.args.get('q', '').strip()
+    if not query:
+        return jsonify({'status': 'error', 'message': 'Search query parameter (q) required'}), 400
+
+    docs = search_campus_knowledge(query, top_k=3)
+    return jsonify({
+        'status': 'success',
+        'query': query,
+        'matched_count': len(docs),
+        'results': docs
+    })
+
+
+@api_bp.route('/api/v1/cctv-telemetry', methods=['GET'])
+def api_cctv_telemetry():
+    """Returns synthesized optical CCTV camera telemetry for security dashboard."""
+    telemetry = get_all_campus_cctv_telemetry()
+    return jsonify({
+        'status': 'success',
+        'active_cameras_count': len(telemetry),
+        'telemetry': telemetry
+    })
+

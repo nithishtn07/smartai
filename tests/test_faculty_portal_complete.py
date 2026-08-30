@@ -143,7 +143,7 @@ class TestFacultyPortalComplete(unittest.TestCase):
         self.assertEqual(resp_get.status_code, 200)
         self.assertIn(b'Course Attendance &amp; Roll-Call Center', resp_get.data)
 
-        # 2. Batch roll-call submission
+        # 2. Batch roll-call submission on a specific date
         resp_post = self.client.post('/faculty/attendance', data={
             'action_type': 'batch_roll_call',
             'course_code': 'CS301',
@@ -154,7 +154,29 @@ class TestFacultyPortalComplete(unittest.TestCase):
         self.assertEqual(resp_post.status_code, 200)
         self.assertIn(b'Class roll call for CS301 successfully saved', resp_post.data)
 
-        # 3. One-click warning notice to student and parent
+        # 3. Test Date-Logs API endpoint
+        resp_api = self.client.get('/api/faculty/attendance/date-logs?course=CS301&date=2026-08-21')
+        self.assertEqual(resp_api.status_code, 200)
+        api_data = resp_api.get_json()
+        self.assertEqual(api_data['status'], 'success')
+        self.assertEqual(api_data['records']['1'], 'Present')
+        self.assertIn('Query Optimization', api_data['topic'])
+
+        # 4. Modify / Edit attendance on the same date (toggle to Absent) without double counting classes_held
+        resp_edit = self.client.post('/faculty/attendance', data={
+            'action_type': 'batch_roll_call',
+            'course_code': 'CS301',
+            'date': '2026-08-21',
+            'topic': 'Advanced Query Optimization & Execution Plans',
+            'status_1': 'Absent'
+        }, follow_redirects=True)
+        self.assertEqual(resp_edit.status_code, 200)
+
+        # Verify edited status in API
+        resp_api_edited = self.client.get('/api/faculty/attendance/date-logs?course=CS301&date=2026-08-21')
+        self.assertEqual(resp_api_edited.get_json()['records']['1'], 'Absent')
+
+        # 5. One-click warning notice to student and parent
         resp_warn = self.client.post('/faculty/attendance/send-warning/1', data={
             'course_code': 'CS301'
         }, follow_redirects=True)

@@ -46,7 +46,7 @@
             <p style="font-size: 0.82rem; color: var(--text-secondary); line-height: 1.4;">Department-wide roll call compliance report flagging students at risk of attendance shortfalls for intervention.</p>
         </div>
         <div style="margin-top: 20px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.06); display: flex; justify-content: space-between; align-items: center;">
-            <span style="font-size: 0.78rem; color: #34d399;">Avg Compliance: {{ "{:.1f}%".format(avg_attendance|default(88.5)) }}</span>
+            <span style="font-size: 0.78rem; color: #34d399;">Avg Compliance: {{ "{:.1f}%".format(avg_attendance|default(0.0)) }}</span>
             <a href="{{ url_for('admin_attendance') }}" class="btn-primary" style="padding: 6px 14px; font-size: 0.78rem; background: #f59e0b; text-decoration: none;">Review Watchlist →</a>
         </div>
     </div>
